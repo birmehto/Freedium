@@ -1,26 +1,25 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/services/storage_service.dart';
+import '../../../../core/services/theme_service.dart';
 
 class SettingsController extends GetxController {
   final StorageService _storage = Get.find();
+  final ThemeService _themeService = Get.find();
 
-  final isDarkMode = false.obs;
   final activeEngineUrl = ''.obs;
+
+  bool get isDarkMode => _themeService.isDarkMode.value;
 
   @override
   void onInit() {
     super.onInit();
-    isDarkMode.value = _storage.isDarkMode;
     activeEngineUrl.value = _storage.activeEngineUrl;
   }
 
   void toggleTheme(bool value) {
-    isDarkMode.value = value;
-    _storage.isDarkMode = value;
-    Get.changeThemeMode(value ? ThemeMode.dark : ThemeMode.light);
+    _themeService.toggleTheme(value);
   }
 
   void setEngineUrl(String url) {

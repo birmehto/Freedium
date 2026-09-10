@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/services/storage_service.dart';
-import '../../../../shared/widgets/background_painter.dart';
+import '../../../../shared/widgets/app_page.dart';
 import '../controllers/settings_controller.dart';
 
 class SettingsPage extends GetView<SettingsController> {
@@ -11,145 +12,126 @@ class SettingsPage extends GetView<SettingsController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final c = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: MeshGradientBackground(
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar.medium(
-              title: Text(
-                'Settings',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
+    return AppPage(
+      title: 'Settings',
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      slivers: [
+        const SizedBox(height: 12),
+        _sectionHeader(context, 'Appearance'),
+        M3ECard(
+          variant: M3ECardVariant.filled,
+          child: Obx(
+            () => M3EListItem(
+              headline: 'Dark Mode',
+              supportingText: 'Comfortable reading in low light',
+              leading: _iconBox(
+                theme,
+                controller.isDarkMode
+                    ? Icons.dark_mode_rounded
+                    : Icons.light_mode_rounded,
+                c.primaryContainer,
+              ),
+              trailing: M3ESwitch(
+                value: controller.isDarkMode,
+                onChanged: controller.toggleTheme,
+              ),
+            ),
+          ),
+        ),
+        _sectionHeader(context, 'Reader Engine'),
+        M3ECard(
+          variant: M3ECardVariant.filled,
+          child: Obx(
+            () => M3EListItem(
+              headline: 'Active Engine',
+              supportingText: 'Alternative engine if primary fails',
+              leading: _iconBox(
+                theme,
+                Icons.swap_horizontal_circle_rounded,
+                c.secondaryContainer,
+              ),
+              trailing: M3EDropdownMenu<String>(
+                singleSelect: true,
+                items: StorageService.availableEngines
+                    .map(
+                      (engine) => M3EDropdownItem(
+                        label: engine['name']!,
+                        value: engine['url']!,
+                      ),
+                    )
+                    .toList(),
+                onSelectionChanged: (items) {
+                  if (items.isNotEmpty) {
+                    controller.setEngineUrl(items.first.value);
+                  }
+                },
+              ),
+            ),
+          ),
+        ),
+        _sectionHeader(context, 'About'),
+        M3ECard(
+          variant: M3ECardVariant.filled,
+          child: Column(
+            children: [
+              M3EListItem(
+                headline: 'Send Feedback',
+                leading: _iconBox(
+                  theme,
+                  Icons.mail_outline_rounded,
+                  c.tertiaryContainer,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: controller.sendFeedback,
+              ),
+              const M3EDivider(),
+              M3EListItem(
+                headline: 'Version',
+                leading: _iconBox(
+                  theme,
+                  Icons.info_outline_rounded,
+                  c.secondaryContainer,
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: c.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: c.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Text(
+                    '1.0.0',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: c.primary,
+                    ),
+                  ),
                 ),
               ),
-              centerTitle: true,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const SizedBox(height: 12),
-                  _sectionHeader(context, 'Appearance'),
-                  _card(
-                    context,
-                    children: [
-                      Obx(
-                        () => SwitchListTile.adaptive(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          secondary: _iconBox(
-                            theme,
-                            controller.isDarkMode.value
-                                ? Icons.dark_mode_rounded
-                                : Icons.light_mode_rounded,
-                            theme.colorScheme.primaryContainer,
-                          ),
-                          title: Text(
-                            'Dark Mode',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          subtitle: const Text(
-                            'Comfortable reading in low light',
-                          ),
-                          value: controller.isDarkMode.value,
-                          onChanged: controller.toggleTheme,
-                        ),
-                      ),
-                    ],
-                  ),
-                  _sectionHeader(context, 'Reader Engine'),
-                  _card(
-                    context,
-                    children: [
-                      Obx(
-                        () => ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          leading: _iconBox(
-                            theme,
-                            Icons.swap_horizontal_circle_rounded,
-                            theme.colorScheme.secondaryContainer,
-                          ),
-                          title: Text(
-                            'Active Engine',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          subtitle: const Text(
-                            'Alternative engine if primary fails',
-                          ),
-                          trailing: DropdownButton<String>(
-                            value: controller.activeEngineUrl.value,
-                            icon: const Icon(Icons.arrow_drop_down_rounded),
-                            underline: const SizedBox.shrink(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                controller.setEngineUrl(value);
-                              }
-                            },
-                            items: StorageService.availableEngines
-                                .map<DropdownMenuItem<String>>((engine) {
-                                  return DropdownMenuItem<String>(
-                                    value: engine['url'],
-                                    child: Text(
-                                      engine['name']!,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  );
-                                })
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  _sectionHeader(context, 'About'),
-                  _card(
-                    context,
-                    children: [
-                      _tile(
-                        context,
-                        icon: Icons.mail_outline_rounded,
-                        bg: theme.colorScheme.tertiaryContainer,
-                        title: 'Send Feedback',
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: controller.sendFeedback,
-                      ),
-                      const _Divider(),
-                      _versionTile(context),
-                      const _Divider(),
-                      _tile(
-                        context,
-                        icon: Icons.gavel_rounded,
-                        bg: theme.colorScheme.secondaryContainer,
-                        title: 'Licenses & Credits',
-                        onTap: () => _showCreditsDialog(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 48),
-                ]),
+              const M3EDivider(),
+              M3EListItem(
+                headline: 'Licenses & Credits',
+                leading: _iconBox(
+                  theme,
+                  Icons.gavel_rounded,
+                  c.secondaryContainer,
+                ),
+                onTap: () => _showCreditsDialog(context),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        const SizedBox(height: 48),
+      ],
     );
   }
-
-  // ───────────────────────── UI Helpers ─────────────────────────
 
   Widget _iconBox(ThemeData theme, IconData icon, Color bg) {
     return Container(
@@ -163,22 +145,6 @@ class SettingsPage extends GetView<SettingsController> {
         size: 22,
         color: theme.colorScheme.onSecondaryContainer,
       ),
-    );
-  }
-
-  Widget _card(BuildContext context, {required List<Widget> children}) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface.withValues(alpha: 0.7),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
     );
   }
 
@@ -197,86 +163,23 @@ class SettingsPage extends GetView<SettingsController> {
     );
   }
 
-  Widget _tile(
-    BuildContext context, {
-    required IconData icon,
-    required Color bg,
-    required String title,
-    Widget? trailing,
-    VoidCallback? onTap,
-  }) {
-    final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: _iconBox(theme, icon, bg),
-      title: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      trailing: trailing,
-      onTap: onTap,
-    );
-  }
-
-  Widget _versionTile(BuildContext context) {
-    final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: _iconBox(
-        theme,
-        Icons.info_outline_rounded,
-        theme.colorScheme.secondaryContainer,
-      ),
-      title: const Text('Version'),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Text(
-          '1.0.0',
-          style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showCreditsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: const Text('Licenses & Credits'),
+    M3EDialog.show<void>(
+      context,
+      dialog: M3EDialog(
+        title: 'Licenses & Credits',
         content: const Text(
           'Readora is not affiliated with Medium.\n\n'
           'All article content belongs to their respective authors.',
         ),
-        actions: [TextButton(onPressed: Get.back, child: const Text('Close'))],
+        actions: [
+          M3EButton(
+            style: M3EButtonStyle.text,
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Divider(
-      height: 1,
-      indent: 20,
-      endIndent: 20,
-      color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
     );
   }
 }

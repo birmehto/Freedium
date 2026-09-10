@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/utils/url_validator.dart';
@@ -26,7 +27,19 @@ class FavoritesListItem extends StatelessWidget {
       background: _buildDeleteBackground(theme),
       child: TapScale(
         onTap: _openArticle,
-        child: _Card(theme: theme, item: item),
+        child: M3ECard(
+          variant: M3ECardVariant.outlined,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _icon(theme.colorScheme),
+                const SizedBox(width: 20),
+                Expanded(child: _text(theme, theme.colorScheme)),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -53,38 +66,6 @@ class FavoritesListItem extends StatelessWidget {
         Icons.delete_sweep_rounded,
         color: theme.colorScheme.onErrorContainer,
         size: 28,
-      ),
-    );
-  }
-}
-
-class _Card extends StatelessWidget {
-  const _Card({required this.theme, required this.item});
-
-  final ThemeData theme;
-  final FavoriteArticle item;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = theme.colorScheme;
-
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: c.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: c.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            _icon(c),
-            const SizedBox(width: 20),
-            Expanded(child: _text(theme, c)),
-          ],
-        ),
       ),
     );
   }

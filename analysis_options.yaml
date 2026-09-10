@@ -38,6 +38,9 @@ analyzer:
     - "build/**"
     - "test/.test_coverage.dart"
     - "integration_test/**"
+    - android/**
+    - ios/**
+    - linux/**
 
 linter:
   rules:
@@ -116,7 +119,6 @@ linter:
     close_sinks: true
     avoid_equals_and_hash_code_on_mutable_classes: true
     avoid_implementing_value_types: true
-    avoid_private_typedef_functions: true
     avoid_renaming_method_parameters: true
     avoid_returning_this: true
     avoid_setters_without_getters: true
@@ -130,9 +132,6 @@ linter:
     avoid_catching_errors: true
     use_rethrow_when_possible: true
     throw_in_finally: true
-
-    # 🔄 Async Programming & Futures
-    # unawaited_futures: true
 
     # 📊 Collections & Iterables
     prefer_collection_literals: true

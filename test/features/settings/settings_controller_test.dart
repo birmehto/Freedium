@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:readora/core/services/storage_service.dart';
+import 'package:readora/core/services/theme_service.dart';
 import 'package:readora/features/settings/presentation/controllers/settings_controller.dart';
 
 class MockStorageService extends StorageService {
@@ -24,6 +25,14 @@ class MockStorageService extends StorageService {
   }
 }
 
+class MockThemeService extends ThemeService {
+  @override
+  void onInit() {
+    super.onInit();
+    isDarkMode.value = Get.find<StorageService>().isDarkMode;
+  }
+}
+
 void main() {
   late MockStorageService mockStorage;
   late SettingsController controller;
@@ -32,8 +41,9 @@ void main() {
     Get.reset();
     mockStorage = MockStorageService();
     Get.put<StorageService>(mockStorage);
+    Get.put<ThemeService>(MockThemeService());
     controller = SettingsController();
-    controller.onInit(); // Call onInit to trigger initialization
+    controller.onInit();
   });
 
   group('SettingsController Tests', () {
@@ -41,20 +51,23 @@ void main() {
       mockStorage.isDarkMode = true;
       mockStorage.activeEngineUrl = 'https://readmedium.com/';
 
+      final themeService = Get.find<ThemeService>();
+      themeService.isDarkMode.value = true;
+
       final freshController = SettingsController();
       freshController.onInit();
 
-      expect(freshController.isDarkMode.value, true);
+      expect(freshController.isDarkMode, true);
       expect(freshController.activeEngineUrl.value, 'https://readmedium.com/');
     });
 
     test('toggleTheme updates state and storage service', () {
-      expect(controller.isDarkMode.value, false);
+      expect(controller.isDarkMode, false);
       expect(mockStorage.isDarkMode, false);
 
       controller.toggleTheme(true);
 
-      expect(controller.isDarkMode.value, true);
+      expect(controller.isDarkMode, true);
       expect(mockStorage.isDarkMode, true);
     });
 

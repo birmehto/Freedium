@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class MeshGradientBackground extends StatelessWidget {
   const MeshGradientBackground({super.key, this.child, this.animate = true});
@@ -39,8 +39,6 @@ class MeshGradientBackground extends StatelessWidget {
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────
 
 class _AnimatedMesh extends StatefulWidget {
   const _AnimatedMesh({required this.colors});
@@ -81,8 +79,6 @@ class _AnimatedMeshState extends State<_AnimatedMesh>
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────
 
 class MeshGradientPainter extends CustomPainter {
   MeshGradientPainter({required this.colors, this.t = 0});
@@ -125,8 +121,6 @@ class MeshGradientPainter extends CustomPainter {
     return old.t != t || old.colors != colors;
   }
 }
-
-// ──────────────────────────────────────────────────────────────
 
 class _Blob {
   const _Blob({

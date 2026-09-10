@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_animations.dart';
 
 class ArticleError extends StatelessWidget {
   const ArticleError({
@@ -27,7 +28,7 @@ class ArticleError extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded, size: 64, color: c.error),
+            const ScaleIn(child: Icon(Icons.error_outline_rounded, size: 64)),
             const SizedBox(height: 20),
 
             Text(
@@ -50,33 +51,57 @@ class ArticleError extends StatelessWidget {
             const SizedBox(height: 32),
 
             if (onRetry != null)
-              AppButton(
-                text: 'Retry',
-                size: AppButtonSize.large,
-                icon: Icons.refresh_rounded,
-                onPressed: onRetry!,
+              SizedBox(
+                width: double.infinity,
+                child: M3EButton(
+                  onPressed: onRetry,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text('Retry'),
+                    ],
+                  ),
+                ),
               ),
 
             if (onSwitchEngine != null) ...[
               const SizedBox(height: 12),
-              AppButton(
-                text: 'Try Alternative Engine',
-                size: AppButtonSize.large,
-                icon: Icons.swap_horizontal_circle_rounded,
-                variant: AppButtonVariant.elevated,
-                onPressed: onSwitchEngine!,
+              SizedBox(
+                width: double.infinity,
+                child: M3EButton(
+                  style: M3EButtonStyle.elevated,
+                  onPressed: onSwitchEngine,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.swap_horizontal_circle_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text('Try Alternative Engine'),
+                    ],
+                  ),
+                ),
               ),
             ],
 
             const SizedBox(height: 12),
 
             if (onOpenBrowser != null)
-              AppButton(
-                text: 'Open in Browser',
-                size: AppButtonSize.large,
-                icon: Icons.open_in_browser_rounded,
-                variant: AppButtonVariant.outlined,
-                onPressed: onOpenBrowser!,
+              SizedBox(
+                width: double.infinity,
+                child: M3EButton(
+                  style: M3EButtonStyle.outlined,
+                  onPressed: onOpenBrowser,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.open_in_browser_rounded, size: 20),
+                      SizedBox(width: 8),
+                      Text('Open in Browser'),
+                    ],
+                  ),
+                ),
               ),
 
             const SizedBox(height: 20),

@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/app/app_log.dart';
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/clipboard_service.dart';
 import '../../../../core/services/share_intent_service.dart';
 import '../../../../core/utils/url_validator.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
 
 class HomeController extends GetxController {
   final ClipboardService _clipboardService = Get.find();
@@ -50,15 +50,7 @@ class HomeController extends GetxController {
   String? _validateUrl(String url) {
     if (url.isEmpty) return null;
     final cleaned = UrlValidator.cleanUrl(url);
-    if (cleaned == null || !UrlValidator.isValidUrl(cleaned)) {
-      return 'Please enter a valid URL';
-    }
-    if (!UrlValidator.isMediumUrl(cleaned)) {
-      return 'Please enter a Medium article URL';
-    }
-    if (!UrlValidator.isMediumArticle(cleaned)) {
-      return 'Please enter a valid Medium article URL';
-    }
+    if (cleaned == null) return 'Please enter a valid URL';
     return null;
   }
 
@@ -74,11 +66,9 @@ class HomeController extends GetxController {
         onUrlChanged(clipboardText);
       }
     } catch (e) {
-      AppSnackbar.show(
+      M3ESnackbar.show(
         Get.context!,
-        title: 'Error',
         message: 'Failed to paste from clipboard: $e',
-        type: SnackbarType.error,
       );
     }
   }
@@ -92,14 +82,11 @@ class HomeController extends GetxController {
     if (!canOpenArticle) return;
 
     final url = urlController.text.trim();
-    final error = _validateUrl(url);
-    if (error != null) {
-      errorMessage.value = error;
+    final cleanedUrl = UrlValidator.cleanUrl(url);
+    if (cleanedUrl == null) {
+      errorMessage.value = 'Please enter a valid URL';
       return;
     }
-
-    final cleanedUrl = UrlValidator.cleanUrl(url);
-    if (cleanedUrl == null) return;
 
     isLoading.value = true;
 
@@ -115,7 +102,8 @@ class HomeController extends GetxController {
       } else {
         errorMessage.value = 'Failed to process the URL';
       }
-    } catch (e) {
+    } catch (e, s) {
+      appLog(e.toString(), stackTrace: s);
       errorMessage.value = 'Failed to open article: ${e.toString()}';
     } finally {
       isLoading.value = false;

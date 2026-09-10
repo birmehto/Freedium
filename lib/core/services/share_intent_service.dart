@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../features/home/presentation/controllers/home_controller.dart';
+import '../app/app_log.dart';
 import '../utils/url_validator.dart';
 
 class ShareIntentService extends GetxService {
@@ -26,7 +27,7 @@ class ShareIntentService extends GetxService {
         }
       },
       onError: (err) {
-        // Ignored
+        appLog(err);
       },
     );
 
@@ -40,10 +41,9 @@ class ShareIntentService extends GetxService {
         _processSharedText(sharedText);
         ReceiveSharingIntent.instance.reset();
       }
-    } catch (e) {
-      // Ignored
+    } catch (e, s) {
+      appLog(e.toString(), stackTrace: s);
     }
-
     return this;
   }
 

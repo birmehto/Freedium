@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../core/app/app_log.dart';
 import '../controllers/article_controller.dart';
@@ -15,8 +16,7 @@ class ArticleWebView extends GetView<ArticleController> {
     appLog('Building ArticleWebView for URL: $url');
 
     final initialSettings = InAppWebViewSettings(
-      userAgent:
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       builtInZoomControls: Platform.isAndroid ? false : null,
       allowsInlineMediaPlayback: true,
       mediaPlaybackRequiresUserGesture: false,

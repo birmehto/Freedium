@@ -5,7 +5,7 @@ void main() {
   group('UrlValidator', () {
     test('extractUrlFromText finds URL in shared text', () {
       const text =
-          'Read “I Made My Flutter App Load 3x Faster” by Abhinav on Medium: https://codingplainenglish.medium.com/article-id';
+          'Read "I Made My Flutter App Load 3x Faster" by Abhinav on Medium: https://codingplainenglish.medium.com/article-id';
       final result = UrlValidator.extractUrlFromText(text);
       expect(result, 'https://codingplainenglish.medium.com/article-id');
     });
@@ -37,79 +37,8 @@ void main() {
       () {
         const url = 'http://textise.org/showtext.aspx';
         final result = UrlValidator.cleanTextiseUrl(url);
-        expect(
-          result,
-          url,
-        ); // Or null? behavior depends on implementation, safer to return original
+        expect(result, url);
       },
     );
-    test('isMediumArticle validates various Medium article formats', () {
-      final validUrls = [
-        'https://medium.com/@user/article-slug-id123',
-        'https://towardsdatascience.com/some-article-id456',
-        'https://username.medium.com/another-article-id789',
-        'https://uxdesign.cc/design-article-abc',
-        'https://medium.com/publication/slug-123',
-      ];
-
-      for (final url in validUrls) {
-        expect(
-          UrlValidator.isMediumArticle(url),
-          isTrue,
-          reason: 'Should be valid: $url',
-        );
-      }
-
-      final invalidUrls = [
-        'https://medium.com/',
-        'https://medium.com/about',
-        'https://medium.com/@user',
-        'https://towardsdatascience.com/',
-        'https://medium.com/me/settings',
-        'https://google.com',
-        'not-a-url',
-      ];
-
-      for (final url in invalidUrls) {
-        expect(
-          UrlValidator.isMediumArticle(url),
-          isFalse,
-          reason: 'Should be invalid: $url',
-        );
-      }
-    });
-
-    test('isMediumArticle handles custom domains from list', () {
-      expect(
-        UrlValidator.isMediumArticle('https://betterhumans.pub/article'),
-        isTrue,
-      );
-      expect(UrlValidator.isMediumArticle('https://eand.co/article'), isTrue);
-    });
-
-    group('isMediumUrl', () {
-      test('identifies medium.com domains', () {
-        expect(UrlValidator.isMediumUrl('https://medium.com/foo'), isTrue);
-        expect(UrlValidator.isMediumUrl('http://www.medium.com/bar'), isTrue);
-        expect(
-          UrlValidator.isMediumUrl('https://username.medium.com/baz'),
-          isTrue,
-        );
-      });
-
-      test('identifies known custom domains', () {
-        expect(
-          UrlValidator.isMediumUrl('https://towardsdatascience.com/foo'),
-          isTrue,
-        );
-        expect(UrlValidator.isMediumUrl('https://uxdesign.cc/bar'), isTrue);
-      });
-
-      test('rejects non-medium domains', () {
-        expect(UrlValidator.isMediumUrl('https://google.com/foo'), isFalse);
-        expect(UrlValidator.isMediumUrl('https://dev.to/bar'), isFalse);
-        expect(UrlValidator.isMediumUrl('https://nytimes.com/baz'), isFalse);
-      });
-    });
   });
 }

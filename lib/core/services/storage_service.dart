@@ -63,11 +63,16 @@ class StorageService extends GetxService {
   }
 
   // Scroll Positions
-  Map<String, dynamic> get _scrollPositions => _box.read(_scrollPositionsKey) ?? {};
+  Map<String, dynamic> get _scrollPositions =>
+      _box.read(_scrollPositionsKey) ?? {};
 
   Future<void> saveScrollPosition(String url, int y, double percentage) async {
     final map = Map<String, dynamic>.from(_scrollPositions);
-    map[url] = {'y': y, 'percentage': percentage, 'updatedAt': DateTime.now().toIso8601String()};
+    map[url] = {
+      'y': y,
+      'percentage': percentage,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
     await _box.write(_scrollPositionsKey, map);
   }
 

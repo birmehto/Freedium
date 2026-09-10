@@ -1,12 +1,9 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 extension ContextX on BuildContext {
-  // ─────────────────────────────────────────────────────
   // THEME
-  // ─────────────────────────────────────────────────────
-
   ThemeData get theme => Theme.of(this);
   ColorScheme get colors => theme.colorScheme;
   TextTheme get text => theme.textTheme;
@@ -14,9 +11,7 @@ extension ContextX on BuildContext {
   bool get isDark => brightness == Brightness.dark;
   bool get isLight => brightness == Brightness.light;
 
-  // ─────────────────────────────────────────────────────
   // MEDIA QUERY (Safe access)
-  // ─────────────────────────────────────────────────────
 
   MediaQueryData get mq =>
       MediaQuery.maybeOf(this) ?? MediaQueryData.fromView(View.of(this));
@@ -32,9 +27,7 @@ extension ContextX on BuildContext {
 
   bool get isKeyboardOpen => insets.bottom > 0;
 
-  // ─────────────────────────────────────────────────────
   // RESPONSIVE
-  // ─────────────────────────────────────────────────────
 
   static const double mobileMax = 600;
   static const double tabletMax = 1024;
@@ -43,24 +36,18 @@ extension ContextX on BuildContext {
   bool get isTablet => width >= mobileMax && width < tabletMax;
   bool get isDesktop => width >= tabletMax;
 
-  // ─────────────────────────────────────────────────────
   // ORIENTATION
-  // ─────────────────────────────────────────────────────
 
   bool get isPortrait => mq.orientation == Orientation.portrait;
   bool get isLandscape => mq.orientation == Orientation.landscape;
 
-  // ─────────────────────────────────────────────────────
   // SAFE AREA
-  // ─────────────────────────────────────────────────────
 
   double get statusBar => padding.top;
   double get bottomBar => padding.bottom;
   double get safeHeight => height - statusBar - bottomBar;
 
-  // ─────────────────────────────────────────────────────
   // SNACKBARS (Safe)
-  // ─────────────────────────────────────────────────────
 
   void snack(
     String message, {
@@ -91,10 +78,7 @@ extension ContextX on BuildContext {
     snack(message, bg: colors.primaryContainer);
   }
 
-  // ─────────────────────────────────────────────────────
   // FOCUS & KEYBOARD
-  // ─────────────────────────────────────────────────────
-
   void unfocus() {
     final FocusScopeNode current = FocusScope.of(this);
     if (!current.hasPrimaryFocus) current.unfocus();

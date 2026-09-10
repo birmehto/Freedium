@@ -1,44 +1,11 @@
 import 'package:get/get.dart';
 
-import '../app/app_constants.dart';
 import '../services/storage_service.dart';
-
 
 class UrlValidator {
   static const String _urlPattern =
       r'^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$';
   static final RegExp _urlRegex = RegExp(_urlPattern);
-
-  /// Known Medium custom domain publications
-  /// These are popular Medium publications that use custom domains
-  static const List<String> _knownMediumCustomDomains = [
-    'towardsdatascience.com',
-    'betterhumans.pub',
-    'betterprogramming.pub',
-    'eand.co',
-    'arcdigital.media',
-    'blog.prototypr.io',
-    'uxdesign.cc',
-    'levelup.gitconnected.com',
-    'javascript.plainenglish.io',
-    'python.plainenglish.io',
-    'aws.plainenglish.io',
-    'blog.devgenius.io',
-    'entrepreneurshandbook.co',
-    'bettermarketing.pub',
-    'writingcooperative.com',
-    'psiloveyou.xyz',
-    'codeburst.io',
-    'itnext.io',
-    'blog.bitsrc.io',
-    'netflixtechblog.com',
-    'engineering.atspotify.com',
-    'slack.engineering',
-    'blog.usejournal.com',
-    'uxplanet.org',
-    'thebolditalic.com',
-    'hackernoon.com',
-  ];
 
   /// Validate if the string is a valid URL
   static bool isValidUrl(String url) {
@@ -46,101 +13,10 @@ class UrlValidator {
     return _urlRegex.hasMatch(url);
   }
 
-  /// Check if URL is a Medium article or can be handled by Freedium
-  /// This includes:
-  /// 1. medium.com/* - Main Medium domain
-  /// 2. *.medium.com/* - Subdomain based Medium profiles
-  /// 3. Known custom domain Medium publications
-  /// 4. Any other URL (Freedium can handle most Medium-hosted content)
-  static bool isMediumUrl(String url) {
-    if (!isValidUrl(url)) return false;
-
-    final uri = Uri.tryParse(url);
-    if (uri == null) return false;
-
-    final host = uri.host.toLowerCase();
-
-    // Check for medium.com domain (with or without www)
-    if (host == MediumConstants.mediumDomain ||
-        host == 'www.${MediumConstants.mediumDomain}') {
-      return true;
-    }
-
-    // Check for medium subdomain (e.g., username.medium.com)
-    if (host.endsWith('.medium.com')) {
-      return true;
-    }
-
-    // Check for known Medium custom domains
-    for (final domain in _knownMediumCustomDomains) {
-      if (host == domain || host == 'www.$domain') {
-        return true;
-      }
-    }
-
-    // If it's not a known Medium domain or subdomain, return false
-    // This allows us to warn the user that the URL might not be a Medium article
-    return false;
-  }
-
-  /// Check if the URL is specifically a Medium ARTICLE
-  /// This helps in filtering out things like Medium home page, profiles, etc.
-  static bool isMediumArticle(String url) {
-    if (!isValidUrl(url)) return false;
-
-    final uri = Uri.tryParse(url);
-    if (uri == null) return false;
-
-    // Remove query parameters for validation
-    final path = uri.path;
-
-    // Basic checks to exclude common non-article paths
-    if (path == '/' || path.isEmpty) return false;
-
-    // Exclude static pages and common Medium paths
-    final excludedPaths = [
-      '/about',
-      '/me',
-      '/settings',
-      '/membership',
-      '/creators',
-      '/p/verify',
-      '/p/report',
-      '/m/signin',
-      '/search',
-      '/tag',
-      '/topic',
-      '/plans',
-      '/verified-authors',
-    ];
-
-    for (final excluded in excludedPaths) {
-      if (path == excluded || path.startsWith('$excluded/')) {
-        return false;
-      }
-    }
-
-    // Most Medium articles have a slug followed by a unique ID (e.g., -abc123456789)
-    // or they are in the format /@username/slug-id
-    // For custom domains, it's often /slug-id
-
-    // Split path to analyze segments
-    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-    if (segments.isEmpty) return false;
-
-    // If it's a profile link like /@username without further segments, it's not an article
-    if (segments.length == 1 && segments[0].startsWith('@')) return false;
-
-    // More complex regex could be used, but this heuristic is generally good for Medium articles
-    // Freedium will handle the final validation when we try to fetch it.
-    return true;
-  }
-
   /// Extract any URL found in the text and clean it
   static String? extractUrlFromText(String text) {
     if (text.isEmpty) return null;
 
-    // Regex to find http or https URLs
     final RegExp urlFinder = RegExp(
       r'(https?:\/\/[^\s]+)',
       caseSensitive: false,
@@ -151,8 +27,6 @@ class UrlValidator {
 
     String url = match.group(0)!;
 
-    // Remove trailing punctuation that might be part of the shared text but not the URL
-    // e.g., "Check this: https://medium.com/abc. It's good!" -> match is "https://medium.com/abc."
     while (url.isNotEmpty &&
         (url.endsWith('.') ||
             url.endsWith(',') ||
@@ -167,15 +41,11 @@ class UrlValidator {
   }
 
   /// Convert any URL to Freedium URL for reading
-  /// We always prepend the Freedium base URL to the full article URL
-  /// as this is the most reliable way Freedium handles both standard and custom domains.
   static String? convertToFreediumUrl(String articleUrl) {
     if (!isValidUrl(articleUrl)) return null;
 
     String targetUrl = cleanUrl(articleUrl) ?? articleUrl;
 
-    // Strip existing Freedium or ReadMedium prefixes to prevent double-prefixing
-    // and to fix any already corrupted URLs in favorites
     final prefixes = [
       'https://freedium-mirror.cfd/',
       'https://freedium.cfd/',
@@ -193,8 +63,6 @@ class UrlValidator {
       }
     }
 
-    // Now targetUrl is stripped of bypass prefixes.
-    // Prepend the active bypass engine URL.
     final activeEngine = Get.find<StorageService>().activeEngineUrl;
     return '$activeEngine/$targetUrl';
   }
@@ -205,7 +73,6 @@ class UrlValidator {
 
     String cleaned = input.trim();
 
-    // Add https if no protocol
     if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
       cleaned = 'https://$cleaned';
     }

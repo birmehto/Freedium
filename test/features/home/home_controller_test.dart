@@ -34,33 +34,40 @@ void main() {
     });
 
     test('Valid Medium URL enables opening article', () {
-      controller.urlController.text = 'https://medium.com/@user/my-awesome-post-abc123';
-      
-      expect(controller.urlText.value, 'https://medium.com/@user/my-awesome-post-abc123');
+      controller.urlController.text =
+          'https://medium.com/@user/my-awesome-post-abc123';
+
+      expect(
+        controller.urlText.value,
+        'https://medium.com/@user/my-awesome-post-abc123',
+      );
       expect(controller.errorMessage.value, '');
       expect(controller.canOpenArticle, true);
     });
 
     test('Invalid URL sets validation error message', () {
       controller.urlController.text = 'not-a-valid-url';
-      
+
       expect(controller.errorMessage.value, 'Please enter a valid URL');
       expect(controller.canOpenArticle, false);
     });
 
-    test('Non-Medium URL sets validation error message', () {
+    test('Non-Medium URL is accepted', () {
       controller.urlController.text = 'https://google.com';
-      
-      expect(controller.errorMessage.value, 'Please enter a Medium article URL');
-      expect(controller.canOpenArticle, false);
+
+      expect(controller.errorMessage.value, '');
+      expect(controller.canOpenArticle, true);
     });
 
     test('pasteFromClipboard populates URL from clipboard', () async {
       mockClipboard.clipboardText = 'https://medium.com/stories/nice-read-xyz';
-      
+
       await controller.pasteFromClipboard();
 
-      expect(controller.urlController.text, 'https://medium.com/stories/nice-read-xyz');
+      expect(
+        controller.urlController.text,
+        'https://medium.com/stories/nice-read-xyz',
+      );
       expect(controller.errorMessage.value, '');
       expect(controller.canOpenArticle, true);
     });

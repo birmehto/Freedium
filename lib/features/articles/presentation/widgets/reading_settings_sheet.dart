@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../controllers/article_controller.dart';
 
@@ -8,90 +9,55 @@ class ReadingSettingsSheet extends GetView<ArticleController> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Handle bar
-          Container(
-            width: 40,
-            height: 4,
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          Text('Reading Settings', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 20),
 
-          // Title
-          Text(
-            'Reading Settings',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-
-          // Dark mode toggle
           Obx(
-            () => SwitchListTile(
-              value: controller.isDarkMode.value,
-              onChanged: (_) => controller.toggleDarkMode(),
-              title: const Text('Dark Mode'),
-              secondary: Icon(
-                controller.isDarkMode.value
-                    ? Icons.dark_mode
-                    : Icons.light_mode,
+            () => M3EListItem(
+              headline: 'Dark Mode',
+              leading: Icon(
+                controller.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+              ),
+              trailing: M3ESwitch(
+                value: controller.isDarkMode,
+                onChanged: (_) => controller.toggleDarkMode(),
               ),
             ),
           ),
-          const Divider(),
+          const M3EDivider(),
+          const SizedBox(height: 8),
 
-          // Font Settings
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Text('Font Size', style: theme.textTheme.titleMedium),
+          Obx(
+            () => M3ESlider(
+              value: controller.fontSize.value,
+              min: 14,
+              max: 28,
+              divisions: 14,
+              onChanged: controller.updateFontSize,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          Text('Font Family', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 12),
+          Obx(
+            () => Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                const SizedBox(height: 8),
-                Text(
-                  'Font Size',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Obx(
-                  () => Slider(
-                    value: controller.fontSize.value,
-                    min: 14,
-                    max: 28,
-                    divisions: 14,
-                    label: '${controller.fontSize.value.round()}px',
-                    onChanged: controller.updateFontSize,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-                Text(
-                  'Font Family',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                Obx(
-                  () => Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildFontChip(context, 'Inter', 'Sans'),
-                      _buildFontChip(context, 'Roboto', 'Sans'),
-                      _buildFontChip(context, 'Merriweather', 'Serif'),
-                      _buildFontChip(context, 'Open Sans', 'Sans'),
-                    ],
-                  ),
-                ),
+                _buildFontChip(context, 'Inter', 'Sans'),
+                _buildFontChip(context, 'Roboto', 'Sans'),
+                _buildFontChip(context, 'Merriweather', 'Serif'),
+                _buildFontChip(context, 'Open Sans', 'Sans'),
               ],
             ),
           ),
@@ -103,16 +69,11 @@ class ReadingSettingsSheet extends GetView<ArticleController> {
 
   Widget _buildFontChip(BuildContext context, String font, String label) {
     final isSelected = controller.fontFamily.value == font;
-    return FilterChip(
-      label: Text(font),
+    return M3EChip(
+      label: font,
+      type: M3EChipType.filter,
       selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          controller.updateFontFamily(font);
-        }
-      },
-      showCheckmark: false,
-      avatar: isSelected ? const Icon(Icons.check, size: 16) : null,
+      onPressed: () => controller.updateFontFamily(font),
     );
   }
 }
