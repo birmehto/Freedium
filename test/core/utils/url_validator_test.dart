@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:readora/core/utils/url_validator.dart';
+import 'package:freedium/core/utils/url_validator.dart';
 
 void main() {
   group('UrlValidator', () {

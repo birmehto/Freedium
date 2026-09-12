@@ -8,8 +8,8 @@ import 'core/routes/app_pages.dart';
 import 'core/routes/app_routes.dart';
 import 'core/services/theme_service.dart';
 
-class Readora extends StatelessWidget {
-  const Readora({super.key});
+class Freedium extends StatelessWidget {
+  const Freedium({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class Readora extends StatelessWidget {
         autoTheming: true,
         data: m3eTheme,
         child: GetMaterialApp(
-          title: 'Readora',
+          title: 'Freedium',
           theme: fm.ThemeData(
             useMaterial3: true,
             fontFamily: 'Inter',

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/services/clipboard_service.dart';
+import 'package:freedium/core/services/share_intent_service.dart';
+import 'package:freedium/core/services/storage_service.dart';
+import 'package:freedium/core/services/theme_service.dart';
 import 'package:get/get.dart';
-import 'package:readora/core/services/clipboard_service.dart';
-import 'package:readora/core/services/share_intent_service.dart';
-import 'package:readora/core/services/storage_service.dart';
-import 'package:readora/core/services/theme_service.dart';
 
 class MockStorageService extends StorageService {
   bool _dark = false;

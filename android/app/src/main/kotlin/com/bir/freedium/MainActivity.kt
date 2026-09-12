@@ -1,4 +1,4 @@
-package com.app.readora
+package com.bir.freedium
 
 import io.flutter.embedding.android.FlutterActivity
 

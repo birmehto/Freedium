@@ -4,8 +4,13 @@ class UrlValidator {
   static final _urlRegex = RegExp(r'^https?://[^\s]+$');
   static final _textUrlRegex = RegExp(r'https?://[^\s]+', caseSensitive: false);
 
-  static bool isValidUrl(String url) =>
-      _urlRegex.hasMatch(url.trim()) && Uri.tryParse(url.trim()) != null;
+  static bool isValidUrl(String url) {
+    final trimmed = url.trim();
+    final uri = Uri.tryParse(trimmed);
+    return _urlRegex.hasMatch(trimmed) &&
+        uri != null &&
+        uri.host.contains('.');
+  }
 
   static String? cleanUrl(String input) {
     final url = input.trim();

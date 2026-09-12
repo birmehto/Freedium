@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/routes/app_routes.dart';
+import 'package:freedium/core/services/storage_service.dart';
+import 'package:freedium/core/services/theme_service.dart';
+import 'package:freedium/features/favorites/controllers/favorites_controller.dart';
+import 'package:freedium/features/favorites/models/favorite_article.dart';
+import 'package:freedium/features/favorites/views/favorites_page.dart';
+import 'package:freedium/features/favorites/widgtes/favorite_tile.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
 import 'package:material_ui/material_ui.dart';
-import 'package:readora/core/routes/app_routes.dart';
-import 'package:readora/core/services/storage_service.dart';
-import 'package:readora/core/services/theme_service.dart';
-import 'package:readora/features/favorites/controllers/favorites_controller.dart';
-import 'package:readora/features/favorites/models/favorite_article.dart';
-import 'package:readora/features/favorites/views/favorites_page.dart';
-import 'package:readora/features/favorites/widgtes/favorite_tile.dart';
 
 class MockStorageService extends StorageService {
   final List<Map<String, dynamic>> _favorites = [];

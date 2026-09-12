@@ -27,7 +27,7 @@ class SettingsController extends GetxController {
     final uri = Uri(
       scheme: 'mailto',
       path: 'birmehto@gmail.com',
-      queryParameters: {'subject': 'Readora Feedback'},
+      queryParameters: {'subject': 'Freedium Feedback'},
     );
 
     try {

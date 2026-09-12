@@ -13,5 +13,5 @@ void main() async {
   Get.put(ThemeService());
   await Get.putAsync(() => ShareIntentService().init());
   Get.put(ClipboardService());
-  runApp(const Readora());
+  runApp(const Freedium());
 }

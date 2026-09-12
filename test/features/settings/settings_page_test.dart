@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/services/storage_service.dart';
+import 'package:freedium/core/services/theme_service.dart';
+import 'package:freedium/features/settings/controllers/settings_controller.dart';
+import 'package:freedium/features/settings/views/settings_page.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
 import 'package:material_ui/material_ui.dart';
-import 'package:readora/core/services/storage_service.dart';
-import 'package:readora/core/services/theme_service.dart';
-import 'package:readora/features/settings/controllers/settings_controller.dart';
-import 'package:readora/features/settings/views/settings_page.dart';
 
 class MockStorageService extends StorageService {
   bool _isDarkMode = false;
