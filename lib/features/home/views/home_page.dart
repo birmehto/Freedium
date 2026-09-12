@@ -73,9 +73,7 @@ class HomePage extends GetView<HomeController> {
               ),
             );
           }),
-
           const SizedBox(height: 24),
-
           Obx(
             () => AppButton(
               label: const Text('Unlock Article'),
