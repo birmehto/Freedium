@@ -1,4 +1,4 @@
-# 📖 Freedium Lite
+# 📖 Freedium
 
 **The friendly Medium un-paywall reader.** Paste a Medium article link, hit *Unlock*, and read the full story in a clean, distraction-free reader — no subscription, no clutter, no drama.
 
@@ -10,13 +10,13 @@
   <img src="screenshots/settings.png" width="170" alt="Settings"/>
 </p>
 
-> 📖 *Readora* is now **Freedium Lite** — same app, friendlier name. 🎉
+> 📖 *Readora* is now **Freedium** — same app, friendlier name. 🎉
 
 ---
 
 ## What is this? 🤔
 
-Freedium Lite is a **free & open-source Flutter app** for **Android** that gives you a better way to read Medium articles. It uses the **Freedium mirror network** to serve the full article content, then wraps it in a beautifully styled, ad-free reading experience — with custom typography, dark/light themes, and none of the popover, paywall, and "you've used your free articles" nonsense.
+Freedium is a **free & open-source Flutter app** for **Android** that gives you a better way to read Medium articles. It uses the **Freedium mirror network** to serve the full article content, then wraps it in a beautifully styled, ad-free reading experience — with custom typography, dark/light themes, and none of the popover, paywall, and "you've used your free articles" nonsense.
 
 Think of it as a cozy reading room for Medium stories. 📚
 
@@ -25,10 +25,10 @@ Think of it as a cozy reading room for Medium stories. 📚
 ## ✨ Features
 
 ### 🛡️ Unlock any Medium story
-Paste a link, or share one from any app, and Freedium Lite fetches the full article through the Freedium mirror. A friendly message appears if something goes wrong (offline, server hiccup, broken link) — no cryptic errors, ever.
+Paste a link, or share one from any app, and Freedium fetches the full article through the Freedium mirror. A friendly message appears if something goes wrong (offline, server hiccup, broken link) — no cryptic errors, ever.
 
 ### 🔗 Share-to-read (one tap)
-Reading something on your phone? Just hit **Share → Freedium Lite** and the article opens instantly. Works with any text containing a URL.
+Reading something on your phone? Just hit **Share → Freedium** and the article opens instantly. Works with any text containing a URL.
 
 ### 🎨 A reading experience you control
 - 🌙 **Dark & light themes** — dark mode by default (easy on the eyes)
@@ -40,7 +40,7 @@ Reading something on your phone? Just hit **Share → Freedium Lite** and the ar
 A live progress indicator in the app bar shows exactly where you are in the article.
 
 ### 💾 Resume where you left off
-Freedium Lite remembers your scroll position per article — close it, come back later, and you're right back where you stopped.
+Freedium remembers your scroll position per article — close it, come back later, and you're right back where you stopped.
 
 ### ⭐ Offline favorites
 Save articles locally — no account needed. Search by title, author, or source, swipe to remove, and re-open any favorite in one tap.
@@ -159,12 +159,12 @@ Found a broken mirror? Want a feature (iOS? more mirrors?)?. Got a bug report?
 - Open a [GitHub issue](https://github.com/birmehto/Readora/issues)
 - Or email: birmehto@gmail.com
 
-Enjoying Freedium Lite? **[Buy me a coffee ☕](https://buymeacoffee.com/birmehto)** — it keeps the mirrors and the momentum going!
+Enjoying Freedium? **[Buy me a coffee ☕](https://buymeacoffee.com/birmehto)** — it keeps the mirrors and the momentum going!
 
 ---
 
 ## ⚖️ Legal & disclaimer
 
-Freedium Lite is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It simply wraps publicly available reader endpoints. All article content remains the property of its original authors. Please respect authors — and consider supporting the writers you love.
+Freedium is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It simply wraps publicly available reader endpoints. All article content remains the property of its original authors. Please respect authors — and consider supporting the writers you love.
 
 Open-source under the [MIT License](LICENSE). © Bir Mehto.
