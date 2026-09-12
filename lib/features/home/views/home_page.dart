@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/extensions/context_ext.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_textform.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/home_widgets.dart';
 
@@ -51,7 +52,8 @@ class HomePage extends GetView<HomeController> {
           Obx(() {
             final hasText = controller.urlText.isNotEmpty;
 
-            return M3ETextField(
+            return AppTextForm(
+              variant: M3ETextFieldVariant.outlined,
               controller: controller.urlController,
               label: 'Paste Medium URL here...',
               onChanged: controller.onUrlChanged,
@@ -59,18 +61,14 @@ class HomePage extends GetView<HomeController> {
               errorText: controller.errorMessage.value.isEmpty
                   ? null
                   : controller.errorMessage.value,
-              trailing: Padding(
-                padding: const EdgeInsets.only(right: 4.0),
-                child: M3EIconButton(
-                  icon: Icon(
-                    hasText
-                        ? M3EIcons.clear_rounded
-                        : M3EIcons.content_paste_rounded,
-                    size: 20,
-                  ),
-                  onPressed: hasText
-                      ? controller.clearUrl
-                      : controller.pasteFromClipboard,
+              trailing: InkWell(
+                onTap: hasText
+                    ? controller.clearUrl
+                    : controller.pasteFromClipboard,
+                child: Icon(
+                  hasText
+                      ? M3EIcons.clear_rounded
+                      : M3EIcons.content_paste_rounded,
                 ),
               ),
             );

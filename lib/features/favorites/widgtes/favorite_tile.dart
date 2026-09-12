@@ -1,10 +1,7 @@
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/routes/app_routes.dart';
-import '../../../core/utils/url_validator.dart';
 import '../../../core/widgets/app_icon_badge.dart';
 import '../models/favorite_article.dart';
 
@@ -33,14 +30,6 @@ class FavoriteTile extends StatelessWidget {
         iconColor: c.primary,
       ),
       trailing: const Icon(M3EIcons.chevron_right_rounded),
-      onTap: () {
-        final url = item.url;
-        final freedium = UrlValidator.convertToFreediumUrl(url) ?? url;
-        Get.toNamed(
-          AppRoutes.article,
-          arguments: {'url': freedium, 'originalUrl': url},
-        );
-      },
     );
   }
 }

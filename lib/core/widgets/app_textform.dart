@@ -1,86 +1,76 @@
+import 'package:flutter/services.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+/// App's text field: M3 Expressive wrapper with a floating label, optional
+/// leading/trailing widgets, supporting and error text.
 class AppTextForm extends StatelessWidget {
   const AppTextForm({
     super.key,
     this.controller,
     this.focusNode,
     this.label,
-    this.hintText,
-    this.initialValue,
-    this.validator,
-    this.onChanged,
-    this.onFieldSubmitted,
-    this.onTap,
-    this.prefixIcon,
-    this.suffixIcon,
+    this.supportingText,
+    this.errorText,
+    this.leading,
+    this.trailing,
+    this.variant = M3ETextFieldVariant.filled,
     this.obscureText = false,
+    this.enabled = true,
     this.keyboardType,
     this.textInputAction,
-    this.textCapitalization = TextCapitalization.none,
-    this.enabled = true,
-    this.readOnly = false,
+    this.inputFormatters,
+    this.onChanged,
+    this.onSubmitted,
+    this.onTapOutside,
     this.maxLines = 1,
-    this.minLines,
-    this.maxLength,
-    this.autofocus = false,
   });
 
   final TextEditingController? controller;
   final FocusNode? focusNode;
 
   final String? label;
-  final String? hintText;
-  final String? initialValue;
+  final String? supportingText;
+  final String? errorText;
 
-  final String? Function(String?)? validator;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onFieldSubmitted;
-  final VoidCallback? onTap;
+  final Widget? leading;
+  final Widget? trailing;
 
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
+  final M3ETextFieldVariant variant;
 
   final bool obscureText;
+  final bool enabled;
+
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
-  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
 
-  final bool enabled;
-  final bool readOnly;
-  final bool autofocus;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final TapRegionCallback? onTapOutside;
 
-  final int? maxLines;
-  final int? minLines;
-  final int? maxLength;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    return M3ETextField(
       controller: controller,
       focusNode: focusNode,
-      initialValue: controller == null ? initialValue : null,
-      validator: validator,
-      onChanged: onChanged,
-      onFieldSubmitted: onFieldSubmitted,
-      onTap: onTap,
+      label: label,
+      supportingText: supportingText,
+      errorText: errorText,
+      leading: leading,
+      trailing: trailing,
+      variant: variant,
       obscureText: obscureText,
+      enabled: enabled,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
-      textCapitalization: textCapitalization,
-      enabled: enabled,
-      readOnly: readOnly,
-      autofocus: autofocus,
-      maxLines: obscureText ? 1 : maxLines,
-      minLines: minLines,
-      maxLength: maxLength,
-      decoration: InputDecoration(
-        border: const OutlineInputBorder(),
-        labelText: label,
-        hintText: hintText,
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-      ),
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      onTapOutside: onTapOutside,
+      maxLines: maxLines,
     );
   }
 }

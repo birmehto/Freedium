@@ -7,7 +7,6 @@ import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../controllers/article_controller.dart';
 import '../widgets/article_webview.dart';
-import '../widgets/reading_settings_sheet.dart';
 
 class ArticlePage extends GetView<ArticleController> {
   const ArticlePage({super.key});
@@ -50,13 +49,13 @@ class ArticlePage extends GetView<ArticleController> {
 
           Obx(() {
             final Widget bar;
-            if (controller.isLoading.value && !controller.isInitialLoad.value) {
+            if (controller.isLoading.value) {
+              final progress = controller.loadingProgress.value;
               bar = M3EProgressIndicator.linear(
-                value: controller.loadingProgress.value,
+                value: progress > 0 && progress < 1.0 ? progress : null,
                 color: theme.colorScheme.primary,
               );
-            } else if (!controller.isInitialLoad.value &&
-                controller.scrollProgress.value > 0) {
+            } else if (controller.scrollProgress.value > 0) {
               bar = M3EProgressIndicator.linear(
                 value: controller.scrollProgress.value,
                 color: theme.colorScheme.secondary.withValues(alpha: 0.8),
@@ -98,16 +97,6 @@ class ArticlePage extends GetView<ArticleController> {
       bottomNavigationBar: M3EToolbar.docked(
         actions: [
           M3EToolbarAction(
-            icon: M3EIcons.settings_suggest_rounded,
-            tooltip: 'Reading settings',
-            onPressed: () => _showReadingSettings(context),
-          ),
-          M3EToolbarAction(
-            icon: M3EIcons.refresh_rounded,
-            tooltip: 'Refresh',
-            onPressed: controller.requestRefresh,
-          ),
-          M3EToolbarAction(
             icon: M3EIcons.copy_rounded,
             tooltip: 'Copy link',
             onPressed: controller.copyLink,
@@ -119,13 +108,6 @@ class ArticlePage extends GetView<ArticleController> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showReadingSettings(BuildContext context) {
-    M3EBottomSheet.show<void>(
-      context,
-      builder: (_) => const ReadingSettingsSheet(),
     );
   }
 }

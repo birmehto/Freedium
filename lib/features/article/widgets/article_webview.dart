@@ -9,9 +9,31 @@ import '../../../core/constants/reader_theme.dart';
 import '../../../core/utils/app_log.dart';
 import '../controllers/article_controller.dart';
 
-class ArticleWebView extends GetView<ArticleController> {
+class ArticleWebView extends StatefulWidget {
   const ArticleWebView({required this.url, super.key});
   final String url;
+
+  @override
+  State<ArticleWebView> createState() => _ArticleWebViewState();
+}
+
+class _ArticleWebViewState extends State<ArticleWebView> {
+  late final ArticleController _controller = Get.find<ArticleController>();
+  late final PullToRefreshController _pullToRefreshController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pullToRefreshController = PullToRefreshController(
+      onRefresh: () => _controller.requestRefresh(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pullToRefreshController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +58,12 @@ class ArticleWebView extends GetView<ArticleController> {
     ]);
 
     return InAppWebView(
-      initialUrlRequest: URLRequest(url: WebUri(url)),
+      initialUrlRequest: URLRequest(url: WebUri(widget.url)),
       initialSettings: initialSettings,
       initialUserScripts: initialUserScripts,
+      pullToRefreshController: _pullToRefreshController,
       onWebViewCreated: (webViewController) {
-        controller.setWebViewController(webViewController);
+        _controller.setWebViewController(webViewController);
       },
       onCreateWindow: (controller, createWindowAction) async => false,
       shouldOverrideUrlLoading: (controller, navigationAction) async {
@@ -58,7 +81,7 @@ class ArticleWebView extends GetView<ArticleController> {
         final targetHost = requestUrl.host.toLowerCase();
         final freediumHost = Uri.parse(AppConstants.freediumUrl).host
             .toLowerCase();
-        final currentHost = Uri.tryParse(this.controller.currentUrl.value)?.host
+        final currentHost = Uri.tryParse(_controller.currentUrl.value)?.host
             .toLowerCase();
 
         final allowed = targetHost == freediumHost || targetHost == currentHost;
@@ -80,30 +103,31 @@ class ArticleWebView extends GetView<ArticleController> {
             handledByClient: true,
           ),
       onLoadStart: (controller, url) {
-        this.controller.isLoading.value = true;
-        this.controller.errorMessage.value = '';
+        _controller.isLoading.value = true;
+        _controller.errorMessage.value = '';
         if (url != null) {
-          this.controller.currentUrl.value = url.toString();
+          _controller.currentUrl.value = url.toString();
         }
       },
       onLoadStop: (controller, url) async {
-        // Small delay before marking as loaded
         await Future.delayed(const Duration(milliseconds: 100));
-        this.controller.onPageLoaded();
-        this.controller.injectCustomCSS();
+        _controller.onPageLoaded();
+        _controller.injectCustomCSS();
+        await _pullToRefreshController.endRefreshing();
       },
       onScrollChanged: (controller, x, y) {
-        this.controller.handleScroll(y);
+        _controller.handleScroll(y);
       },
       onProgressChanged: (controller, progress) {
-        this.controller.updateProgress(progress.toDouble());
+        _controller.updateProgress(progress.toDouble());
       },
       onReceivedError: (controller, request, error) {
         appLog(
           'Page error: ${error.description}, type: ${error.type}, for: ${request.url}',
         );
-        // Only handle main frame errors
         if (request.isForMainFrame ?? false) {
+          _pullToRefreshController.endRefreshing();
+
           String errorMsg = 'Failed to load article';
 
           final description = error.description.toLowerCase();
@@ -120,7 +144,7 @@ class ArticleWebView extends GetView<ArticleController> {
             errorMsg = 'Failed to load article: ${error.description}';
           }
 
-          this.controller.onPageError(errorMsg);
+          _controller.onPageError(errorMsg);
         }
       },
       onReceivedHttpError: (controller, request, errorResponse) {
@@ -132,7 +156,7 @@ class ArticleWebView extends GetView<ArticleController> {
           final statusCode = errorResponse.statusCode ?? 0;
 
           if (statusCode >= 500) {
-            this.controller.handleServerError(statusCode);
+            _controller.handleServerError(statusCode);
           } else if (statusCode >= 400) {
             String errorMsg = 'Server error ($statusCode)';
 
@@ -140,7 +164,7 @@ class ArticleWebView extends GetView<ArticleController> {
               errorMsg = 'Article not found (404).';
             }
 
-            this.controller.onPageError(errorMsg);
+            _controller.onPageError(errorMsg);
           }
         }
       },

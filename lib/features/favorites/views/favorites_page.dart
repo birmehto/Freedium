@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/routes/app_routes.dart';
+import '../../../core/utils/url_validator.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_empty.dart';
 import '../../../core/widgets/app_textform.dart';
@@ -21,12 +23,12 @@ class FavoritesPage extends GetView<FavoritesController> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: AppTextForm(
-              
+              variant: M3ETextFieldVariant.outlined,
               label: 'Search your library...',
               onChanged: controller.onSearchChanged,
-              prefixIcon: const Icon(M3EIcons.search_rounded),
+              leading: const Icon(M3EIcons.search_rounded),
             ),
           ),
           Expanded(
@@ -49,9 +51,19 @@ class FavoritesPage extends GetView<FavoritesController> {
               }
 
               return Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: M3EDismissibleColumn(
                   itemCount: list.length,
+                  style: const M3EDismissibleListStyle(gap: 8),
+                  onTap: (index) {
+                    final item = list[index];
+                    final freedium =
+                        UrlValidator.convertToFreediumUrl(item.url) ?? item.url;
+                    Get.toNamed(
+                      AppRoutes.article,
+                      arguments: {'url': freedium, 'originalUrl': item.url},
+                    );
+                  },
                   onDismiss: (index, _) async {
                     await controller.removeFavorite(list[index].url);
                     return true;

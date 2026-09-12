@@ -30,8 +30,6 @@ class ArticleController extends GetxController {
 
   Timer? _loadingTimer;
 
-  final fontSize = 16.0.obs;
-  final fontFamily = 'Inter'.obs;
   final isFavorite = false.obs;
 
   bool get isDarkMode => _themeService.isDarkMode.value;
@@ -39,8 +37,6 @@ class ArticleController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fontSize.value = _storage.fontSize;
-    fontFamily.value = _storage.fontFamily;
 
     final args = Get.arguments as Map<String, dynamic>?;
     final url = args?['url'] as String?;
@@ -105,8 +101,12 @@ class ArticleController extends GetxController {
       final result = await webViewController?.evaluateJavascript(
         source: '''
         (function() {
+          var se = document.scrollingElement || document.documentElement;
+          var h = se.scrollHeight || 0;
+          var bodyH = document.body ? document.body.scrollHeight : 0;
+          if (bodyH > h) h = bodyH;
           return JSON.stringify({
-            h: document.documentElement.scrollHeight || 0,
+            h: h,
             v: window.innerHeight || 0
           });
         })();
@@ -117,6 +117,16 @@ class ArticleController extends GetxController {
         _contentHeight = (data['h'] as num?)?.toDouble();
         _viewportHeight = (data['v'] as num?)?.toDouble();
       }
+
+      if ((_contentHeight ?? 0) <= (_viewportHeight ?? 0)) {
+        // Document is not scrollable yet (e.g. images still loading after CSS
+        // injection). Re-measure shortly so the scroll bar can catch up.
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (!isClosed) {
+            unawaited(_refreshLayoutMetrics());
+          }
+        });
+      }
     } catch (e) {
       appLog(e.toString());
     }
@@ -125,7 +135,9 @@ class ArticleController extends GetxController {
   void handleScroll(int y) {
     if (isClosed || webViewController == null) return;
 
-    if (_contentHeight == null || _viewportHeight == null) {
+    if (_contentHeight == null ||
+        _viewportHeight == null ||
+        _contentHeight! <= _viewportHeight!) {
       unawaited(_refreshLayoutMetrics());
     }
     final scrollable = (_contentHeight ?? 0.0) - (_viewportHeight ?? 0.0);
@@ -185,20 +197,6 @@ class ArticleController extends GetxController {
       );
       isFavorite.value = true;
     }
-  }
-
-  void updateFontSize(double size) {
-    fontSize.value = size.clamp(14, 28);
-    _storage.fontSize = fontSize.value;
-  }
-
-  void updateFontFamily(String family) {
-    fontFamily.value = family;
-    _storage.fontFamily = family;
-  }
-
-  void toggleDarkMode() {
-    _themeService.toggleDarkMode();
   }
 
   String get articleTitle {
@@ -276,19 +274,13 @@ class ArticleController extends GetxController {
   }
 
   void _setupWebViewListeners() {
-    ever(fontSize, (_) => injectCustomCSS());
     ever(_themeService.isDarkMode, (_) => injectCustomCSS());
-    ever(fontFamily, (_) => injectCustomCSS());
   }
 
   Future<void> injectCustomCSS() async {
     if (isClosed || webViewController == null) return;
 
-    final css = ReaderTheme.getCss(
-      fontSize: fontSize.value,
-      isDarkMode: isDarkMode,
-      fontFamily: fontFamily.value,
-    );
+    final css = ReaderTheme.getCss(isDarkMode: isDarkMode);
 
     try {
       await webViewController?.evaluateJavascript(

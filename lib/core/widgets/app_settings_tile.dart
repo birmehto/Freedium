@@ -40,10 +40,9 @@ class AppSettingsTile extends StatelessWidget {
                   backgroundColor ?? c.primaryContainer.withValues(alpha: 0.6),
             )
           : null,
-      trailing: trailing ??
-          (onTap != null
-              ? const Icon(M3EIcons.chevron_right_rounded)
-              : null),
+      trailing:
+          trailing ??
+          (onTap != null ? const Icon(M3EIcons.chevron_right_rounded) : null),
       onTap: onTap,
     );
   }

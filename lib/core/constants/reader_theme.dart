@@ -56,23 +56,27 @@ class ReaderTheme {
 ''';
 
   static const _light = _ThemeColors(
-    background: '#fdfcff',
-    text: '#1a1c1e',
-    link: '#005cbb',
-    codeBackground: '#f0f0f0',
-    codeText: '#333333',
-    quoteBorder: '#005cbb',
-    quoteText: '#546e7a',
+    background: '#fbfaf7',
+    text: '#2b2823',
+    link: '#7a6a50',
+    codeBackground: '#f0ede6',
+    codeText: '#4a453d',
+    quoteBorder: '#dcd5c8',
+    quoteText: '#7c7568',
+    border: '#e8e4db',
+    selection: 'rgba(43, 40, 35, 0.10)',
   );
 
   static const _dark = _ThemeColors(
-    background: '#1a1c1e',
-    text: '#e2e2e6',
-    link: '#aec6ff',
-    codeBackground: '#2c2c2c',
-    codeText: '#e0e0e0',
-    quoteBorder: '#64b5f6',
-    quoteText: '#b0bec5',
+    background: '#1b1915',
+    text: '#e7e1d6',
+    link: '#c0b298',
+    codeBackground: '#262319',
+    codeText: '#d8d1c4',
+    quoteBorder: '#4a4438',
+    quoteText: '#a89f8f',
+    border: '#333028',
+    selection: 'rgba(231, 225, 214, 0.14)',
   );
 
   static const String popupBlockingJs = '''
@@ -160,9 +164,9 @@ class ReaderTheme {
 ''';
 
   static String getCss({
-    required double fontSize,
     required bool isDarkMode,
-    String fontFamily = 'Inter',
+    double fontSize = 17.0,
+    String fontFamily = 'Source Serif 4',
   }) {
     final colors = isDarkMode ? _dark : _light;
     final fontUrl = _getGoogleFontUrl(fontFamily);
@@ -200,10 +204,38 @@ class ReaderTheme {
 
         font-family: '$fontFamily', $fallback !important;
         font-size: ${fontSize}px !important;
-        line-height: 1.6 !important;
+        line-height: 1.8 !important;
 
         -webkit-font-smoothing: antialiased !important;
         text-rendering: optimizeLegibility !important;
+      }
+
+      /* ================================
+         Ensure document-level scrolling
+         ================================ */
+
+      html,
+      body {
+        height: auto !important;
+      }
+
+      html {
+        overflow-y: auto !important;
+      }
+
+      ::selection {
+        background: ${colors.selection} !important;
+      }
+
+      /* ================================
+         Reading column
+         ================================ */
+
+      article {
+        max-width: 42em !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        text-align: left !important;
       }
 
       /* ================================
@@ -233,7 +265,7 @@ class ReaderTheme {
       }
 
       p {
-        margin: 0 0 1em !important;
+        margin: 0 0 1.25em !important;
       }
 
       h1,
@@ -242,29 +274,32 @@ class ReaderTheme {
       h4,
       h5,
       h6 {
-        margin-top: 1.5em !important;
-        margin-bottom: 0.5em !important;
+        margin-top: 1.6em !important;
+        margin-bottom: 0.55em !important;
 
         font-family: inherit !important;
         font-weight: 600 !important;
-        line-height: 1.3 !important;
+        line-height: 1.35 !important;
+        letter-spacing: -0.01em !important;
         color: inherit !important;
       }
 
       h1 {
         font-size: 2em !important;
+        line-height: 1.25 !important;
+        letter-spacing: -0.02em !important;
       }
 
       h2 {
-        font-size: 1.5em !important;
+        font-size: 1.55em !important;
       }
 
       h3 {
-        font-size: 1.25em !important;
+        font-size: 1.3em !important;
       }
 
       h4 {
-        font-size: 1.1em !important;
+        font-size: 1.15em !important;
       }
 
       h5,
@@ -289,10 +324,12 @@ class ReaderTheme {
       a {
         color: ${colors.link} !important;
         text-decoration: none !important;
+        border-bottom: 1px solid ${colors.quoteBorder} !important;
       }
 
       a:hover {
         text-decoration: underline !important;
+        border-bottom-color: transparent !important;
       }
 
       /* ================================
@@ -300,10 +337,10 @@ class ReaderTheme {
          ================================ */
 
       blockquote {
-        margin: 16px 0 !important;
-        padding: 4px 0 4px 16px !important;
+        margin: 1.75em 0 !important;
+        padding: 0.35em 0 0.35em 1.35em !important;
 
-        border-left: 4px solid ${colors.quoteBorder} !important;
+        border-left: 2px solid ${colors.quoteBorder} !important;
 
         color: ${colors.quoteText} !important;
         font-style: italic !important;
@@ -314,7 +351,7 @@ class ReaderTheme {
          ================================ */
 
       code {
-        padding: 2px 5px !important;
+        padding: 2px 6px !important;
         border-radius: 4px !important;
 
         background: ${colors.codeBackground} !important;
@@ -327,19 +364,20 @@ class ReaderTheme {
           Menlo,
           monospace !important;
 
-        font-size: 0.9em !important;
+        font-size: 0.88em !important;
       }
 
       pre {
-        margin: 16px 0 !important;
-        padding: 12px !important;
+        margin: 1.75em 0 !important;
+        padding: 16px !important;
 
         max-width: 100% !important;
         overflow-x: auto !important;
         white-space: pre-wrap !important;
         overflow-wrap: anywhere !important;
 
-        border-radius: 6px !important;
+        border-radius: 8px !important;
+        border: 1px solid ${colors.border} !important;
 
         background: ${colors.codeBackground} !important;
         color: ${colors.codeText} !important;
@@ -351,7 +389,8 @@ class ReaderTheme {
           Menlo,
           monospace !important;
 
-        line-height: 1.5 !important;
+        font-size: 0.92em !important;
+        line-height: 1.6 !important;
       }
 
       pre code {
@@ -372,6 +411,15 @@ class ReaderTheme {
       img,
       video {
         height: auto !important;
+      }
+
+      img {
+        border-radius: 6px !important;
+      }
+
+      figcaption {
+        color: ${colors.quoteText} !important;
+        font-size: 0.9em !important;
       }
 
       iframe {
@@ -565,6 +613,7 @@ class ReaderTheme {
       case 'merriweather':
       case 'georgia':
       case 'lora':
+      case 'source serif 4':
         return 'serif';
 
       default:
@@ -582,6 +631,8 @@ class _ThemeColors {
     required this.codeText,
     required this.quoteBorder,
     required this.quoteText,
+    required this.border,
+    required this.selection,
   });
   final String background;
   final String text;
@@ -590,4 +641,6 @@ class _ThemeColors {
   final String codeText;
   final String quoteBorder;
   final String quoteText;
+  final String border;
+  final String selection;
 }
