@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:material_ui/material_ui.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../features/home/controllers/home_controller.dart';
@@ -14,61 +14,42 @@ class ShareIntentService extends GetxService {
   StreamSubscription? _intentSub;
 
   Future<ShareIntentService> init() async {
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      return this;
-    }
+    if (!Platform.isAndroid && !Platform.isIOS) return this;
 
-    // Handle incoming intents when app is running
-    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
-      (files) {
-        if (files.isNotEmpty) {
-          final sharedText = files.first.path;
-          _processSharedText(sharedText);
-        }
-      },
-      onError: (err) {
-        appLog(err.toString());
-      },
-    );
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((files) {
+      if (files.isNotEmpty) _process(files.first.path);
+    }, onError: (error) => appLog(error.toString()));
 
-    // Check for initial intent when app starts
     try {
-      final List<SharedMediaFile> initialMedia = await ReceiveSharingIntent
-          .instance
-          .getInitialMedia();
-      if (initialMedia.isNotEmpty) {
-        final sharedText = initialMedia.first.path;
-        _processSharedText(sharedText);
+      final files = await ReceiveSharingIntent.instance.getInitialMedia();
+
+      if (files.isNotEmpty) {
+        _process(files.first.path);
         ReceiveSharingIntent.instance.reset();
       }
-    } catch (e) {
-      appLog(e.toString());
+    } catch (error) {
+      appLog(error.toString());
     }
+
     return this;
   }
 
-  void _processSharedText(String? sharedText) {
-    if (sharedText == null || sharedText.isEmpty) return;
+  void _process(String? text) {
+    final url = UrlValidator.extractUrlFromText(text ?? '');
+    if (url == null) return;
 
-    // Extract and clean URL
-    String? url = UrlValidator.extractUrlFromText(sharedText);
-    if (url != null) {
-      url = UrlValidator.cleanTextiseUrl(url);
-      if (url != null && url.isNotEmpty) {
-        _openArticle(url);
-      }
-    }
-  }
+    final cleanUrl = UrlValidator.cleanTextiseUrl(url);
+    if (cleanUrl.isEmpty) return;
 
-  void _openArticle(String url) {
     if (Get.isRegistered<HomeController>()) {
-      final homeController = Get.find<HomeController>();
-      homeController.urlController.text = url;
+      final controller = Get.find<HomeController>();
+      controller.urlController.text = cleanUrl;
+
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => homeController.openArticle(),
+        (_) => controller.openArticle(),
       );
     } else {
-      pendingUrl = url;
+      pendingUrl = cleanUrl;
     }
   }
 

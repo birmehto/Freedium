@@ -21,16 +21,18 @@ class ReadingSettingsSheet extends GetView<ArticleController> {
           const SizedBox(height: 20),
 
           Obx(
-            () => M3EListItem(
-              headline: 'Dark Mode',
-              leading: Icon(
-                controller.isDarkMode
-                    ? M3EIcons.dark_mode
-                    : M3EIcons.light_mode,
-              ),
-              trailing: M3ESwitch(
-                value: controller.isDarkMode,
-                onChanged: (_) => controller.toggleDarkMode(),
+            () => Material(
+              child: M3EListItem(
+                headline: 'Dark Mode',
+                leading: Icon(
+                  controller.isDarkMode
+                      ? M3EIcons.dark_mode
+                      : M3EIcons.light_mode,
+                ),
+                trailing: M3ESwitch(
+                  value: controller.isDarkMode,
+                  onChanged: (_) => controller.toggleDarkMode(),
+                ),
               ),
             ),
           ),

@@ -1,6 +1,8 @@
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'app_button.dart';
+
 /// Centered error state with an optional retry and secondary action.
 class AppError extends StatelessWidget {
   const AppError({
@@ -61,38 +63,22 @@ class AppError extends StatelessWidget {
             const SizedBox(height: 32),
 
             if (onRetry != null)
-              SizedBox(
-                width: double.infinity,
-                child: M3EButton(
-                  onPressed: onRetry,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(M3EIcons.refresh_rounded, size: 20),
-                      const SizedBox(width: 8),
-                      Text(retryLabel),
-                    ],
-                  ),
-                ),
+              AppButton(
+                onPressed: onRetry,
+                isFullWidth: true,
+                icon: const Icon(M3EIcons.refresh_rounded, size: 20),
+                label: Text(retryLabel),
               ),
 
             const SizedBox(height: 12),
 
             if (secondaryLabel != null && onSecondary != null)
-              SizedBox(
-                width: double.infinity,
-                child: M3EButton(
-                  style: M3EButtonStyle.outlined,
-                  onPressed: onSecondary,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(M3EIcons.open_in_browser_rounded, size: 20),
-                      const SizedBox(width: 8),
-                      Text(secondaryLabel!),
-                    ],
-                  ),
-                ),
+              AppButton(
+                onPressed: onSecondary,
+                variant: AppButtonVariant.outlined,
+                isFullWidth: true,
+                icon: const Icon(M3EIcons.open_in_browser_rounded, size: 20),
+                label: Text(secondaryLabel!),
               ),
 
             if (hint != null) ...[

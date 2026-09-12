@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -29,8 +30,20 @@ class SettingsController extends GetxController {
       queryParameters: {'subject': 'Readora Feedback'},
     );
 
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
+    try {
+      final canLaunch = await canLaunchUrl(uri);
+      if (!canLaunch) {
+        M3ESnackbar.show(
+          // ignore: use_build_context_synchronously
+          Get.context!,
+          message: 'No email app found. Email us at birmehto@gmail.com',
+        );
+        return;
+      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      appLog('Failed to open email client: $e');
+      M3ESnackbar.show(Get.context!, message: "Couldn't open email app");
     }
   }
 

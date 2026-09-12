@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' as flutter;
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
@@ -14,8 +14,8 @@ class ThemeService extends GetxService {
     isDarkMode.value = _storage.isDarkMode;
   }
 
-  flutter.ThemeMode get themeMode =>
-      isDarkMode.value ? flutter.ThemeMode.dark : flutter.ThemeMode.light;
+  ThemeMode get themeMode =>
+      isDarkMode.value ? ThemeMode.dark : ThemeMode.light;
 
   void toggleTheme(bool value) {
     isDarkMode.value = value;

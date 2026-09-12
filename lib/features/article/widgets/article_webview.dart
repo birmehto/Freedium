@@ -24,7 +24,11 @@ class ArticleWebView extends GetView<ArticleController> {
       mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
     );
 
-    final popupBlockingScripts = UnmodifiableListView<UserScript>([
+    final initialUserScripts = UnmodifiableListView<UserScript>([
+      UserScript(
+        source: ReaderTheme.esCompatPolyfills,
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
       UserScript(
         source: ReaderTheme.popupBlockingJs,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
@@ -34,7 +38,7 @@ class ArticleWebView extends GetView<ArticleController> {
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(url)),
       initialSettings: initialSettings,
-      initialUserScripts: popupBlockingScripts,
+      initialUserScripts: initialUserScripts,
       onWebViewCreated: (webViewController) {
         controller.setWebViewController(webViewController);
       },
@@ -52,7 +56,7 @@ class ArticleWebView extends GetView<ArticleController> {
         if (!isMainFrame) return NavigationActionPolicy.ALLOW;
 
         final targetHost = requestUrl.host.toLowerCase();
-        final freediumHost = Uri.parse(MediumConstants.freediumUrl).host
+        final freediumHost = Uri.parse(AppConstants.freediumUrl).host
             .toLowerCase();
         final currentHost = Uri.tryParse(this.controller.currentUrl.value)?.host
             .toLowerCase();
@@ -142,9 +146,9 @@ class ArticleWebView extends GetView<ArticleController> {
       },
 
       onConsoleMessage: (controller, consoleMessage) {
-        appLog(
-          'Console: ${consoleMessage.messageLevel}: ${consoleMessage.message}',
-        );
+        if (consoleMessage.messageLevel == ConsoleMessageLevel.ERROR) {
+          appLog('Console: ${consoleMessage.message}');
+        }
       },
     );
   }

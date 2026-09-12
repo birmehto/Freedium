@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../controllers/article_controller.dart';
@@ -16,9 +17,9 @@ class ArticlePage extends GetView<ArticleController> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: M3EAppBar.top(
-        titleText: controller.articleTitle,
-        automaticallyImplyLeading: true,
+      appBar: AppAppBar(
+        title: controller.articleTitle,
+        centerTitle: false,
         actions: [
           Obx(
             () => M3EIconButton(
@@ -80,7 +81,8 @@ class ArticlePage extends GetView<ArticleController> {
                   onRetry: controller.requestRefresh,
                   secondaryLabel: 'Open in Browser',
                   onSecondary: controller.openInBrowser,
-                  hint: 'Try refreshing or opening the article in your browser.',
+                  hint:
+                      'Try refreshing or opening the article in your browser.',
                 ),
               ),
             );

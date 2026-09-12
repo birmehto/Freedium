@@ -3,6 +3,58 @@ class ReaderTheme {
 
   static const String customCssId = 'custom-reader-style';
 
+  /// ES2022/ES2023 polyfills for older Android WebViews that still load the
+  /// Freedium Svelte bundle. Prevents
+  /// "TypeError: ?.at / e.findLast is not a function".
+  static const String esCompatPolyfills = '''
+(function () {
+  'use strict';
+
+  if (!Array.prototype.at) {
+    Array.prototype.at = function (index) {
+      var length = this.length;
+      var i = index < 0 ? length + index : index;
+      return i >= 0 && i < length ? this[i] : undefined;
+    };
+  }
+
+  if (!Array.prototype.findLast) {
+    Array.prototype.findLast = function (callback, thisArg) {
+      for (var i = this.length - 1; i >= 0; i--) {
+        if (i in this && callback.call(thisArg, this[i], i, this)) {
+          return this[i];
+        }
+      }
+      return undefined;
+    };
+  }
+
+  if (!Array.prototype.findLastIndex) {
+    Array.prototype.findLastIndex = function (callback, thisArg) {
+      for (var i = this.length - 1; i >= 0; i--) {
+        if (i in this && callback.call(thisArg, this[i], i, this)) {
+          return i;
+        }
+      }
+      return -1;
+    };
+  }
+
+  if (!Object.hasOwn) {
+    Object.defineProperty(Object, 'hasOwn', {
+      value: function (obj, prop) {
+        if (obj == null) {
+          throw new TypeError('Cannot convert undefined or null to object');
+        }
+        return Object.prototype.hasOwnProperty.call(Object(obj), prop);
+      },
+      configurable: true,
+      writable: true
+    });
+  }
+})();
+''';
+
   static const _light = _ThemeColors(
     background: '#fdfcff',
     text: '#1a1c1e',
@@ -48,10 +100,12 @@ class ReaderTheme {
     '[data-dropdown-menu-content], [data-menu-content], ' +
     '[data-popover-content], [data-tooltip-content], ' +
     '[role="dialog"], [role="alertdialog"], [role="menu"], ' +
-    '[data-sonner-toaster], [data-sonner-toast], ' +
-    'section[aria-label*="Notifications"]';
+    '[data-sonner-toaster], [data-sonner-toast]';
+
+  var hydrationReady = false;
 
   function stripPopups() {
+    if (!hydrationReady) return;
     var nodes = document.querySelectorAll(POPUPS);
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
@@ -87,12 +141,19 @@ class ReaderTheme {
   }, true);
 
   if (window.MutationObserver) {
-    new MutationObserver(stripPopups).observe(
+    new MutationObserver(function () {
+      if (hydrationReady) stripPopups();
+    }).observe(
       document.documentElement,
       { childList: true, subtree: true }
     );
   }
-  document.addEventListener('DOMContentLoaded', stripPopups);
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      hydrationReady = true;
+      stripPopups();
+    }, 350);
+  });
   silenceJsDialogs();
   stripPopups();
 })();

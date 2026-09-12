@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as fm;
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:material_ui/material_ui.dart' as ui;
 
+import 'core/routes/app_pages.dart';
 import 'core/routes/app_routes.dart';
 import 'core/services/theme_service.dart';
 
@@ -21,20 +23,22 @@ class Readora extends StatelessWidget {
           : M3EThemeData.light(seedColor: seedColor);
 
       return M3ETheme(
+        dynamicColoring: true,
+        autoTheming: true,
         data: m3eTheme,
         child: GetMaterialApp(
           title: 'Readora',
-          theme: ThemeData(
+          theme: fm.ThemeData(
             useMaterial3: true,
             fontFamily: 'Inter',
-            colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
+            colorScheme: fm.ColorScheme.fromSeed(seedColor: seedColor),
           ),
-          darkTheme: ThemeData(
+          darkTheme: fm.ThemeData(
             useMaterial3: true,
             fontFamily: 'Inter',
-            colorScheme: ColorScheme.fromSeed(
+            colorScheme: fm.ColorScheme.fromSeed(
               seedColor: seedColor,
-              brightness: Brightness.dark,
+              brightness: fm.Brightness.dark,
             ),
           ),
           themeMode: themeService.themeMode,

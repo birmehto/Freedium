@@ -74,20 +74,6 @@ class ArticleController extends GetxController {
     isInitialLoad.value = false;
     loadingProgress.value = 1.0;
     _refreshLayoutMetrics();
-    _restoreScrollPosition();
-  }
-
-  Future<void> _restoreScrollPosition() async {
-    final scrollData = _storage.getScrollPosition(originalUrl.value);
-    if (scrollData != null && webViewController != null) {
-      final int y = scrollData['y'] ?? 0;
-      final double pct = scrollData['percentage'] ?? 0.0;
-      scrollProgress.value = pct;
-      if (y > 0) {
-        await Future.delayed(const Duration(milliseconds: 350));
-        await webViewController?.scrollTo(x: 0, y: y);
-      }
-    }
   }
 
   void handleServerError(int statusCode) {
@@ -109,11 +95,12 @@ class ArticleController extends GetxController {
     loadingProgress.value = progress / 100.0;
   }
 
-  Timer? _scrollDebounce;
   double? _contentHeight;
   double? _viewportHeight;
 
   Future<void> _refreshLayoutMetrics() async {
+    if (isClosed || webViewController == null) return;
+
     try {
       final result = await webViewController?.evaluateJavascript(
         source: '''
@@ -135,19 +122,16 @@ class ArticleController extends GetxController {
     }
   }
 
-  Future<void> handleScroll(int y) async {
+  void handleScroll(int y) {
+    if (isClosed || webViewController == null) return;
+
     if (_contentHeight == null || _viewportHeight == null) {
-      await _refreshLayoutMetrics();
+      unawaited(_refreshLayoutMetrics());
     }
     final scrollable = (_contentHeight ?? 0.0) - (_viewportHeight ?? 0.0);
     scrollProgress.value = scrollable > 0
         ? (y / scrollable).clamp(0.0, 1.0)
         : 0.0;
-    _scrollDebounce?.cancel();
-    _scrollDebounce = Timer(const Duration(milliseconds: 500), () {
-      _storage.saveScrollPosition(originalUrl.value, y, scrollProgress.value);
-      _refreshLayoutMetrics();
-    });
   }
 
   void requestRefresh() {
@@ -265,7 +249,7 @@ class ArticleController extends GetxController {
 
   void _startLoadingTimer() {
     _cancelLoadingTimer();
-    _loadingTimer = Timer(MediumConstants.webViewTimeout, () {
+    _loadingTimer = Timer(AppConstants.webViewTimeout, () {
       if (isLoading.value) {
         onPageError(
           'Loading timeout. Please check your connection and try again.',
@@ -282,7 +266,6 @@ class ArticleController extends GetxController {
   @override
   void onClose() {
     _cancelLoadingTimer();
-    _scrollDebounce?.cancel();
     super.onClose();
   }
 
@@ -299,7 +282,7 @@ class ArticleController extends GetxController {
   }
 
   Future<void> injectCustomCSS() async {
-    if (webViewController == null) return;
+    if (isClosed || webViewController == null) return;
 
     final css = ReaderTheme.getCss(
       fontSize: fontSize.value,

@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:material_ui/material_ui.dart';
 
 extension ContextX on BuildContext {
@@ -12,7 +10,6 @@ extension ContextX on BuildContext {
   bool get isLight => brightness == Brightness.light;
 
   // SNACKBARS (Safe)
-
   void snack(
     String message, {
     Duration duration = const Duration(seconds: 3),
@@ -21,7 +18,6 @@ extension ContextX on BuildContext {
   }) {
     final messenger = ScaffoldMessenger.maybeOf(this);
     if (messenger == null) return;
-
     messenger
       ..clearSnackBars()
       ..showSnackBar(

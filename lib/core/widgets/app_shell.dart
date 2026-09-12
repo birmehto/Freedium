@@ -16,8 +16,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
-  static const List<String> _titles = ['Readora', 'Favorites', 'Settings'];
-
   static const List<M3ENavigationBarDestination> _destinations = [
     M3ENavigationBarDestination(icon: Icon(M3EIcons.home), label: 'Home'),
     M3ENavigationBarDestination(
@@ -32,27 +30,15 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = M3ETheme.of(context);
-
     return Scaffold(
-      body: ColoredBox(
-        color: theme.colorScheme.surface,
-        child: Column(
-          children: [
-            M3EAppBar.top(titleText: _titles[_index], centerTitle: true),
-            Expanded(
-              child: IndexedStack(
-                index: _index,
-                children: const [HomePage(), FavoritesPage(), SettingsPage()],
-              ),
-            ),
-            M3ENavigationBar(
-              destinations: _destinations,
-              selectedIndex: _index,
-              onDestinationSelected: (i) => setState(() => _index = i),
-            ),
-          ],
-        ),
+      body: IndexedStack(
+        index: _index,
+        children: const [HomePage(), FavoritesPage(), SettingsPage()],
+      ),
+      bottomNavigationBar: M3ENavigationBar(
+        destinations: _destinations,
+        selectedIndex: _index,
+        onDestinationSelected: (i) => setState(() => _index = i),
       ),
     );
   }

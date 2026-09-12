@@ -85,12 +85,9 @@ class HomeController extends GetxController {
       errorMessage.value = 'Please enter a valid URL';
       return;
     }
-
     isLoading.value = true;
-
     try {
       final freediumUrl = UrlValidator.convertToFreediumUrl(cleanedUrl);
-
       if (freediumUrl != null) {
         await Get.toNamed(
           AppRoutes.article,
