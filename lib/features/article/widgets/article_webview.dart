@@ -30,12 +30,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
   }
 
   @override
-  void dispose() {
-    _pullToRefreshController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final initialSettings = InAppWebViewSettings(
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

@@ -46,10 +46,10 @@ WHY FREEDIUM?
 Just paste a link or share it into Freedium from any app. The app fetches the full article through the Freedium mirror and shows it to you right away.
 
 ★ A clean, distraction-free reader
-Forget cluttered web pages. Freedium strips away nav bars, dialogs, popovers and popups, leaving a beautifully typeset page you control. Adjust font size, switch between Inter, Roboto, Merriweather and Open Sans, and flip between dark and light themes — your reading, your way.
+Forget cluttered web pages. Freedium strips away nav bars, dialogs, popovers and popups, leaving a beautifully typeset page riffing on the Freedium design — warm paper canvas, muted teal-green accents and elegant serif headlines. Read in dark or light, refresh with a pull, and keep your eyes on the story — your reading, your way.
 
 ★ Reading progress bar
-A live progress indicator in the app bar shows exactly where you are in every article.
+A live progress indicator at the top of the reader shows exactly where you are in every article.
 
 ★ Resume where you left off
 Freedium remembers your scroll position per article. Close a story and come back hours later — you start right where you stopped.
@@ -75,6 +75,7 @@ Have feedback? Reach out at birmehto@gmail.com — we read everything.
 ```
 🎉 Freedium 1.1.0
 • New app name & icon — meet Freedium!
+• Reader redesigned to match Freedium — warm paper, muted green
 • Smoother reading experience
 • Faster article loading
 • Bug fixes & performance improvements
@@ -113,7 +114,7 @@ Have feedback? Reach out at birmehto@gmail.com — we read everything.
 | Sizes | each side 320–3840 px, aspect between 1:2 and 2:1 |
 | Rule | Show the **real app** — no fake features (rejection risk) |
 
-Use the 5 existing screenshots: `screenshots/home.png`, `article.png`, `article_settings.png`, `favorites.png`, `settings.png`. Re-shoot at 1080×1920 for the phone portrait slot.
+Use the existing screenshots: `screenshots/home.png`, `article.png`, `favorites.png`, `settings.png`. Re-shoot at 1080×1920 for the phone portrait slot.
 
 ### Promo video (highly recommended)
 - YouTube URL, 30 seconds, phone screen demo of pasting a link → reading a clean article → saving favorite.
@@ -122,32 +123,33 @@ Use the 5 existing screenshots: `screenshots/home.png`, `article.png`, `article_
 
 ## 6️⃣ App Icon Generation Prompt 🎨 (better colors + premium look)
 
-> **Design direction:** Replace the flat indigo with a **rich royal-indigo → violet gradient** (`#3A3B8F` → `#7B6CF6`), warm **amber `#FFB94E`** accent for the book/spark motif, and a soft warm paper-cream background layer for readable contrast. Glossy-but-premium: subtle radial lighting, no harsh shadows (Google adds its own).
+> **Design direction:** Mirror the app's real theme — a **warm paper-cream** canvas (`#F7F5EF`), ink text (`#13120E`), gentle tonal depth, and the **muted teal-green Freedium accent** (`#49814C`; light `#9BD69C` on dark surfaces) for the book/spark motif. Calm and minimal: soft diffused lighting, subtle tonal layering, no harsh shadows or loud gradients (Google adds its own).
 
 ### Play Store icon (512×512) — copy into any image generator:
 
 ```
-Square app icon, 512x512, full-bleed. A clean, open book shape in warm
-paper-cream white (#F5EFE6) floating centered, its pages slightly fanned,
-atop a rich royal-indigo to violet gradient background (#3A3B8F top-left
-→ #7B6CF6 bottom-right). A small amber spark/star (#FFB94E) sits above
-the right page where a lock opens — symbolizing a story "unlocked."
-Soft, diffused radial lighting from the upper left, gentle 3D depth on the
-book, minimal and flat, premium minimalism, generous negative space.
-No text, no badge, no rounded corners, no drop shadow — full square canvas,
-key motif within central safe zone. Modern Material 3 style, crisp edges,
-icon looks clean at 16px and 512px.
+Square app icon, 512x512, full-bleed. A clean, open book shape in soft
+warm off-white (#F7F5EF) floating centered, its pages gently fanned,
+atop a warm near-black canvas (#13120E) with a hint of deep green.
+A small muted teal-green spark (#9BD69C) sits above the right page
+where a lock opens — symbolizing a story "unlocked." Soft, diffused
+lighting from the upper left, gentle tonal depth on the book, calm and
+minimal, premium minimalism, generous negative space. No text, no badge,
+no rounded corners, no drop shadow — full square canvas, key motif
+within central safe zone. Modern Material 3 style, crisp edges, icon
+looks clean at 16px and 512px.
 ```
 
 ### Feature graphic (1024×500) — copy into any image generator:
 
 ```
 Wide banner, 1024x500, landscape. Left side: bold headline in clean
-sans-serif "READ MEDIUM. FREEDIUM." with the amber spark (#FFB94E)
-between the words. Right side: the same open-book glyph floating over a
-soft royal-indigo (#4A4BB0) to violet (#7B6CF6) gradient, with faint
-floating page wisps. Background subtle deep-indigo, one strong focal
-point, high contrast, generous margins, no phone frame, no small text.
+sans-serif "READ MEDIUM. FREEDIUM." with the muted teal-green spark
+(#9BD69C) between the words. Right side: the same open-book glyph
+floating on a warm near-black canvas (#13120E) with faint floating page
+wisps in warm paper (#F7F5EF). Background layered warm ink and bone
+surfaces with subtle depth, one strong focal point, calm high contrast,
+generous margins, no phone frame, no small text.
 ```
 
 > After generating: export icon as full square PNG and run it through the [Play App Icon resizer](https://www.appicon.co/) to confirm 512×512 < 1 MB. Test the adaptive (launcher) icon in Android Studio — keep the glyph inside the **66×66 dp safe zone** of a 108×108 dp layer.

@@ -3,9 +3,12 @@
 **The friendly Medium un-paywall reader.** Paste a Medium article link, hit *Unlock*, and read the full story in a clean, distraction-free reader — no subscription, no clutter, no drama.
 
 <p align="center">
+  <img src="screenshots/banner.png" width="720" alt="Freedium banner"/>
+</p>
+
+<p align="center">
   <img src="screenshots/home.png" width="170" alt="Home screen"/>
   <img src="screenshots/article.png" width="170" alt="Article reader"/>
-  <img src="screenshots/article_settings.png" width="170" alt="Reading settings"/>
   <img src="screenshots/favorites.png" width="170" alt="Favorites"/>
   <img src="screenshots/settings.png" width="170" alt="Settings"/>
 </p>
@@ -16,7 +19,7 @@
 
 ## What is this? 🤔
 
-Freedium is a **free & open-source Flutter app** for **Android** that gives you a better way to read Medium articles. It uses the **Freedium mirror network** to serve the full article content, then wraps it in a beautifully styled, ad-free reading experience — with custom typography, dark/light themes, and none of the popover, paywall, and "you've used your free articles" nonsense.
+Freedium is a **free & open-source Flutter app** for **Android** that gives you a better way to read Medium articles. It uses the **Freedium mirror network** to serve the full article content, then wraps it in a calm, beautifully styled, ad-free reading experience — themed to match Freedium's own design (warm paper canvas, muted teal-green accents, elegant serif headlines), with dark/light modes, and none of the popover, paywall, and "you've used your free articles" nonsense.
 
 Think of it as a cozy reading room for Medium stories. 📚
 
@@ -30,14 +33,14 @@ Paste a link, or share one from any app, and Freedium fetches the full article t
 ### 🔗 Share-to-read (one tap)
 Reading something on your phone? Just hit **Share → Freedium** and the article opens instantly. Works with any text containing a URL.
 
-### 🎨 A reading experience you control
+### 🎨 Calm reading, Freedium-style
 - 🌙 **Dark & light themes** — dark mode by default (easy on the eyes)
-- 🔠 **Font size slider** (14–28) for comfortable reading
-- ✒️ **Font family picker** — Inter, Roboto, Merriweather, Open Sans
+- 🎨 The reader mirrors the Freedium design — warm paper, muted green accents, serif headlines
+- 🔄 **Pull-to-refresh** to reload any article in one gesture
 - All preferences are saved automatically
 
 ### 📊 Reading progress bar
-A live progress indicator in the app bar shows exactly where you are in the article.
+A live progress indicator at the top of the reader shows exactly where you are in the article.
 
 ### 💾 Resume where you left off
 Freedium remembers your scroll position per article — close it, come back later, and you're right back where you stopped.
@@ -115,7 +118,7 @@ lib/
 │   └── widgets/                   # Shared UI (shell, error/empty states…)
 └── features/
     ├── home/                      # URL input + unlock button
-    ├── article/                   # WebView reader + settings sheet
+    ├── article/                   # WebView reader + progress & bottom bar
     ├── favorites/                 # Local saved articles
     └── settings/                  # Appearance & about
 ```

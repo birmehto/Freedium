@@ -23,8 +23,8 @@ class Readora extends StatelessWidget {
           : M3EThemeData.light(seedColor: seedColor);
 
       return M3ETheme(
-        // dynamicColoring: true,
-        // autoTheming: true,
+        dynamicColoring: true,
+        autoTheming: true,
         data: m3eTheme,
         child: GetMaterialApp(
           title: 'Readora',
