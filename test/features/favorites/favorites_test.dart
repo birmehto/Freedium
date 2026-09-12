@@ -1,30 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:readora/features/favorites/data/models/favorite_article_model.dart';
-import 'package:readora/features/favorites/domain/entities/favorite_article.dart';
-import 'package:readora/features/favorites/domain/repositories/favorites_repository.dart';
-import 'package:readora/features/favorites/domain/usecases/get_favorites_usecase.dart';
-import 'package:readora/features/favorites/domain/usecases/remove_favorite_usecase.dart';
+import 'package:get/get.dart';
+import 'package:readora/core/services/storage_service.dart';
+import 'package:readora/features/favorites/controllers/favorites_controller.dart';
+import 'package:readora/features/favorites/models/favorite_article.dart';
 
-class MockFavoritesRepository implements FavoritesRepository {
-  final List<FavoriteArticle> _favorites = [];
-  bool removeFavoriteCalled = false;
-  String? lastRemovedUrl;
+class MockStorageService extends StorageService {
+  final List<Map<String, dynamic>> _favorites = [];
 
   @override
-  Future<List<FavoriteArticle>> getFavorites() async {
-    return _favorites;
+  List<dynamic> get favorites => _favorites;
+
+  @override
+  Future<void> addToFavorites(Map<String, dynamic> item) async {
+    if (!_favorites.any((e) => e['url'] == item['url'])) {
+      _favorites.insert(0, item);
+    }
   }
 
   @override
-  Future<void> removeFavorite(String url) async {
-    removeFavoriteCalled = true;
-    lastRemovedUrl = url;
-    _favorites.removeWhere((item) => item.url == url);
+  Future<void> removeFromFavorites(String url) async {
+    _favorites.removeWhere((e) => e['url'] == url);
   }
+
+  @override
+  bool isFavorite(String url) => _favorites.any((e) => e['url'] == url);
 }
 
 void main() {
-  group('FavoriteArticleModel Tests', () {
+  group('FavoriteArticle Tests', () {
     test('fromJson should parse correctly', () {
       final json = {
         'title': 'Test Article',
@@ -35,19 +38,19 @@ void main() {
         'imageUrl': 'https://medium.com/image.png',
       };
 
-      final model = FavoriteArticleModel.fromJson(json);
+      final article = FavoriteArticle.fromJson(json);
 
-      expect(model.title, 'Test Article');
-      expect(model.url, 'https://medium.com/test');
-      expect(model.visitedAt, DateTime.parse('2026-05-19T12:00:00.000Z'));
-      expect(model.author, 'Test Author');
-      expect(model.domain, 'medium.com');
-      expect(model.imageUrl, 'https://medium.com/image.png');
+      expect(article.title, 'Test Article');
+      expect(article.url, 'https://medium.com/test');
+      expect(article.visitedAt, DateTime.parse('2026-05-19T12:00:00.000Z'));
+      expect(article.author, 'Test Author');
+      expect(article.domain, 'medium.com');
+      expect(article.imageUrl, 'https://medium.com/image.png');
     });
 
     test('toJson should convert correctly', () {
       final visited = DateTime.parse('2026-05-19T12:00:00.000Z');
-      final model = FavoriteArticleModel(
+      final article = FavoriteArticle(
         title: 'Test Article',
         url: 'https://medium.com/test',
         visitedAt: visited,
@@ -56,7 +59,7 @@ void main() {
         imageUrl: 'https://medium.com/image.png',
       );
 
-      final json = model.toJson();
+      final json = article.toJson();
 
       expect(json['title'], 'Test Article');
       expect(json['url'], 'https://medium.com/test');
@@ -67,39 +70,72 @@ void main() {
     });
   });
 
-  group('Favorites UseCase Tests', () {
-    late MockFavoritesRepository repository;
-    late GetFavoritesUseCase getFavoritesUseCase;
-    late RemoveFavoriteUseCase removeFavoriteUseCase;
+  group('FavoritesController Tests', () {
+    late MockStorageService mockStorage;
+    late FavoritesController controller;
 
     setUp(() {
-      repository = MockFavoritesRepository();
-      getFavoritesUseCase = GetFavoritesUseCase(repository);
-      removeFavoriteUseCase = RemoveFavoriteUseCase(repository);
+      Get.reset();
+      mockStorage = MockStorageService();
+      Get.put<StorageService>(mockStorage);
+      controller = FavoritesController(mockStorage);
+      controller.onInit();
     });
 
-    test('GetFavoritesUseCase returns list from repository', () async {
-      final article = FavoriteArticle(
-        title: 'Hello',
-        url: 'https://medium.com/hello',
-        visitedAt: DateTime.now(),
+    test('loadFavorites reads saved favorites from storage', () async {
+      mockStorage.addToFavorites(
+        FavoriteArticle(
+          title: 'Hello',
+          url: 'https://medium.com/hello',
+          visitedAt: DateTime.now(),
+        ).toJson(),
       );
-      repository._favorites.add(article);
 
-      final result = await getFavoritesUseCase.execute();
+      await controller.loadFavorites();
 
-      expect(result.length, 1);
-      expect(result.first.title, 'Hello');
-      expect(result.first.url, 'https://medium.com/hello');
+      expect(controller.favorites.length, 1);
+      expect(controller.favorites.first.title, 'Hello');
+      expect(controller.favorites.first.url, 'https://medium.com/hello');
     });
 
-    test('RemoveFavoriteUseCase calls remove on repository', () async {
+    test('removeFavorite removes from storage and list', () async {
       const url = 'https://medium.com/hello';
+      mockStorage.addToFavorites(
+        FavoriteArticle(
+          title: 'Hello',
+          url: url,
+          visitedAt: DateTime.now(),
+        ).toJson(),
+      );
+      await controller.loadFavorites();
 
-      await removeFavoriteUseCase.execute(url);
+      await controller.removeFavorite(url);
 
-      expect(repository.removeFavoriteCalled, true);
-      expect(repository.lastRemovedUrl, url);
+      expect(controller.favorites, isEmpty);
+      expect(mockStorage.favorites, isEmpty);
+    });
+
+    test('filteredFavorites matches search query', () async {
+      mockStorage.addToFavorites(
+        FavoriteArticle(
+          title: 'Dart Tips',
+          url: 'https://medium.com/dart',
+          visitedAt: DateTime.now(),
+        ).toJson(),
+      );
+      mockStorage.addToFavorites(
+        FavoriteArticle(
+          title: 'Flutter Guide',
+          url: 'https://medium.com/flutter',
+          visitedAt: DateTime.now(),
+        ).toJson(),
+      );
+      await controller.loadFavorites();
+
+      controller.onSearchChanged('dart');
+
+      expect(controller.filteredFavorites.length, 1);
+      expect(controller.filteredFavorites.first.title, 'Dart Tips');
     });
   });
 }

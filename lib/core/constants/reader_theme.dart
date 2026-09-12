@@ -23,6 +23,81 @@ class ReaderTheme {
     quoteText: '#b0bec5',
   );
 
+  static const String popupBlockingJs = '''
+(function () {
+  'use strict';
+
+  function silenceJsDialogs() {
+    try {
+      window.alert = function () {};
+      window.confirm = function () { return false; };
+      window.prompt = function () { return null; };
+      try {
+        Object.defineProperty(window, 'open', {
+          value: function () { return null; },
+          configurable: true,
+          writable: false
+        });
+      } catch (err) {}
+    } catch (err) {}
+  }
+
+  var POPUPS =
+    '[data-dialog-content], [data-dialog-overlay], ' +
+    '[data-drawer-content], [data-drawer-overlay], ' +
+    '[data-dropdown-menu-content], [data-menu-content], ' +
+    '[data-popover-content], [data-tooltip-content], ' +
+    '[role="dialog"], [role="alertdialog"], [role="menu"], ' +
+    '[data-sonner-toaster], [data-sonner-toast], ' +
+    'section[aria-label*="Notifications"]';
+
+  function stripPopups() {
+    var nodes = document.querySelectorAll(POPUPS);
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (node && node.parentNode) node.parentNode.removeChild(node);
+    }
+  }
+
+  function closest(el, selector) {
+    while (el && el.nodeType === 1) {
+      if (el.matches && el.matches(selector)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  document.addEventListener('click', function (event) {
+    var link = closest(event.target, 'a');
+    if (link && link.target === '_blank') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    var trigger = closest(
+      event.target,
+      '[data-zoom-src], .image-zoom-figure, [data-dialog-trigger], ' +
+      '[data-drawer-trigger], [data-popover-trigger], ' +
+      '[data-dropdown-menu-trigger], button[aria-haspopup]'
+    );
+    if (trigger) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+
+  if (window.MutationObserver) {
+    new MutationObserver(stripPopups).observe(
+      document.documentElement,
+      { childList: true, subtree: true }
+    );
+  }
+  document.addEventListener('DOMContentLoaded', stripPopups);
+  silenceJsDialogs();
+  stripPopups();
+})();
+''';
+
   static String getCss({
     required double fontSize,
     required bool isDarkMode,
@@ -81,7 +156,17 @@ class ReaderTheme {
       body li,
       body dt,
       body dd,
-      body blockquote {
+      body blockquote,
+      body strong,
+      body b,
+      body em,
+      body i,
+      body small,
+      body time,
+      body figure,
+      body figcaption,
+      body address,
+      body caption {
         font-family: inherit !important;
         color: inherit !important;
       }
@@ -233,6 +318,41 @@ class ReaderTheme {
       }
 
       /* ================================
+         Neutralize site backgrounds
+         ================================ */
+
+      article,
+      main,
+      aside,
+      section,
+      header,
+      footer,
+      figure,
+      figcaption,
+      div,
+      p,
+      ul,
+      ol,
+      table,
+      thead,
+      tbody,
+      tr,
+      th,
+      td,
+      blockquote {
+        background: transparent !important;
+      }
+
+      article,
+      main,
+      section,
+      header,
+      footer {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+
+      /* ================================
          Tables
          ================================ */
 
@@ -271,13 +391,72 @@ class ReaderTheme {
       .paywall,
       .subscription-banner,
       .premium-banner,
-      nav,
-      header,
       .navbar,
+      #progress,
       #darkModeToggle,
       #openProblemModal,
+      .theme-toggle,
       .storage-notification-container,
       .fixed.bottom-4.left-4 {
+        display: none !important;
+      }
+
+      /* Freedium site chrome: header nav, donate bar, footer */
+
+      nav#header,
+      .header-nav,
+      footer {
+        display: none !important;
+      }
+
+      /* Article toolbars (back / share / open original) */
+
+      article nav {
+        display: none !important;
+      }
+
+      /* Contents + "Download article" section */
+
+      section[aria-labelledby="toc-heading"] {
+        display: none !important;
+      }
+
+      /* Kill popup surfaces: dialogs, menus, drawers, popovers */
+
+      [role="dialog"],
+      [role="alertdialog"],
+      [role="menu"],
+      [data-dialog-content],
+      [data-dialog-overlay],
+      [data-drawer-content],
+      [data-drawer-overlay],
+      [data-dropdown-menu-content],
+      [data-menu-content],
+      [data-popover-content],
+      [data-tooltip-content],
+      [data-slot][data-slot\$="-overlay"],
+      button[aria-haspopup="dialog"],
+      [data-dialog-trigger],
+      [data-dropdown-menu-trigger],
+      [data-drawer-trigger],
+      [data-popover-trigger] {
+        display: none !important;
+      }
+
+      /* Disable click-to-zoom lightbox on cover/article images */
+
+      .image-zoom-figure,
+      [data-zoom-src] {
+        pointer-events: none !important;
+        cursor: default !important;
+      }
+
+      /* Toast / snackbar region (sonner notifications) */
+
+      section[aria-label*="Notifications"],
+      [role="region"][aria-label*="Notifications"],
+      [data-sonner-toaster],
+      [data-sonner-toast] {
         display: none !important;
       }
 

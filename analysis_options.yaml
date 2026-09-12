@@ -90,7 +90,7 @@ linter:
     unnecessary_raw_strings: true
     unnecessary_brace_in_string_interps: true
 
-    # � Namidng Conventions
+    # Naming Conventions
     camel_case_types: true
     camel_case_extensions: true
     library_names: true

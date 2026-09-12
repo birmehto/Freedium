@@ -5,8 +5,8 @@ import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
-import '../../features/home/presentation/controllers/home_controller.dart';
-import '../app/app_log.dart';
+import '../../features/home/controllers/home_controller.dart';
+import '../utils/app_log.dart';
 import '../utils/url_validator.dart';
 
 class ShareIntentService extends GetxService {
@@ -27,7 +27,7 @@ class ShareIntentService extends GetxService {
         }
       },
       onError: (err) {
-        appLog(err);
+        appLog(err.toString());
       },
     );
 
@@ -41,8 +41,8 @@ class ShareIntentService extends GetxService {
         _processSharedText(sharedText);
         ReceiveSharingIntent.instance.reset();
       }
-    } catch (e, s) {
-      appLog(e.toString(), stackTrace: s);
+    } catch (e) {
+      appLog(e.toString());
     }
     return this;
   }
@@ -64,7 +64,6 @@ class ShareIntentService extends GetxService {
     if (Get.isRegistered<HomeController>()) {
       final homeController = Get.find<HomeController>();
       homeController.urlController.text = url;
-      homeController.onUrlChanged(url);
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => homeController.openArticle(),
       );

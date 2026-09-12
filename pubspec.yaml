@@ -1,6 +1,6 @@
 name: readora
-description: "A new Flutter project."
-publish_to: 'none'
+description: "Free, open-source Medium paywall bypass reader."
+publish_to: "none"
 version: 1.1.0
 
 environment:
@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   url_launcher: ^6.3.2
   flutter_inappwebview: ^6.1.5
   intl: ^0.20.3
@@ -19,8 +18,8 @@ dependencies:
   receive_sharing_intent: ^1.9.0
   material_3_expressive: ^1.1.2
   material_ui: 1.2.0
+  package_info_plus: ^10.2.1
 
-  
 dev_dependencies:
   flutter_test:
     sdk: flutter

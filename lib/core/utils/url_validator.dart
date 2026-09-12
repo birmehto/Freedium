@@ -1,6 +1,4 @@
-import 'package:get/get.dart';
-
-import '../services/storage_service.dart';
+import '../constants/app_constants.dart';
 
 class UrlValidator {
   static const String _urlPattern =
@@ -46,11 +44,7 @@ class UrlValidator {
 
     String targetUrl = cleanUrl(articleUrl) ?? articleUrl;
 
-    final prefixes = [
-      'https://freedium-mirror.cfd/',
-      'https://freedium.cfd/',
-      'https://readmedium.com/',
-    ];
+    final prefixes = ['https://freedium-mirror.cfd/', 'https://freedium.cfd/'];
 
     bool stripped = true;
     while (stripped) {
@@ -63,7 +57,7 @@ class UrlValidator {
       }
     }
 
-    final activeEngine = Get.find<StorageService>().activeEngineUrl;
+    const activeEngine = MediumConstants.freediumUrl;
     return '$activeEngine/$targetUrl';
   }
 

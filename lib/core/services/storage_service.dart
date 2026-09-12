@@ -16,7 +16,6 @@ class StorageService extends GetxService {
   static const String _fontFamilyKey = 'font_family';
   static const String _favoritesKey = 'favorites_list';
   static const String _scrollPositionsKey = 'scroll_positions_map';
-  static const String _engineKey = 'reader_engine_url';
 
   // Theme
   bool get isDarkMode => _box.read(_themeModeKey) ?? true;
@@ -29,17 +28,6 @@ class StorageService extends GetxService {
   // Font Family
   String get fontFamily => _box.read(_fontFamilyKey) ?? 'Inter';
   set fontFamily(String value) => _box.write(_fontFamilyKey, value);
-
-  // Bypass Engine settings
-  static const String defaultEngine = 'https://freedium-mirror.cfd';
-  static const List<Map<String, String>> availableEngines = [
-    {'name': 'Freedium Mirror', 'url': 'https://freedium-mirror.cfd'},
-    {'name': 'Freedium CFD', 'url': 'https://freedium.cfd'},
-    {'name': 'ReadMedium', 'url': 'https://readmedium.com'},
-  ];
-
-  String get activeEngineUrl => _box.read(_engineKey) ?? defaultEngine;
-  set activeEngineUrl(String value) => _box.write(_engineKey, value);
 
   // Favorites
   List<dynamic> get favorites => _box.read(_favoritesKey) ?? [];

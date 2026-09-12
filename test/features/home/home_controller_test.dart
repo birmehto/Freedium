@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:readora/core/services/clipboard_service.dart';
-import 'package:readora/features/home/presentation/controllers/home_controller.dart';
+import 'package:readora/features/home/controllers/home_controller.dart';
 
 class MockClipboardService extends ClipboardService {
   String? clipboardText = 'https://medium.com/@username/article-slug-123';
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('Invalid URL sets validation error message', () {
-      controller.urlController.text = 'not-a-valid-url';
+      controller.onUrlChanged('not-a-valid-url');
 
       expect(controller.errorMessage.value, 'Please enter a valid URL');
       expect(controller.canOpenArticle, false);
@@ -73,7 +73,7 @@ void main() {
     });
 
     test('clearUrl resets input and error state', () {
-      controller.urlController.text = 'invalid-stuff';
+      controller.onUrlChanged('invalid-stuff');
       expect(controller.errorMessage.value.isNotEmpty, true);
 
       controller.clearUrl();

@@ -1,13 +1,14 @@
 import 'package:get/get.dart';
 
-import '../../features/articles/bindings/article_binding.dart';
-import '../../features/articles/presentation/views/article_page.dart';
+import '../../core/widgets/app_shell.dart';
+import '../../features/article/bindings/article_binding.dart';
+import '../../features/article/views/article_page.dart';
 import '../../features/favorites/bindings/favorites_binding.dart';
-import '../../features/favorites/presentation/views/favorites_page.dart';
+import '../../features/favorites/views/favorites_page.dart';
 import '../../features/home/bindings/home_binding.dart';
-import '../../features/home/presentation/views/home_page.dart';
+
 import '../../features/settings/bindings/settings_binding.dart';
-import '../../features/settings/presentation/views/settings_page.dart';
+import '../../features/settings/views/settings_page.dart';
 
 class AppRoutes {
   static const String home = '/';
@@ -20,8 +21,8 @@ class AppPages {
   static final routes = [
     GetPage(
       name: AppRoutes.home,
-      page: () => const HomePage(),
-      binding: HomeBinding(),
+      page: () => const AppShell(),
+      bindings: [HomeBinding(), FavoritesBinding(), SettingsBinding()],
     ),
     GetPage(
       name: AppRoutes.article,
