@@ -52,7 +52,7 @@ class AppButton extends StatelessWidget {
             const SizedBox(
               width: 18,
               height: 18,
-              child: M3EProgressIndicator.circularWavy(size: 18),
+              child: M3EProgressIndicator.circular(size: 20),
             ),
             if (label case final Widget label?) ...[
               const SizedBox(width: 8),
