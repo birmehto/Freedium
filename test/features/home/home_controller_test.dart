@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/services/clipboard_service.dart';
+import 'package:freedium/features/home/controllers/home_controller.dart';
 import 'package:get/get.dart';
-import 'package:readora/core/services/clipboard_service.dart';
-import 'package:readora/features/home/controllers/home_controller.dart';
 
 class MockClipboardService extends ClipboardService {
   String? clipboardText = 'https://medium.com/@username/article-slug-123';

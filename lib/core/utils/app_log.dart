@@ -1,4 +1,3 @@
-// lib/utils/logger.dart
 import 'package:flutter/foundation.dart';
 
 /// ANSI color codes for console output (only visible in debug terminals)

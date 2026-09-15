@@ -31,6 +31,7 @@ class FavoritesController extends GetxController {
   void onInit() {
     super.onInit();
     loadFavorites();
+    ever(_storage.favoritesRevision, (_) => loadFavorites());
   }
 
   Future<void> loadFavorites() async {

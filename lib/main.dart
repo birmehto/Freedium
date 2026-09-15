@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app.dart';
 import 'core/services/clipboard_service.dart';
@@ -13,5 +13,5 @@ void main() async {
   Get.put(ThemeService());
   await Get.putAsync(() => ShareIntentService().init());
   Get.put(ClipboardService());
-  runApp(const Readora());
+  runApp(const Freedium());
 }

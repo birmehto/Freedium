@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.app.readora"
+    namespace = "com.bir.freedium"
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
@@ -14,7 +14,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.app.readora"
+        applicationId = "com.bir.freedium"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -2,26 +2,90 @@ class ReaderTheme {
   ReaderTheme._();
 
   static const String customCssId = 'custom-reader-style';
+  static const String _earlyCssId = 'freedium-early-flash-prevention';
+
+  /// ES2022/ES2023 polyfills for older Android WebViews that still load the
+  /// Freedium Svelte bundle. Prevents
+  /// "TypeError: ?.at / e.findLast is not a function".
+  static const String esCompatPolyfills = '''
+(function () {
+  'use strict';
+
+  if (!Array.prototype.at) {
+    Array.prototype.at = function (index) {
+      var length = this.length;
+      var i = index < 0 ? length + index : index;
+      return i >= 0 && i < length ? this[i] : undefined;
+    };
+  }
+
+  if (!Array.prototype.findLast) {
+    Array.prototype.findLast = function (callback, thisArg) {
+      for (var i = this.length - 1; i >= 0; i--) {
+        if (i in this && callback.call(thisArg, this[i], i, this)) {
+          return this[i];
+        }
+      }
+      return undefined;
+    };
+  }
+
+  if (!Array.prototype.findLastIndex) {
+    Array.prototype.findLastIndex = function (callback, thisArg) {
+      for (var i = this.length - 1; i >= 0; i--) {
+        if (i in this && callback.call(thisArg, this[i], i, this)) {
+          return i;
+        }
+      }
+      return -1;
+    };
+  }
+
+  if (!Object.hasOwn) {
+    Object.defineProperty(Object, 'hasOwn', {
+      value: function (obj, prop) {
+        if (obj == null) {
+          throw new TypeError('Cannot convert undefined or null to object');
+        }
+        return Object.prototype.hasOwnProperty.call(Object(obj), prop);
+      },
+      configurable: true,
+      writable: true
+    });
+  }
+})();
+''';
 
   static const _light = _ThemeColors(
-    background: '#fdfcff',
-    text: '#1a1c1e',
-    link: '#005cbb',
-    codeBackground: '#f0f0f0',
-    codeText: '#333333',
-    quoteBorder: '#005cbb',
-    quoteText: '#546e7a',
+    background: '#fbfaf7',
+    text: '#2b2823',
+    selection: 'rgba(43, 40, 35, 0.10)',
   );
 
   static const _dark = _ThemeColors(
-    background: '#1a1c1e',
-    text: '#e2e2e6',
-    link: '#aec6ff',
-    codeBackground: '#2c2c2c',
-    codeText: '#e0e0e0',
-    quoteBorder: '#64b5f6',
-    quoteText: '#b0bec5',
+    background: '#1b1915',
+    text: '#e7e1d6',
+    selection: 'rgba(231, 225, 214, 0.14)',
   );
+
+  /// Inject minimal CSS at document start to prevent white/dark flash.
+  /// Must be safe for injection before DOM is fully ready.
+  static String earlyStyleInjector({required bool isDarkMode}) {
+    final bg = isDarkMode ? _dark.background : _light.background;
+    final fg = isDarkMode ? _dark.text : _light.text;
+    final scheme = isDarkMode ? 'dark' : 'light';
+
+    return '''
+(function() {
+  try {
+    var s = document.createElement('style');
+    s.id = '$_earlyCssId';
+    s.textContent = 'html, body { background: $bg !important; color: $fg !important; color-scheme: $scheme !important; transition: none !important; } * { transition: none !important; }';
+    (document.head || document.documentElement).appendChild(s);
+  } catch(e) {}
+})();
+''';
+  }
 
   static const String popupBlockingJs = '''
 (function () {
@@ -48,10 +112,12 @@ class ReaderTheme {
     '[data-dropdown-menu-content], [data-menu-content], ' +
     '[data-popover-content], [data-tooltip-content], ' +
     '[role="dialog"], [role="alertdialog"], [role="menu"], ' +
-    '[data-sonner-toaster], [data-sonner-toast], ' +
-    'section[aria-label*="Notifications"]';
+    '[data-sonner-toaster], [data-sonner-toast]';
+
+  var hydrationReady = false;
 
   function stripPopups() {
+    if (!hydrationReady) return;
     var nodes = document.querySelectorAll(POPUPS);
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i];
@@ -87,33 +153,42 @@ class ReaderTheme {
   }, true);
 
   if (window.MutationObserver) {
-    new MutationObserver(stripPopups).observe(
+    new MutationObserver(function () {
+      if (hydrationReady) stripPopups();
+    }).observe(
       document.documentElement,
       { childList: true, subtree: true }
     );
   }
-  document.addEventListener('DOMContentLoaded', stripPopups);
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      hydrationReady = true;
+      stripPopups();
+    }, 350);
+  });
   silenceJsDialogs();
   stripPopups();
 })();
 ''';
 
-  static String getCss({
-    required double fontSize,
-    required bool isDarkMode,
-    String fontFamily = 'Inter',
-  }) {
+  /// JavaScript to extract article text for reading time estimation.
+  static const String extractArticleTextJs = r'''
+(function() {
+  try {
+    var article = document.querySelector('article') || document.querySelector('main') || document.body;
+    var text = article ? article.innerText || article.textContent || '' : '';
+    var words = text.trim().split(/\s+/).filter(function(w) { return w.length > 0; }).length;
+    return JSON.stringify({ words: words });
+  } catch(e) {
+    return JSON.stringify({ words: 0 });
+  }
+})();
+''';
+
+  static String getCss({required bool isDarkMode, double fontSize = 17.0}) {
     final colors = isDarkMode ? _dark : _light;
-    final fontUrl = _getGoogleFontUrl(fontFamily);
-    final fallback = _getFallbackFont(fontFamily);
 
     return '''
-      /* ================================
-         Reader Theme
-         ================================ */
-
-      @import url('$fontUrl');
-
       :root {
         color-scheme: ${isDarkMode ? 'dark' : 'light'};
       }
@@ -121,6 +196,7 @@ class ReaderTheme {
       html {
         background: ${colors.background} !important;
         color: ${colors.text} !important;
+        -webkit-text-size-adjust: 100% !important;
       }
 
       body {
@@ -130,181 +206,38 @@ class ReaderTheme {
         width: 100% !important;
         max-width: 100% !important;
         min-height: 100vh !important;
-
         box-sizing: border-box !important;
         overflow-wrap: anywhere !important;
 
         background: ${colors.background} !important;
         color: ${colors.text} !important;
 
-        font-family: '$fontFamily', $fallback !important;
         font-size: ${fontSize}px !important;
-        line-height: 1.6 !important;
-
+        line-height: 1.8 !important;
         -webkit-font-smoothing: antialiased !important;
-        text-rendering: optimizeLegibility !important;
       }
 
-      /* ================================
-         Typography
-         ================================ */
-
-      body,
-      body p,
-      body div,
-      body span,
-      body li,
-      body dt,
-      body dd,
-      body blockquote,
-      body strong,
-      body b,
-      body em,
-      body i,
-      body small,
-      body time,
-      body figure,
-      body figcaption,
-      body address,
-      body caption {
-        font-family: inherit !important;
-        color: inherit !important;
+      ::selection {
+        background: ${colors.selection} !important;
       }
 
-      p {
-        margin: 0 0 1em !important;
+      article {
+        max-width: 42em !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
       }
 
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6 {
-        margin-top: 1.5em !important;
-        margin-bottom: 0.5em !important;
-
-        font-family: inherit !important;
-        font-weight: 600 !important;
-        line-height: 1.3 !important;
-        color: inherit !important;
-      }
-
-      h1 {
-        font-size: 2em !important;
-      }
-
-      h2 {
-        font-size: 1.5em !important;
-      }
-
-      h3 {
-        font-size: 1.25em !important;
-      }
-
-      h4 {
-        font-size: 1.1em !important;
-      }
-
-      h5,
-      h6 {
-        font-size: 1em !important;
-      }
-
-      strong,
-      b {
-        font-weight: 700 !important;
-      }
-
-      em,
-      i {
-        font-style: italic !important;
-      }
-
-      /* ================================
-         Links
-         ================================ */
-
-      a {
-        color: ${colors.link} !important;
-        text-decoration: none !important;
-      }
-
-      a:hover {
-        text-decoration: underline !important;
-      }
-
-      /* ================================
-         Blockquotes
-         ================================ */
-
-      blockquote {
-        margin: 16px 0 !important;
-        padding: 4px 0 4px 16px !important;
-
-        border-left: 4px solid ${colors.quoteBorder} !important;
-
-        color: ${colors.quoteText} !important;
-        font-style: italic !important;
-      }
-
-      /* ================================
-         Code
-         ================================ */
-
-      code {
-        padding: 2px 5px !important;
-        border-radius: 4px !important;
-
-        background: ${colors.codeBackground} !important;
-        color: ${colors.codeText} !important;
-
-        font-family:
-          'SFMono-Regular',
-          Consolas,
-          'Liberation Mono',
-          Menlo,
-          monospace !important;
-
-        font-size: 0.9em !important;
-      }
-
-      pre {
-        margin: 16px 0 !important;
-        padding: 12px !important;
-
-        max-width: 100% !important;
-        overflow-x: auto !important;
-        white-space: pre-wrap !important;
-        overflow-wrap: anywhere !important;
-
-        border-radius: 6px !important;
-
-        background: ${colors.codeBackground} !important;
-        color: ${colors.codeText} !important;
-
-        font-family:
-          'SFMono-Regular',
-          Consolas,
-          'Liberation Mono',
-          Menlo,
-          monospace !important;
-
-        line-height: 1.5 !important;
-      }
-
-      pre code {
-        padding: 0 !important;
-        background: transparent !important;
-      }
-
-      /* ================================
-         Media
-         ================================ */
-
+      p,
+      div,
+      section,
+      article,
+      main,
+      aside,
       img,
       video,
-      iframe {
+      iframe,
+      table,
+      pre {
         max-width: 100% !important;
       }
 
@@ -313,99 +246,23 @@ class ReaderTheme {
         height: auto !important;
       }
 
-      iframe {
-        border: 0 !important;
+      img {
+        content-visibility: auto !important;
+        contain-intrinsic-size: auto 300px;
       }
 
       /* ================================
-         Neutralize site backgrounds
+         Remove site chrome
          ================================ */
 
-      article,
-      main,
-      aside,
-      section,
-      header,
-      footer,
-      figure,
-      figcaption,
-      div,
-      p,
-      ul,
-      ol,
-      table,
-      thead,
-      tbody,
-      tr,
-      th,
-      td,
-      blockquote {
-        background: transparent !important;
-      }
-
-      article,
-      main,
-      section,
-      header,
-      footer {
-        border-radius: 0 !important;
-        box-shadow: none !important;
-      }
-
-      /* ================================
-         Tables
-         ================================ */
-
-      table {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow-x: auto !important;
-
-        border-collapse: collapse !important;
-      }
-
-      th,
-      td {
-        padding: 8px !important;
-        border: 1px solid ${isDarkMode ? '#44474b' : '#d9d9d9'} !important;
-      }
-
-      /* ================================
-         Lists
-         ================================ */
-
-      ul,
-      ol {
-        padding-left: 24px !important;
-      }
-
-      li {
-        margin-bottom: 0.4em !important;
-      }
-
-      /* ================================
-         Remove unwanted website UI
-         ================================ */
-
-      .paywall,
-      .subscription-banner,
-      .premium-banner,
-      .navbar,
-      #progress,
-      #darkModeToggle,
-      #openProblemModal,
-      .theme-toggle,
-      .storage-notification-container,
-      .fixed.bottom-4.left-4 {
-        display: none !important;
-      }
-
-      /* Freedium site chrome: header nav, donate bar, footer */
+      /* Freedium header nav, footer, top progress bar, notifications */
 
       nav#header,
       .header-nav,
-      footer {
+      footer,
+      #progress,
+      section[aria-label*="Notifications"],
+      [role="region"][aria-label*="Notifications"] {
         display: none !important;
       }
 
@@ -421,7 +278,20 @@ class ReaderTheme {
         display: none !important;
       }
 
-      /* Kill popup surfaces: dialogs, menus, drawers, popovers */
+      /* ================================
+         Remove popups
+         ================================ */
+
+      /* Triggers: report-problem dialog, drawers, dropdown menus */
+
+      [data-dialog-trigger],
+      [data-drawer-trigger],
+      [data-dropdown-menu-trigger],
+      button[aria-haspopup="dialog"] {
+        display: none !important;
+      }
+
+      /* Popup surfaces */
 
       [role="dialog"],
       [role="alertdialog"],
@@ -435,80 +305,19 @@ class ReaderTheme {
       [data-popover-content],
       [data-tooltip-content],
       [data-slot][data-slot\$="-overlay"],
-      button[aria-haspopup="dialog"],
-      [data-dialog-trigger],
-      [data-dropdown-menu-trigger],
-      [data-drawer-trigger],
-      [data-popover-trigger] {
+      [data-sonner-toaster],
+      [data-sonner-toast] {
         display: none !important;
       }
 
-      /* Disable click-to-zoom lightbox on cover/article images */
+      /* Disable click-to-zoom lightbox on the cover image */
 
       .image-zoom-figure,
       [data-zoom-src] {
         pointer-events: none !important;
         cursor: default !important;
       }
-
-      /* Toast / snackbar region (sonner notifications) */
-
-      section[aria-label*="Notifications"],
-      [role="region"][aria-label*="Notifications"],
-      [data-sonner-toaster],
-      [data-sonner-toast] {
-        display: none !important;
-      }
-
-      /* "Go to the original" */
-
-      p.text-green-500.text-sm > a {
-        display: none !important;
-      }
-
-      /* Tags section */
-
-      div:has(> a[href*="/tag/"]) {
-        display: none !important;
-      }
-
-      /* ================================
-         Prevent horizontal overflow
-         ================================ */
-
-      body * {
-        box-sizing: border-box !important;
-      }
-
-      p,
-      div,
-      section,
-      article,
-      main,
-      aside {
-        max-width: 100% !important;
-      }
     ''';
-  }
-
-  static String _getGoogleFontUrl(String family) {
-    final encodedFamily = Uri.encodeComponent(family).replaceAll('%20', '+');
-
-    return 'https://fonts.googleapis.com/css2'
-        '?family=$encodedFamily:wght@400;600;700'
-        '&display=swap';
-  }
-
-  static String _getFallbackFont(String family) {
-    switch (family.toLowerCase()) {
-      case 'merriweather':
-      case 'georgia':
-      case 'lora':
-        return 'serif';
-
-      default:
-        return 'sans-serif';
-    }
   }
 }
 
@@ -516,17 +325,9 @@ class _ThemeColors {
   const _ThemeColors({
     required this.background,
     required this.text,
-    required this.link,
-    required this.codeBackground,
-    required this.codeText,
-    required this.quoteBorder,
-    required this.quoteText,
+    required this.selection,
   });
   final String background;
   final String text;
-  final String link;
-  final String codeBackground;
-  final String codeText;
-  final String quoteBorder;
-  final String quoteText;
+  final String selection;
 }

@@ -1,7 +1,7 @@
-name: readora
+name: freedium
 description: "Free, open-source Medium paywall bypass reader."
 publish_to: "none"
-version: 1.1.0
+version: 1.0.0
 
 environment:
   sdk: ^3.13.0
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   url_launcher: ^6.3.2
-  flutter_inappwebview: ^6.1.5
+  flutter_inappwebview: ^6.2.0-beta.3
   intl: ^0.20.3
   share_plus: ^13.3.0
   get: ^4.7.3

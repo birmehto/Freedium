@@ -1,52 +1,28 @@
 # 📖 Freedium
 
-**The friendly Medium un-paywall reader.** Paste a Medium article link, hit *Unlock*, and read the full story in a clean, distraction-free reader — no subscription, no clutter, no drama.
+**The friendly Medium un-paywall reader.** Paste a Medium article link, hit *Unlock*, and read the full story in a clean, distraction-free reader — no subscription, no clutter.
+
+<p align="center">
+  <img src="screenshots/banner.png" width="720" alt="Freedium banner"/>
+</p>
 
 <p align="center">
   <img src="screenshots/home.png" width="170" alt="Home screen"/>
   <img src="screenshots/article.png" width="170" alt="Article reader"/>
-  <img src="screenshots/article_settings.png" width="170" alt="Reading settings"/>
   <img src="screenshots/favorites.png" width="170" alt="Favorites"/>
   <img src="screenshots/settings.png" width="170" alt="Settings"/>
 </p>
-
-> 📖 *Readora* is now **Freedium** — same app, friendlier name. 🎉
-
----
-
-## What is this? 🤔
-
-Freedium is a **free & open-source Flutter app** for **Android** that gives you a better way to read Medium articles. It uses the **Freedium mirror network** to serve the full article content, then wraps it in a beautifully styled, ad-free reading experience — with custom typography, dark/light themes, and none of the popover, paywall, and "you've used your free articles" nonsense.
-
-Think of it as a cozy reading room for Medium stories. 📚
 
 ---
 
 ## ✨ Features
 
-### 🛡️ Unlock any Medium story
-Paste a link, or share one from any app, and Freedium fetches the full article through the Freedium mirror. A friendly message appears if something goes wrong (offline, server hiccup, broken link) — no cryptic errors, ever.
-
-### 🔗 Share-to-read (one tap)
-Reading something on your phone? Just hit **Share → Freedium** and the article opens instantly. Works with any text containing a URL.
-
-### 🎨 A reading experience you control
-- 🌙 **Dark & light themes** — dark mode by default (easy on the eyes)
-- 🔠 **Font size slider** (14–28) for comfortable reading
-- ✒️ **Font family picker** — Inter, Roboto, Merriweather, Open Sans
-- All preferences are saved automatically
-
-### 📊 Reading progress bar
-A live progress indicator in the app bar shows exactly where you are in the article.
-
-### 💾 Resume where you left off
-Freedium remembers your scroll position per article — close it, come back later, and you're right back where you stopped.
-
-### ⭐ Offline favorites
-Save articles locally — no account needed. Search by title, author, or source, swipe to remove, and re-open any favorite in one tap.
-
-### 🖼️ Cleared landing pages
-Injected CSS + a popup blocker strip away paywalls, nav bars, dialogs, menus, and modal popovers — leaving just the story.
+- **🛡️ Unlock any Medium story** — paste a link (or share it from any app) and Freedium fetches the full article through the Freedium mirror network. Friendly messages, never cryptic errors.
+- **🔗 Share-to-read (one tap)** — Share → Freedium opens the article instantly from any app with a URL.
+- **🎨 Calm reading, Freedium-style** — warm paper canvas, muted green accents, serif headlines, dark/light themes, pull-to-refresh.
+- **📊 Reading progress** — a live progress bar plus per-article scroll-position memory, so you resume where you left off.
+- **⭐ Offline favorites** — save locally (no account), search by title/author/source, swipe to remove, reopen in one tap.
+- **🖼️ Cleared landing pages** — injected CSS strips paywalls, nav bars, dialogs, and modal popovers, leaving just the story.
 
 ---
 
@@ -54,50 +30,38 @@ Injected CSS + a popup blocker strip away paywalls, nav bars, dialogs, menus, an
 
 | Platform | Link |
 |----------|------|
-| 🤖 Android APK | [Latest Release](https://github.com/birmehto/Readora/releases/latest) |
-| 🍎 iOS | 🚧 Planned — watch this space! |
+| 🤖 Android APK | [Latest release](https://github.com/birmehto/Freedium/releases/latest) |
+| 🍎 iOS | 🚧 Planned |
 
-> **Tip:** On Android, make sure you allow installs from unknown sources for direct APK downloads.
-
-Linux desktop scaffolding is included too, but the app is built for phones first.
+> On Android, allow installs from unknown sources for direct APK downloads.
 
 ---
 
 ## 🛠️ Build from source
 
-### Prerequisites
-- **Flutter** `>= 3.44.0` ([install guide](https://docs.flutter.dev/get-started/install))
-- **Dart** `>= 3.13.0` (ships with Flutter)
-- An Android device/emulator (or just build an APK)
-
-### Run it
+**Prerequisites:** Flutter `>= 3.44.0` + Dart `>= 3.13.0`.
 
 ```bash
-git clone https://github.com/birmehto/Readora.git
-cd Readora
+git clone https://github.com/birmehto/Freedium.git
+cd Freedium
 flutter pub get
 flutter run
 ```
 
-### Build a release APK
+**Release APK:**
 
 ```bash
 flutter build apk --release
-# split per ABI (smaller files)
-flutter build apk --release --split-per-abi
+flutter build apk --release --split-per-abi   # smaller per-ABI builds
 ```
 
-Output lands in `build/app/outputs/flutter-apk/`.
-
-### Quality checks
+**Quality checks** (run by CI on every push):
 
 ```bash
 flutter analyze      # static analysis
-flutter test         # run the test suite
-dart format .        # format the code
+flutter test         # test suite
+dart format .        # formatting
 ```
-
-CI runs all of these on every push, plus test coverage reports via Codecov. ✅
 
 ---
 
@@ -108,63 +72,49 @@ lib/
 ├── main.dart                      # App entry point
 ├── app.dart                       # Root widget + theming
 ├── core/
-│   ├── constants/                 # Freedium URL, timeouts, reader CSS/JS
+│   ├── constants/                 # Freedium URL, reader CSS/JS
 │   ├── routes/                    # Routing (GetX)
-│   ├── services/                  # Storage, theme, clipboard, share intent
+│   ├── services/                  # Storage, theme, share intent
 │   ├── utils/                     # URL validation & cleanup
-│   └── widgets/                   # Shared UI (shell, error/empty states…)
+│   └── widgets/                   # Shared UI (shell, empty states…)
 └── features/
-    ├── home/                      # URL input + unlock button
-    ├── article/                   # WebView reader + settings sheet
+    ├── home/                      # URL input + unlock
+    ├── article/                   # WebView reader + progress bar
     ├── favorites/                 # Local saved articles
     └── settings/                  # Appearance & about
 ```
 
 Each feature follows a clean layout: `controllers/`, `bindings/`, `views/`, `widgets/`, `models/`.
 
----
-
-## 🧰 Tech stack
-
-| Piece | What it uses |
-|-------|--------------|
-| 🧩 Framework | Flutter (Material 3) |
-| 🗂️ State & routing | GetX |
-| 🌐 Reader engine | `flutter_inappwebview` |
-| 💾 Local storage | `get_storage` |
-| 📤 Sharing | `share_plus` + `receive_sharing_intent` |
-| 🎨 UI kit | `material_3_expressive` + `material_ui` |
-| 🔗 Links | `url_launcher`, `package_info_plus`, `intl` |
+**Tech stack:** Flutter (Material 3) · GetX · `flutter_inappwebview` · `get_storage` · `share_plus` · `receive_sharing_intent` · `url_launcher`.
 
 ---
 
 ## 🤝 Contributing
 
-Found a bug? Have an idea? PRs and issues are always welcome!
-
-1. 🍴 **Fork** the repo
+1. 🍴 Fork the repo
 2. 🌿 Create a branch (`git checkout -b feat/my-idea`)
-3. ✍️ Make your changes — keep the lints happy (`flutter analyze`)
-4. 🧪 Add tests where it makes sense (`flutter test`)
-5. 🚀 Open a **pull request**
+3. ✍️ Make your changes — keep `flutter analyze` happy
+4. 🧪 Add tests where it makes sense
+5. 🚀 Open a pull request
 
-Please be nice — this is a passion project, and kindness makes open source go `round. 💜`
+Please be kind — this is a passion project. 💜
 
 ---
 
 ## 💌 Feedback & support
 
-Found a broken mirror? Want a feature (iOS? more mirrors?)?. Got a bug report?
+Found a broken mirror? Want iOS? Have a bug?
 
-- Open a [GitHub issue](https://github.com/birmehto/Readora/issues)
-- Or email: birmehto@gmail.com
+- Open a [GitHub issue](https://github.com/birmehto/Freedium/issues)
+- Email: birmehto@gmail.com
 
 Enjoying Freedium? **[Buy me a coffee ☕](https://buymeacoffee.com/birmehto)** — it keeps the mirrors and the momentum going!
 
 ---
 
-## ⚖️ Legal & disclaimer
+## ⚖️ Legal
 
-Freedium is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It simply wraps publicly available reader endpoints. All article content remains the property of its original authors. Please respect authors — and consider supporting the writers you love.
+Freedium is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It wraps publicly available reader endpoints; all article content remains the property of its original authors.
 
 Open-source under the [MIT License](LICENSE). © Bir Mehto.

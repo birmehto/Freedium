@@ -71,14 +71,14 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           # Universal
           cp build/app/outputs/flutter-apk/app-release.apk \
-             release-apks/Readora-v$VERSION-universal.apk
+             release-apks/Freedium-v$VERSION-universal.apk
           # Split
           mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
-             release-apks/Readora-v$VERSION-arm64-v8a.apk
+             release-apks/Freedium-v$VERSION-arm64-v8a.apk
           mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
-             release-apks/Readora-v$VERSION-armeabi-v7a.apk
+             release-apks/Freedium-v$VERSION-armeabi-v7a.apk
           mv build/app/outputs/flutter-apk/app-x86_64-release.apk \
-             release-apks/Readora-v$VERSION-x86_64.apk
+             release-apks/Freedium-v$VERSION-x86_64.apk
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
@@ -115,9 +115,9 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r Readora-v${{ steps.version.outputs.version }}-unsigned.ipa Payload
+          zip -r Freedium-v${{ steps.version.outputs.version }}-unsigned.ipa Payload
           mkdir release-ipas
-          mv Readora-v${{ steps.version.outputs.version }}-unsigned.ipa release-ipas/
+          mv Freedium-v${{ steps.version.outputs.version }}-unsigned.ipa release-ipas/
 
       - name: Upload IPA Artifacts
         uses: actions/upload-artifact@v4

@@ -1,3 +1,6 @@
+// ignore_for_file: avoid_redundant_argument_values
+
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -9,22 +12,66 @@ import '../../../core/constants/reader_theme.dart';
 import '../../../core/utils/app_log.dart';
 import '../controllers/article_controller.dart';
 
-class ArticleWebView extends GetView<ArticleController> {
+class ArticleWebView extends StatefulWidget {
   const ArticleWebView({required this.url, super.key});
   final String url;
+
+  @override
+  State<ArticleWebView> createState() => _ArticleWebViewState();
+}
+
+class _ArticleWebViewState extends State<ArticleWebView> {
+  late final ArticleController _controller = Get.find<ArticleController>();
+  late final PullToRefreshController _pullToRefreshController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pullToRefreshController = PullToRefreshController(
+      onRefresh: () => _controller.requestRefresh(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final initialSettings = InAppWebViewSettings(
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       builtInZoomControls: false,
+      displayZoomControls: false,
+      supportZoom: false,
+      useWideViewPort: true,
+      loadWithOverviewMode: true,
       allowsInlineMediaPlayback: true,
       mediaPlaybackRequiresUserGesture: false,
       useShouldOverrideUrlLoading: true,
       mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+      // Performance & caching
+      hardwareAcceleration: true,
+      cacheEnabled: true,
+      domStorageEnabled: true,
+      databaseEnabled: true,
+      offscreenPreRaster: true,
+      useHybridComposition: true,
+      allowFileAccess: false,
+      allowContentAccess: false,
+      networkAvailable: true,
+      scrollbarFadingEnabled: true,
+      overScrollMode: OverScrollMode.IF_CONTENT_SCROLLS,
+      // iOS back/forward swipe gestures
+      allowsBackForwardNavigationGestures: true,
     );
 
-    final popupBlockingScripts = UnmodifiableListView<UserScript>([
+    final initialUserScripts = UnmodifiableListView<UserScript>([
+      UserScript(
+        source: ReaderTheme.esCompatPolyfills,
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+      UserScript(
+        source: ReaderTheme.earlyStyleInjector(
+          isDarkMode: _controller.isDarkMode,
+        ),
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
       UserScript(
         source: ReaderTheme.popupBlockingJs,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
@@ -32,11 +79,15 @@ class ArticleWebView extends GetView<ArticleController> {
     ]);
 
     return InAppWebView(
-      initialUrlRequest: URLRequest(url: WebUri(url)),
+      initialUrlRequest: URLRequest(
+        url: WebUri(widget.url),
+        headers: const {'Accept-Language': 'en-US,en;q=0.9'},
+      ),
       initialSettings: initialSettings,
-      initialUserScripts: popupBlockingScripts,
+      initialUserScripts: initialUserScripts,
+      pullToRefreshController: _pullToRefreshController,
       onWebViewCreated: (webViewController) {
-        controller.setWebViewController(webViewController);
+        _controller.setWebViewController(webViewController);
       },
       onCreateWindow: (controller, createWindowAction) async => false,
       shouldOverrideUrlLoading: (controller, navigationAction) async {
@@ -52,9 +103,9 @@ class ArticleWebView extends GetView<ArticleController> {
         if (!isMainFrame) return NavigationActionPolicy.ALLOW;
 
         final targetHost = requestUrl.host.toLowerCase();
-        final freediumHost = Uri.parse(MediumConstants.freediumUrl).host
+        final freediumHost = Uri.parse(AppConstants.freediumUrl).host
             .toLowerCase();
-        final currentHost = Uri.tryParse(this.controller.currentUrl.value)?.host
+        final currentHost = Uri.tryParse(_controller.currentUrl.value)?.host
             .toLowerCase();
 
         final allowed = targetHost == freediumHost || targetHost == currentHost;
@@ -76,30 +127,28 @@ class ArticleWebView extends GetView<ArticleController> {
             handledByClient: true,
           ),
       onLoadStart: (controller, url) {
-        this.controller.isLoading.value = true;
-        this.controller.errorMessage.value = '';
+        _controller.isLoading.value = true;
+        _controller.errorMessage.value = '';
         if (url != null) {
-          this.controller.currentUrl.value = url.toString();
+          _controller.currentUrl.value = url.toString();
         }
       },
       onLoadStop: (controller, url) async {
-        // Small delay before marking as loaded
-        await Future.delayed(const Duration(milliseconds: 100));
-        this.controller.onPageLoaded();
-        this.controller.injectCustomCSS();
+        await Future.delayed(const Duration(milliseconds: 60));
+        _controller.onPageLoaded();
+        _controller.injectCustomCSS();
+        await _pullToRefreshController.endRefreshing();
       },
       onScrollChanged: (controller, x, y) {
-        this.controller.handleScroll(y);
+        // _controller.handleScroll(y);
       },
       onProgressChanged: (controller, progress) {
-        this.controller.updateProgress(progress.toDouble());
+        _controller.updateProgress(progress.toDouble());
       },
       onReceivedError: (controller, request, error) {
-        appLog(
-          'Page error: ${error.description}, type: ${error.type}, for: ${request.url}',
-        );
-        // Only handle main frame errors
         if (request.isForMainFrame ?? false) {
+          _pullToRefreshController.endRefreshing();
+
           String errorMsg = 'Failed to load article';
 
           final description = error.description.toLowerCase();
@@ -116,19 +165,15 @@ class ArticleWebView extends GetView<ArticleController> {
             errorMsg = 'Failed to load article: ${error.description}';
           }
 
-          this.controller.onPageError(errorMsg);
+          _controller.onPageError(errorMsg);
         }
       },
       onReceivedHttpError: (controller, request, errorResponse) {
         if (request.isForMainFrame ?? false) {
-          appLog(
-            'HTTP Error: ${errorResponse.statusCode} ${errorResponse.reasonPhrase} for ${request.url}',
-          );
-
           final statusCode = errorResponse.statusCode ?? 0;
 
           if (statusCode >= 500) {
-            this.controller.handleServerError(statusCode);
+            _controller.handleServerError(statusCode);
           } else if (statusCode >= 400) {
             String errorMsg = 'Server error ($statusCode)';
 
@@ -136,15 +181,14 @@ class ArticleWebView extends GetView<ArticleController> {
               errorMsg = 'Article not found (404).';
             }
 
-            this.controller.onPageError(errorMsg);
+            _controller.onPageError(errorMsg);
           }
         }
       },
-
       onConsoleMessage: (controller, consoleMessage) {
-        appLog(
-          'Console: ${consoleMessage.messageLevel}: ${consoleMessage.message}',
-        );
+        if (consoleMessage.messageLevel == ConsoleMessageLevel.ERROR) {
+          appLog('Console: ${consoleMessage.message}');
+        }
       },
     );
   }
