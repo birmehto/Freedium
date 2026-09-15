@@ -62,7 +62,6 @@ class SettingsController extends GetxController {
     await _openExternal('https://github.com/birmehto/Freedium');
   }
 
-
   Future<void> _openExternal(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null) return;

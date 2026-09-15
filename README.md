@@ -65,31 +65,6 @@ dart format .        # formatting
 
 ---
 
-## 🧭 Project structure
-
-```
-lib/
-├── main.dart                      # App entry point
-├── app.dart                       # Root widget + theming
-├── core/
-│   ├── constants/                 # Freedium URL, reader CSS/JS
-│   ├── routes/                    # Routing (GetX)
-│   ├── services/                  # Storage, theme, share intent
-│   ├── utils/                     # URL validation & cleanup
-│   └── widgets/                   # Shared UI (shell, empty states…)
-└── features/
-    ├── home/                      # URL input + unlock
-    ├── article/                   # WebView reader + progress bar
-    ├── favorites/                 # Local saved articles
-    └── settings/                  # Appearance & about
-```
-
-Each feature follows a clean layout: `controllers/`, `bindings/`, `views/`, `widgets/`, `models/`.
-
-**Tech stack:** Flutter (Material 3) · GetX · `flutter_inappwebview` · `get_storage` · `share_plus` · `receive_sharing_intent` · `url_launcher`.
-
----
-
 ## 🤝 Contributing
 
 1. 🍴 Fork the repo
