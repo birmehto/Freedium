@@ -11,6 +11,7 @@
   <img src="screenshots/article.png" width="170" alt="Article reader"/>
   <img src="screenshots/favorites.png" width="170" alt="Favorites"/>
   <img src="screenshots/settings.png" width="170" alt="Settings"/>
+  <img src="screenshots/share.png" width="170" alt="share"/>
 </p>
 
 ---
