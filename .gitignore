@@ -43,3 +43,55 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# ──────────────────────────────────────────────────────────────
+# Sensitive data & credentials
+# ──────────────────────────────────────────────────────────────
+
+# Android signing
+/android/local.properties
+/android/key.properties
+/android/keystore.properties
+*.keystore
+*.jks
+*.jks.bak
+*.p12
+*.pem
+
+# Environment & API keys
+.env
+.env.*
+!.env.example
+.envrc
+*.env
+
+# Google Play / service accounts
+google-play.json
+play-service-account.json
+service-account-key.json
+service_account.json
+*\.aab  # (uncomment only if you don't want to commit signed AABs)
+
+# Generic private keys / credentials
+id_rsa
+id_ed25519
+*.p8
+credential.json
+credentials.json
+secrets/
+*.secret
+
+# Tooling auth
+.gradle/
+.credentials
+
+# Info, notes & temp files
+*.info
+*.report
+*.bak
+*.orig
+*.tmp
+*.swp
+*.history
+notes/
+NOTES*
