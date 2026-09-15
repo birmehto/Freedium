@@ -20,8 +20,6 @@ class MockStorageService extends StorageService {
   @override
   double get fontSize => 16.0;
   @override
-  String get fontFamily => 'Inter';
-  @override
   List<dynamic> get favorites => [];
 }
 

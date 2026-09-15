@@ -28,7 +28,17 @@ class ArticleController extends GetxController {
   final loadingProgress = 0.0.obs;
   final scrollProgress = 0.0.obs;
 
+  // Reader preferences
+  final fontSize = 17.0.obs;
+
+  // Reading time (minutes)
+  final readingTime = 0.obs;
+
+  Timer? _progressSaveTimer;
+
   Timer? _loadingTimer;
+
+  InAppWebViewController? webViewController;
 
   final isFavorite = false.obs;
 
@@ -48,6 +58,8 @@ class ArticleController extends GetxController {
       return;
     }
 
+    fontSize.value = _storage.fontSize;
+
     _initialize(url, original);
     _setupWebViewListeners();
   }
@@ -64,13 +76,96 @@ class ArticleController extends GetxController {
     isFavorite.value = _storage.isFavorite(originalUrl.value);
   }
 
+  // /// Saved scroll position for the current article, if any.
+  // Future<double?> getSavedScrollPosition() async {
+  //   return _storage.getReadingProgress(originalUrl.value);
+  // }
+
   void onPageLoaded() {
     _cancelLoadingTimer();
     isLoading.value = false;
     isInitialLoad.value = false;
     loadingProgress.value = 1.0;
     _refreshLayoutMetrics();
+    unawaited(_estimateReadingTime());
   }
+
+  Future<void> _estimateReadingTime() async {
+    if (isClosed || webViewController == null) return;
+    try {
+      final result = await webViewController?.evaluateJavascript(
+        source: ReaderTheme.extractArticleTextJs,
+      );
+      if (result is String && result.isNotEmpty) {
+        final data = jsonDecode(result) as Map<String, dynamic>;
+        final words = (data['words'] as num?)?.toInt() ?? 0;
+        final minutes = (words / 200).ceil();
+        readingTime.value = minutes;
+      }
+    } catch (e) {
+      appLog('Failed to estimate reading time: $e');
+    }
+  }
+
+  // --- Reader appearance ---
+
+  void incrementFontSize() {
+    setFontSize(fontSize.value + AppConstants.fontSizeStep);
+  }
+
+  void decrementFontSize() {
+    setFontSize(fontSize.value - AppConstants.fontSizeStep);
+  }
+
+  void setFontSize(double size) {
+    final clamped = size.clamp(
+      AppConstants.minFontSize,
+      AppConstants.maxFontSize,
+    );
+    fontSize.value = clamped;
+    _storage.fontSize = clamped;
+    injectCustomCSS();
+  }
+
+  void resetFontSize() {
+    setFontSize(AppConstants.defaultFontSize);
+  }
+
+  // // --- Scroll handling ---
+
+  // void handleScroll(int y) {
+  //   if (isClosed || webViewController == null) return;
+
+  //   if (_contentHeight == null ||
+  //       _viewportHeight == null ||
+  //       _contentHeight! <= _viewportHeight!) {
+  //     unawaited(_refreshLayoutMetrics());
+  //   }
+  //   final scrollable = (_contentHeight ?? 0.0) - (_viewportHeight ?? 0.0);
+  //   scrollProgress.value = scrollable > 0
+  //       ? (y / scrollable).clamp(0.0, 1.0)
+  //       : 0.0;
+
+  //   _saveProgressAfterSettling();
+  // }
+
+  // void _saveProgressAfterSettling() {
+  //   if (_progressSaveTimer?.isActive ?? false) return;
+  //   _progressSaveTimer = Timer(const Duration(seconds: 2), () {
+  //     if (isClosed) return;
+  //     final p = scrollProgress.value;
+  //     if (p > 0.02) {
+  //       final y = (p * ((_contentHeight ?? 0) - (_viewportHeight ?? 0)))
+  //           .toDouble()
+  //           .round();
+  //       unawaited(
+  //         _storage.saveReadingProgress(originalUrl.value, y.toDouble()),
+  //       );
+  //     }
+  //   });
+  // }
+
+  // --- Error / load handling ---
 
   void handleServerError(int statusCode) {
     String errorMsg = 'Server error ($statusCode)';
@@ -130,20 +225,6 @@ class ArticleController extends GetxController {
     } catch (e) {
       appLog(e.toString());
     }
-  }
-
-  void handleScroll(int y) {
-    if (isClosed || webViewController == null) return;
-
-    if (_contentHeight == null ||
-        _viewportHeight == null ||
-        _contentHeight! <= _viewportHeight!) {
-      unawaited(_refreshLayoutMetrics());
-    }
-    final scrollable = (_contentHeight ?? 0.0) - (_viewportHeight ?? 0.0);
-    scrollProgress.value = scrollable > 0
-        ? (y / scrollable).clamp(0.0, 1.0)
-        : 0.0;
   }
 
   void requestRefresh() {
@@ -264,10 +345,9 @@ class ArticleController extends GetxController {
   @override
   void onClose() {
     _cancelLoadingTimer();
+    _progressSaveTimer?.cancel();
     super.onClose();
   }
-
-  InAppWebViewController? webViewController;
 
   void setWebViewController(InAppWebViewController controller) {
     webViewController = controller;
@@ -280,7 +360,10 @@ class ArticleController extends GetxController {
   Future<void> injectCustomCSS() async {
     if (isClosed || webViewController == null) return;
 
-    final css = ReaderTheme.getCss(isDarkMode: isDarkMode);
+    final css = ReaderTheme.getCss(
+      isDarkMode: isDarkMode,
+      fontSize: fontSize.value,
+    );
 
     try {
       await webViewController?.evaluateJavascript(

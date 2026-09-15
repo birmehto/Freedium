@@ -1,3 +1,6 @@
+// ignore_for_file: avoid_redundant_argument_values
+
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -34,15 +37,39 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     final initialSettings = InAppWebViewSettings(
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       builtInZoomControls: false,
+      displayZoomControls: false,
+      supportZoom: false,
+      useWideViewPort: true,
+      loadWithOverviewMode: true,
       allowsInlineMediaPlayback: true,
       mediaPlaybackRequiresUserGesture: false,
       useShouldOverrideUrlLoading: true,
       mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+      // Performance & caching
+      hardwareAcceleration: true,
+      cacheEnabled: true,
+      domStorageEnabled: true,
+      databaseEnabled: true,
+      offscreenPreRaster: true,
+      useHybridComposition: true,
+      allowFileAccess: false,
+      allowContentAccess: false,
+      networkAvailable: true,
+      scrollbarFadingEnabled: true,
+      overScrollMode: OverScrollMode.IF_CONTENT_SCROLLS,
+      // iOS back/forward swipe gestures
+      allowsBackForwardNavigationGestures: true,
     );
 
     final initialUserScripts = UnmodifiableListView<UserScript>([
       UserScript(
         source: ReaderTheme.esCompatPolyfills,
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+      UserScript(
+        source: ReaderTheme.earlyStyleInjector(
+          isDarkMode: _controller.isDarkMode,
+        ),
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       ),
       UserScript(
@@ -52,7 +79,10 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     ]);
 
     return InAppWebView(
-      initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+      initialUrlRequest: URLRequest(
+        url: WebUri(widget.url),
+        headers: const {'Accept-Language': 'en-US,en;q=0.9'},
+      ),
       initialSettings: initialSettings,
       initialUserScripts: initialUserScripts,
       pullToRefreshController: _pullToRefreshController,
@@ -104,21 +134,18 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         }
       },
       onLoadStop: (controller, url) async {
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 60));
         _controller.onPageLoaded();
         _controller.injectCustomCSS();
         await _pullToRefreshController.endRefreshing();
       },
       onScrollChanged: (controller, x, y) {
-        _controller.handleScroll(y);
+        // _controller.handleScroll(y);
       },
       onProgressChanged: (controller, progress) {
         _controller.updateProgress(progress.toDouble());
       },
       onReceivedError: (controller, request, error) {
-        appLog(
-          'Page error: ${error.description}, type: ${error.type}, for: ${request.url}',
-        );
         if (request.isForMainFrame ?? false) {
           _pullToRefreshController.endRefreshing();
 
@@ -143,10 +170,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       },
       onReceivedHttpError: (controller, request, errorResponse) {
         if (request.isForMainFrame ?? false) {
-          appLog(
-            'HTTP Error: ${errorResponse.statusCode} ${errorResponse.reasonPhrase} for ${request.url}',
-          );
-
           final statusCode = errorResponse.statusCode ?? 0;
 
           if (statusCode >= 500) {
@@ -162,7 +185,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
           }
         }
       },
-
       onConsoleMessage: (controller, consoleMessage) {
         if (consoleMessage.messageLevel == ConsoleMessageLevel.ERROR) {
           appLog('Console: ${consoleMessage.message}');

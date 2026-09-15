@@ -78,8 +78,12 @@ class FavoritesPage extends GetView<FavoritesController> {
                           controller.removeFavorite(list[index].url),
                     ),
                   ],
-                  itemBuilder: (context, index) =>
-                      FavoriteTile(item: list[index]),
+                  itemBuilder: (context, index) {
+                    if (index < 0 || index >= list.length) {
+                      return const SizedBox.shrink();
+                    }
+                    return FavoriteTile(item: list[index]);
+                  },
                 ),
               );
             }),

@@ -7,9 +7,7 @@ class UrlValidator {
   static bool isValidUrl(String url) {
     final trimmed = url.trim();
     final uri = Uri.tryParse(trimmed);
-    return _urlRegex.hasMatch(trimmed) &&
-        uri != null &&
-        uri.host.contains('.');
+    return _urlRegex.hasMatch(trimmed) && uri != null && uri.host.contains('.');
   }
 
   static String? cleanUrl(String input) {
