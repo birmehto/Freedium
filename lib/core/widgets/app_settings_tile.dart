@@ -1,10 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
-import 'package:material_ui/material_ui.dart';
 
 import 'app_icon_badge.dart';
 
-/// Settings-style list item: icon badge leading, optional text trailing and a
-/// chevron when [onTap] is provided.
+/// A settings-style list item with an optional icon, supporting text,
+/// trailing widget, and navigation chevron.
 class AppSettingsTile extends StatelessWidget {
   const AppSettingsTile({
     required this.title,
@@ -27,23 +27,33 @@ class AppSettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return M3EListItem(
       headline: title,
       supportingText: supportingText,
-      leading: icon != null
-          ? AppIconBadge(
-              icon: icon!,
-              iconColor: iconColor ?? c.onSecondaryContainer,
-              backgroundColor:
-                  backgroundColor ?? c.primaryContainer.withValues(alpha: 0.6),
-            )
-          : null,
-      trailing:
-          trailing ??
-          (onTap != null ? const Icon(M3EIcons.chevron_right_rounded) : null),
+      leading: _buildLeading(colorScheme),
+      trailing: _buildTrailing(),
       onTap: onTap,
     );
+  }
+
+  Widget? _buildLeading(ColorScheme colorScheme) {
+    final icon = this.icon;
+    if (icon == null) return null;
+
+    return AppIconBadge(
+      icon: icon,
+      iconColor: iconColor ?? colorScheme.onSecondaryContainer,
+      backgroundColor:
+          backgroundColor ??
+          colorScheme.primaryContainer.withValues(alpha: 0.6),
+    );
+  }
+
+  Widget? _buildTrailing() {
+    if (trailing != null) return trailing;
+
+    return onTap != null ? const Icon(M3EIcons.chevron_right_rounded) : null;
   }
 }
