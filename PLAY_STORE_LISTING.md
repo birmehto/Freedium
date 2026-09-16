@@ -73,7 +73,7 @@ Have feedback? Reach out at birmehto@gmail.com — we read everything.
 ## 4️⃣ What's New (release notes style)
 
 ```
-🎉 Freedium 1.1.0
+🎉 Freedium 1.0.0
 • New app name & icon — meet Freedium!
 • Reader redesigned to match Freedium — warm paper, muted green
 • Smoother reading experience

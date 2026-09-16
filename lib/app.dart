@@ -14,7 +14,7 @@ class Freedium extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeService = Get.find<ThemeService>();
-    const seedColor = Color(0xFF536DFE);
+    const seedColor = Color(0xFF00695C);
 
     return Obx(() {
       final isDark = themeService.isDarkMode.value;

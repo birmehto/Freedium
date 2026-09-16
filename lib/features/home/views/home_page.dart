@@ -21,7 +21,7 @@ class HomePage extends GetView<HomeController> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const SizedBox(height: 30),
+          const SizedBox(height: 20),
           const Center(child: HomeHeaderIcon()),
           const SizedBox(height: 30),
           Text(
