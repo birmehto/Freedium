@@ -14,6 +14,12 @@ class MockStorageService extends StorageService {
   set isDarkMode(bool value) {
     _isDarkMode = value;
   }
+
+  @override
+  double get fontSize => 17.0;
+
+  @override
+  set fontSize(double value) {}
 }
 
 class MockThemeService extends ThemeService {
