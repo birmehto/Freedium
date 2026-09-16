@@ -48,6 +48,9 @@ Just paste a link or share it into Freedium from any app. The app fetches the fu
 ★ A clean, distraction-free reader
 Forget cluttered web pages. Freedium strips away nav bars, dialogs, popovers and popups, leaving a beautifully typeset page riffing on the Freedium design — warm paper canvas, muted teal-green accents and elegant serif headlines. Read in dark or light, refresh with a pull, and keep your eyes on the story — your reading, your way.
 
+★ Modern Material 3 Expressive design
+Freedium is built on Google's Material 3 Expressive design system — dynamic color that adapts to your wallpaper, fluid animations, expressive navigation, and a consistent, premium feel on every screen. Dark or light, always beautiful.
+
 ★ Reading progress bar
 A live progress indicator at the top of the reader shows exactly where you are in every article.
 
