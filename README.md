@@ -4,47 +4,16 @@
 
 **The friendly Medium un-paywall reader — free, open-source, and endlessly readable.**
 
+[![Visitors](https://api.visitorbadge.io/api/VisitorHit?user=birmehto&repo=Freedium&countColor=%232E8B57)](https://github.com/birmehto/Freedium)
+[![Made with Flutter](https://img.shields.io/badge/Made%20with-Flutter-02569B?logo=flutter&logoColor=white&labelColor=0F172A)](https://flutter.dev)
+[![Material 3 Expressive](https://img.shields.io/badge/Material%203-Expressive-6750A4?logo=materialdesign&logoColor=white&labelColor=0F172A)](https://pub.dev/packages/material_3_expressive)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![Version](https://img.shields.io/badge/Release-v1.1.1-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue?style=flat-square)]()
+
 <p align="center">
   <img src="screenshots/banner.png" width="720" alt="Freedium banner"/>
 </p>
-
-[![Visitors](https://api.visitorbadge.io/api/VisitorHit?user=birmehto&repo=Freedium&countColor=%232E8B57&style=flat-square)](https://github.com/birmehto/Freedium)
-[![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square&logo=github&label=Stars&color=gold)](https://github.com/birmehto/Freedium/stargazers)
-[![Version](https://img.shields.io/badge/Release-v1.1.1-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
-[![Platform](https://img.shields.io/badge/Android%20%7C%20iOS-blue?style=flat-square)]()
-[![License: MIT](https://img.shields.io/github/license/birmehto/Freedium?color=yellow&style=flat-square)](LICENSE)
-
-Paste a Medium link, tap **Unlock**, and read the full story — no subscription, no paywall, no clutter.
-
-</div>
-
----
-
-## 📋 Table of contents
-
-- [About](#-about)
-- [Screenshots](#-screenshots)
-- [Features](#-features)
-- [Download](#-download)
-- [Build from source](#-build-from-source)
-- [Tech stack](#-tech-stack)
-- [Contributing](#-contributing)
-- [Feedback & support](#-feedback--support)
-- [Legal](#️-legal)
-
----
-
-## 📖 About
-
-Freedium fetches the complete article through the mirror network and serves it in a calm, distraction-free Material 3 reader. No account. No subscription. No tracking.
-
-1. **Paste a link** — any Medium URL, from anywhere.
-2. **Tap *Unlock*** — Freedium pulls the full story through the mirror network.
-3. **Just read** — paywalls, nav bars, and popovers are gone, leaving pure content.
-
----
-
-## 📸 Screenshots
 
 <p align="center">
   <img src="screenshots/home.png" width="170" alt="Home screen"/>
@@ -54,19 +23,21 @@ Freedium fetches the complete article through the mirror network and serves it i
   <img src="screenshots/share.png" width="170" alt="Share-to-read"/>
 </p>
 
+**Paste a Medium link, tap *Unlock*, and read the full story** — no subscription, no paywall, no clutter. Freedium fetches the complete article through the mirror network and serves it in a calm, distraction-free Material 3 reader.
+
+</div>
+
 ---
 
 ## ✨ Features
 
-| Feature | What it does |
-|---------|--------------|
-| 🛡️ Unlock any Medium story | Paste a link (or share it from any app) and read the full article instantly. Friendly messages, never cryptic errors. |
-| 🔗 Share-to-read | Share → Freedium opens the article from any app with a URL — one tap. |
-| 🎨 Material 3 Expressive | Dynamic color extraction, animated navigation, adaptive light/dark themes. |
-| 📊 Reading progress | Live progress bar plus per-article scroll memory — resume where you left off. |
-| ⭐ Offline favorites | No account needed; search by title/author/source, swipe to remove, reopen in one tap. |
-| 🖼️ Cleared landing pages | Injected CSS strips paywalls, dialogs, and modal popovers, leaving just the story. |
-| 🔤 Adjustable reading | Font size from 12 to 28 px with a live slider. |
+- **🛡️ Unlock any Medium story** — paste a link (or share it from any app) and Freedium fetches the full article through the Freedium mirror network. Friendly messages, never cryptic errors.
+- **🔗 Share-to-read (one tap)** — Share → Freedium opens the article instantly from any app with a URL.
+- **🎨 Material 3 Expressive design** — built on the `material_3_expressive` design system: dynamic color extraction, animated navigation, expressive navigation bar, adaptive light/dark themes, and polish you can feel on every screen.
+- **📊 Reading progress** — a live progress bar plus per-article scroll-position memory, so you resume where you left off.
+- **⭐ Offline favorites** — save locally (no account), search by title/author/source, swipe to remove, reopen in one tap.
+- **🖼️ Cleared landing pages** — injected CSS strips paywalls, nav bars, dialogs, and modal popovers, leaving just the story.
+- **🔤 Adjustable reading** — font size from 12 to 28 px with a live slider.
 
 ---
 
@@ -77,11 +48,11 @@ Freedium fetches the complete article through the mirror network and serves it i
 | 🤖 Android (APK) | [Latest release](https://github.com/birmehto/Freedium/releases/latest) |
 | 🍎 iOS | 🚧 Planned (unsigned IPA on releases for sideloading) |
 
-On Android, allow installs from unknown sources for direct APK downloads.
+> On Android, allow installs from unknown sources for direct APK downloads.
 
 ---
 
-## 🔨 Build from source
+## 🛠️ Build from source
 
 **Prerequisites:** Flutter `>= 3.44.0` + Dart `>= 3.13.0`.
 
@@ -148,12 +119,12 @@ Found a broken mirror? Want iOS? Have a bug?
 - Open a [GitHub issue](https://github.com/birmehto/Freedium/issues)
 - Email: birmehto@gmail.com
 
-Enjoying Freedium? **[Buy me a coffee ☕](https://buymeacoffee.com/birmehto)**.
+Enjoying Freedium? **[Buy me a coffee ☕](https://buymeacoffee.com/birmehto)** — it keeps the mirrors and the momentum going!
 
 ---
 
 ## ⚖️ Legal
 
-Freedium is **not affiliated with, endorsed by, or connected to Medium**. It wraps publicly available reader endpoints; all article content remains the property of its original authors.
+Freedium is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It wraps publicly available reader endpoints; all article content remains the property of its original authors.
 
-Screenshots shown are illustrative. Released under the [MIT License](LICENSE). © Bir Mehto.
+Open-source under the [MIT License](LICENSE). © Bir Mehto.

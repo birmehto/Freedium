@@ -87,50 +87,39 @@ class ArticlePage extends GetView<ArticleController> {
           ),
         ],
       ),
-      bottomNavigationBar: Material(
-        color: theme.colorScheme.surfaceContainer,
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Obx(
-                  () => M3EIconButton(
-                    icon: Icon(
-                      controller.isFavorite.value
-                          ? M3EIcons.favorite_rounded
-                          : M3EIcons.favorite_border_rounded,
-                      color: controller.isFavorite.value
-                          ? theme.colorScheme.error
-                          : null,
-                    ),
-                    tooltip: controller.isFavorite.value
-                        ? 'Remove from favorites'
-                        : 'Add to favorites',
-                    onPressed: controller.toggleFavorite,
-                  ),
-                ),
-                M3EIconButton(
-                  icon: const Icon(M3EIcons.format_size_rounded),
-                  tooltip: 'Reading settings',
-                  onPressed: () => _showAppearanceSheet(context),
-                ),
-                M3EIconButton(
-                  icon: const Icon(M3EIcons.copy_rounded),
-                  tooltip: 'Copy link',
-                  onPressed: controller.copyLink,
-                ),
-                M3EIconButton(
-                  icon: const Icon(M3EIcons.open_in_browser_rounded),
-                  tooltip: 'Open in browser',
-                  onPressed: controller.openInBrowser,
-                ),
-              ],
-            ),
+      floatingActionButton: M3EFabMenu(
+        icon: const Icon(M3EIcons.more_horiz_rounded),
+        items: <M3EFabMenuItem>[
+          M3EFabMenuItem(
+            icon: const Icon(M3EIcons.open_in_browser_rounded),
+            label: 'Open in browser',
+            onPressed: controller.openInBrowser,
           ),
-        ),
+          M3EFabMenuItem(
+            icon: const Icon(M3EIcons.copy_rounded),
+            label: 'Copy link',
+            onPressed: controller.copyLink,
+          ),
+          M3EFabMenuItem(
+            icon: const Icon(M3EIcons.format_size_rounded),
+            label: 'Reading settings',
+            onPressed: () => _showAppearanceSheet(context),
+          ),
+          M3EFabMenuItem(
+            icon: Obx(
+              () => Icon(
+                controller.isFavorite.value
+                    ? M3EIcons.favorite_rounded
+                    : M3EIcons.favorite_border_rounded,
+                color: controller.isFavorite.value
+                    ? theme.colorScheme.error
+                    : null,
+              ),
+            ),
+            label: 'Favorite',
+            onPressed: controller.toggleFavorite,
+          ),
+        ],
       ),
     );
   }
