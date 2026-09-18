@@ -41,7 +41,12 @@ void main() {
     Get.reset();
     Get.put<StorageService>(MockStorageService());
     Get.put<ThemeService>(MockThemeService());
-    Get.put(SettingsController());
+    Get.put(
+      SettingsController(
+        Get.find<ThemeService>(),
+        Get.find<StorageService>(),
+      ),
+    );
   });
 
   Widget buildTestApp() {

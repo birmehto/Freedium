@@ -6,19 +6,22 @@ import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/constants/reader_theme.dart';
-import '../../../../core/services/clipboard_service.dart';
-import '../../../../core/services/storage_service.dart';
-import '../../../../core/services/theme_service.dart';
-import '../../../../core/utils/url_validator.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/reader_theme.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/services/clipboard_service.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/utils/url_validator.dart';
 import '../../favorites/models/favorite_article.dart';
 
 class ArticleController extends GetxController {
-  final ClipboardService _clipboardService = Get.find();
-  final StorageService _storage = Get.find();
-  final ThemeService _themeService = Get.find();
+  ArticleController(this._clipboardService, this._storage, this._themeService);
+
+  final ClipboardService _clipboardService;
+  final StorageService _storage;
+  final ThemeService _themeService;
 
   final currentUrl = ''.obs;
   final originalUrl = ''.obs;
@@ -53,7 +56,7 @@ class ArticleController extends GetxController {
     final original = args?['originalUrl'] as String?;
 
     if (url == null || !UrlValidator.isValidUrl(url)) {
-      errorMessage.value = 'Invalid or missing article URL';
+      errorMessage.value = AppException.invalidUrl().userMessage;
       isLoading.value = false;
       return;
     }
@@ -103,7 +106,12 @@ class ArticleController extends GetxController {
         readingTime.value = minutes;
       }
     } catch (e) {
-      appLog('Failed to estimate reading time: $e');
+      appLog(
+        'Failed to estimate reading time',
+        name: 'Reader',
+        level: LogLevel.warning,
+      );
+      appLog(e.toString(), name: 'Reader');
     }
   }
 
@@ -223,7 +231,12 @@ class ArticleController extends GetxController {
         });
       }
     } catch (e) {
-      appLog(e.toString());
+      appLog(
+        'Failed to refresh layout metrics',
+        name: 'Reader',
+        level: LogLevel.warning,
+      );
+      appLog(e.toString(), name: 'Reader');
     }
   }
 
@@ -382,7 +395,8 @@ class ArticleController extends GetxController {
       );
       _refreshLayoutMetrics();
     } catch (e) {
-      appLog('Error injecting CSS: $e');
+      appLog('Error injecting CSS', name: 'Reader', level: LogLevel.warning);
+      appLog(e.toString(), name: 'Reader');
     }
   }
 }

@@ -39,7 +39,10 @@ void main() {
     mockStorage = MockStorageService();
     Get.put<StorageService>(mockStorage);
     Get.put<ThemeService>(MockThemeService());
-    controller = SettingsController();
+    controller = SettingsController(
+      Get.find<ThemeService>(),
+      mockStorage,
+    );
     controller.onInit();
   });
 
@@ -50,7 +53,10 @@ void main() {
       final themeService = Get.find<ThemeService>();
       themeService.isDarkMode.value = true;
 
-      final freshController = SettingsController();
+      final freshController = SettingsController(
+        Get.find<ThemeService>(),
+        Get.find<StorageService>(),
+      );
 
       expect(freshController.isDarkMode, true);
     });

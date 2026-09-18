@@ -8,7 +8,7 @@ import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_empty.dart';
 import '../../../core/widgets/app_textform.dart';
 import '../controllers/favorites_controller.dart';
-import '../widgtes/favorite_tile.dart';
+import '../widgets/favorite_tile.dart';
 
 class FavoritesPage extends GetView<FavoritesController> {
   const FavoritesPage({super.key});

@@ -16,9 +16,19 @@ class ShareIntentService extends GetxService {
   Future<ShareIntentService> init() async {
     if (!Platform.isAndroid && !Platform.isIOS) return this;
 
-    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((files) {
-      if (files.isNotEmpty) _process(files.first.path);
-    }, onError: (error) => appLog(error.toString()));
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
+      (files) {
+        if (files.isNotEmpty) _process(files.first.path);
+      },
+      onError: (error) {
+        appLog(
+          'Share intent stream error',
+          name: 'ShareIntent',
+          level: LogLevel.warning,
+        );
+        appLog(error.toString(), name: 'ShareIntent');
+      },
+    );
 
     try {
       final files = await ReceiveSharingIntent.instance.getInitialMedia();
@@ -28,7 +38,12 @@ class ShareIntentService extends GetxService {
         ReceiveSharingIntent.instance.reset();
       }
     } catch (error) {
-      appLog(error.toString());
+      appLog(
+        'Failed to read initial share intent',
+        name: 'ShareIntent',
+        level: LogLevel.warning,
+      );
+      appLog(error.toString(), name: 'ShareIntent');
     }
 
     return this;

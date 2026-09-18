@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/errors/app_exception.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/share_intent_service.dart';
@@ -9,7 +10,9 @@ import '../../../core/utils/app_log.dart';
 import '../../../core/utils/url_validator.dart';
 
 class HomeController extends GetxController {
-  final ClipboardService _clipboardService = Get.find();
+  HomeController(this._clipboardService);
+
+  final ClipboardService _clipboardService;
 
   final TextEditingController urlController = TextEditingController();
   final RxString urlText = ''.obs;
@@ -64,9 +67,11 @@ class HomeController extends GetxController {
         onUrlChanged(clipboardText);
       }
     } catch (e) {
+      final exception = AppException.from(e, context: 'pasteFromClipboard');
+      appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
       M3ESnackbar.show(
         Get.context!,
-        message: 'Failed to paste from clipboard: $e',
+        message: 'Failed to paste from clipboard: ${exception.userMessage}',
       );
     }
   }
@@ -82,7 +87,7 @@ class HomeController extends GetxController {
     final url = urlController.text.trim();
     final cleanedUrl = UrlValidator.cleanUrl(url);
     if (cleanedUrl == null) {
-      errorMessage.value = 'Please enter a valid URL';
+      errorMessage.value = AppException.invalidUrl().userMessage;
       return;
     }
     isLoading.value = true;
@@ -94,11 +99,13 @@ class HomeController extends GetxController {
           arguments: {'url': freediumUrl, 'originalUrl': cleanedUrl},
         );
       } else {
-        errorMessage.value = 'Failed to process the URL';
+        errorMessage.value = AppException.invalidUrl().userMessage;
       }
-    } catch (e) {
-      appLog(e.toString());
-      errorMessage.value = 'Failed to open article: ${e.toString()}';
+    } catch (e, stackTrace) {
+      final exception = AppException.from(e, context: 'openArticle');
+      appLog(exception.toString(), name: 'Home', level: LogLevel.error);
+      appLog(stackTrace.toString(), name: 'Home');
+      errorMessage.value = exception.userMessage;
     } finally {
       isLoading.value = false;
     }

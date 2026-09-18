@@ -20,7 +20,7 @@ void main() {
     Get.reset();
     mockClipboard = MockClipboardService();
     Get.put<ClipboardService>(mockClipboard);
-    controller = HomeController();
+    controller = HomeController(mockClipboard);
     controller.onInit();
   });
 

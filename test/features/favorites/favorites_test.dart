@@ -5,7 +5,7 @@ import 'package:freedium/core/services/theme_service.dart';
 import 'package:freedium/features/favorites/controllers/favorites_controller.dart';
 import 'package:freedium/features/favorites/models/favorite_article.dart';
 import 'package:freedium/features/favorites/views/favorites_page.dart';
-import 'package:freedium/features/favorites/widgtes/favorite_tile.dart';
+import 'package:freedium/features/favorites/widgets/favorite_tile.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
@@ -144,6 +144,44 @@ void main() {
 
       expect(decoded.url, article.url);
       expect(decoded.title, article.title);
+    });
+
+    test('copyWith replaces only the provided fields', () {
+      final article = FavoriteArticle(
+        title: 'Original',
+        url: 'https://medium.com/original',
+        visitedAt: DateTime(2026),
+        author: 'Author',
+        domain: 'medium.com',
+      );
+
+      final updated = article.copyWith(title: 'Updated', domain: 'dev.to');
+
+      expect(updated.title, 'Updated');
+      expect(updated.domain, 'dev.to');
+      expect(updated.url, article.url);
+      expect(updated.visitedAt, article.visitedAt);
+      expect(updated.author, article.author);
+    });
+
+    test('copyWith with no arguments returns an equal article', () {
+      final article = FavoriteArticle(
+        title: 'Same',
+        url: 'https://medium.com/same',
+        visitedAt: DateTime(2026, 2, 2),
+        author: 'Author',
+        domain: 'medium.com',
+        imageUrl: 'https://medium.com/img.png',
+      );
+
+      final copied = article.copyWith();
+
+      expect(copied.title, article.title);
+      expect(copied.url, article.url);
+      expect(copied.visitedAt, article.visitedAt);
+      expect(copied.author, article.author);
+      expect(copied.domain, article.domain);
+      expect(copied.imageUrl, article.imageUrl);
     });
   });
 

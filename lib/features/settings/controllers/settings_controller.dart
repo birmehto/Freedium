@@ -3,13 +3,16 @@ import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/errors/app_exception.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_log.dart';
 
 class SettingsController extends GetxController {
-  final ThemeService _themeService = Get.find();
-  final StorageService _storage = Get.find();
+  SettingsController(this._themeService, this._storage);
+
+  final ThemeService _themeService;
+  final StorageService _storage;
 
   final appVersion = ''.obs;
 
@@ -53,7 +56,12 @@ class SettingsController extends GetxController {
       }
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      appLog('Failed to open email client: $e');
+      final exception = AppException.from(e, context: 'sendFeedback');
+      appLog(
+        exception.toString(),
+        name: 'Settings',
+        level: LogLevel.warning,
+      );
       M3ESnackbar.show(Get.context!, message: "Couldn't open email app");
     }
   }
@@ -73,7 +81,12 @@ class SettingsController extends GetxController {
       }
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
-      appLog('Failed to open link: $e');
+      final exception = AppException.from(e, context: '_openExternal');
+      appLog(
+        exception.toString(),
+        name: 'Settings',
+        level: LogLevel.warning,
+      );
       M3ESnackbar.show(Get.context!, message: "Couldn't open link");
     }
   }
@@ -83,7 +96,12 @@ class SettingsController extends GetxController {
       final info = await PackageInfo.fromPlatform();
       appVersion.value = info.version;
     } catch (e) {
-      appLog('Failed to load app version: $e');
+      final exception = AppException.from(e, context: '_loadAppVersion');
+      appLog(
+        exception.toString(),
+        name: 'Settings',
+        level: LogLevel.warning,
+      );
     }
   }
 }
