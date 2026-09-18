@@ -1,3 +1,6 @@
+import '../../features/settings/models/reader_settings.dart';
+import '../../features/settings/models/reader_theme_mode.dart';
+
 class ReaderTheme {
   ReaderTheme._();
 
@@ -68,19 +71,60 @@ class ReaderTheme {
     selection: 'rgba(231, 225, 214, 0.14)',
   );
 
+  static const _sepia = _ThemeColors(
+    background: '#f4ecd8',
+    text: '#5b4636',
+    selection: 'rgba(91, 70, 54, 0.18)',
+  );
+
+  static const _oled = _ThemeColors(
+    background: '#000000',
+    text: '#c9c7c2',
+    selection: 'rgba(201, 199, 194, 0.18)',
+  );
+
+  static _ThemeColors _palette(
+    ReaderThemeMode mode, {
+    required bool systemDark,
+  }) {
+    return switch (mode) {
+      ReaderThemeMode.system => systemDark ? _dark : _light,
+      ReaderThemeMode.light => _light,
+      ReaderThemeMode.dark => _dark,
+      ReaderThemeMode.sepia => _sepia,
+      ReaderThemeMode.oled => _oled,
+    };
+  }
+
+  /// Effective theme of an explicit reader theme given the app's brightness.
+  static bool readerIsDark(
+    ReaderSettings settings, {
+    required bool systemDark,
+  }) {
+    return switch (settings.themeMode) {
+      ReaderThemeMode.system => systemDark,
+      ReaderThemeMode.light => false,
+      ReaderThemeMode.dark || ReaderThemeMode.oled => true,
+      ReaderThemeMode.sepia => false,
+    };
+  }
+
   /// Inject minimal CSS at document start to prevent white/dark flash.
   /// Must be safe for injection before DOM is fully ready.
-  static String earlyStyleInjector({required bool isDarkMode}) {
-    final bg = isDarkMode ? _dark.background : _light.background;
-    final fg = isDarkMode ? _dark.text : _light.text;
-    final scheme = isDarkMode ? 'dark' : 'light';
+  static String earlyStyleInjector({
+    required ReaderSettings settings,
+    required bool systemDark,
+  }) {
+    final colors = _palette(settings.themeMode, systemDark: systemDark);
+    final dark = readerIsDark(settings, systemDark: systemDark);
+    final scheme = dark ? 'dark' : 'light';
 
     return '''
 (function() {
   try {
     var s = document.createElement('style');
     s.id = '$_earlyCssId';
-    s.textContent = 'html, body { background: $bg !important; color: $fg !important; color-scheme: $scheme !important; transition: none !important; } * { transition: none !important; }';
+    s.textContent = 'html, body { background: ${colors.background} !important; color: ${colors.text} !important; color-scheme: $scheme !important; transition: none !important; } * { transition: none !important; }';
     (document.head || document.documentElement).appendChild(s);
   } catch(e) {}
 })();
@@ -171,7 +215,7 @@ class ReaderTheme {
 })();
 ''';
 
-  /// JavaScript to extract article text for reading time estimation.
+  /// JavaScript to extract article word count for reading-time estimation.
   static const String extractArticleTextJs = r'''
 (function() {
   try {
@@ -185,12 +229,109 @@ class ReaderTheme {
 })();
 ''';
 
-  static String getCss({required bool isDarkMode, double fontSize = 17.0}) {
-    final colors = isDarkMode ? _dark : _light;
+  /// JavaScript to read rich metadata (title, author, publication, date).
+  static const String extractMetaJs = r'''
+(function() {
+  function meta(selector) {
+    var el = document.querySelector(selector);
+    return el ? (el.content || el.textContent || '').trim() : '';
+  }
+  function pick(selectors) {
+    for (var i = 0; i < selectors.length; i++) {
+      var v = meta(selectors[i]);
+      if (v) return v;
+    }
+    return '';
+  }
+  var title = pick([
+    'meta[property="og:title"]',
+    'meta[name="twitter:title"]',
+    'meta[name="title"]'
+  ]) || document.title || '';
+  var author = pick([
+    'meta[name="author"]',
+    'meta[name="twitter:creator"]',
+    'meta[property="article:author"]'
+  ]);
+  if (author && author.indexOf('?source=') !== -1) author = author.split('?source=')[0];
+  var publication = pick([
+    'meta[property="og:site_name"]',
+    'meta[name="twitter:site"]'
+  ]);
+  var publishedAt = pick([
+    'meta[property="article:published_time"]',
+    'meta[itemprop="datePublished"]',
+    'meta[name="date"]'
+  ]);
+  var article = document.querySelector('article') || document.querySelector('main') || document.body;
+  var text = article ? article.innerText || article.textContent || '' : '';
+  var words = text.trim().split(/\s+/).filter(function(w) { return w.length > 0; }).length;
+  return JSON.stringify({
+    title: title,
+    author: author,
+    publication: publication,
+    publishedAt: publishedAt,
+    wordCount: words
+  });
+})();
+''';
+
+  /// Snapshots the current (cleaned) document so it can be stored off-line.
+  static const String captureArticleHtmlJs = '''
+(function() {
+  try {
+    var root = document.documentElement;
+    var html = root ? root.outerHTML : '';
+    return JSON.stringify({
+      html: html,
+      images: document.querySelectorAll('img').length
+    });
+  } catch(e) {
+    return JSON.stringify({ html: '', images: 0 });
+  }
+})();
+''';
+
+  /// Selected text when present, otherwise the (truncated) body text.
+  static const String selectedOrBodyTextJs = r'''
+(function() {
+  try {
+    var sel = window.getSelection ? window.getSelection().toString() : '';
+    if (sel && sel.trim()) return JSON.stringify({ text: sel });
+  } catch(e) {}
+  try {
+    var article = document.querySelector('article') || document.querySelector('main') || document.body;
+    var text = article ? article.innerText || article.textContent || '' : '';
+    var clean = text.split(/\s+/).filter(function(w){ return w.length > 0; }).join(' ');
+    return JSON.stringify({ text: clean.substring(0, 20000) });
+  } catch(e) {
+    return JSON.stringify({ text: '' });
+  }
+})();
+''';
+
+  /// Restores an absolute scroll position once the page has settled.
+  static String restoreScrollJs(double y) =>
+      '''
+(function() {
+  try {
+    window.scrollTo(0, $y);
+  } catch(e) {}
+})();
+''';
+
+  static String getCss({
+    required ReaderSettings settings,
+    required bool systemDark,
+  }) {
+    final colors = _palette(settings.themeMode, systemDark: systemDark);
+    final fontFamily = settings.isSystemFont
+        ? ''
+        : '\n        font-family: ${settings.fontFamily} !important;';
 
     return '''
       :root {
-        color-scheme: ${isDarkMode ? 'dark' : 'light'};
+        color-scheme: ${readerIsDark(settings, systemDark: systemDark) ? 'dark' : 'light'};
       }
 
       html {
@@ -212,9 +353,10 @@ class ReaderTheme {
         background: ${colors.background} !important;
         color: ${colors.text} !important;
 
-        font-size: ${fontSize}px !important;
-        line-height: 1.8 !important;
+        font-size: ${settings.fontSize}px !important;
+        line-height: ${settings.lineHeight} !important;
         -webkit-font-smoothing: antialiased !important;
+        $fontFamily
       }
 
       ::selection {
@@ -222,9 +364,15 @@ class ReaderTheme {
       }
 
       article {
-        max-width: 42em !important;
+        max-width: ${settings.contentWidthEm}em !important;
         margin-left: auto !important;
         margin-right: auto !important;
+        text-align: ${settings.textAlign} !important;
+      }
+
+      p {
+        margin: 0 0 ${settings.paragraphSpacing}em !important;
+        margin-top: 0 !important;
       }
 
       p,
@@ -255,8 +403,6 @@ class ReaderTheme {
          Remove site chrome
          ================================ */
 
-      /* Freedium header nav, footer, top progress bar, notifications */
-
       nav#header,
       .header-nav,
       footer,
@@ -266,13 +412,9 @@ class ReaderTheme {
         display: none !important;
       }
 
-      /* Article toolbars (back / share / open original) */
-
       article nav {
         display: none !important;
       }
-
-      /* Contents + "Download article" section */
 
       section[aria-labelledby="toc-heading"] {
         display: none !important;
@@ -282,16 +424,12 @@ class ReaderTheme {
          Remove popups
          ================================ */
 
-      /* Triggers: report-problem dialog, drawers, dropdown menus */
-
       [data-dialog-trigger],
       [data-drawer-trigger],
       [data-dropdown-menu-trigger],
       button[aria-haspopup="dialog"] {
         display: none !important;
       }
-
-      /* Popup surfaces */
 
       [role="dialog"],
       [role="alertdialog"],
@@ -309,8 +447,6 @@ class ReaderTheme {
       [data-sonner-toast] {
         display: none !important;
       }
-
-      /* Disable click-to-zoom lightbox on the cover image */
 
       .image-zoom-figure,
       [data-zoom-src] {

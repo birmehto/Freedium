@@ -50,7 +50,7 @@ void main() {
   test('ThemeService initializes from StorageService', () {
     final themeService = Get.find<ThemeService>();
     expect(themeService.isDarkMode.value, false);
-    expect(themeService.themeMode, ThemeMode.light);
+    expect(themeService.themeMode, ThemeMode.system);
   });
 
   test('ThemeService toggles dark mode', () {

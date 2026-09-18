@@ -15,6 +15,7 @@ class AppError extends StatelessWidget {
     this.secondaryLabel,
     this.onSecondary,
     this.hint,
+    this.extraActions = const [],
   });
 
   final String title;
@@ -28,6 +29,9 @@ class AppError extends StatelessWidget {
   final VoidCallback? onSecondary;
 
   final String? hint;
+
+  /// Additional full-width action buttons rendered below the secondary one.
+  final List<Widget> extraActions;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +84,11 @@ class AppError extends StatelessWidget {
                 icon: const Icon(M3EIcons.open_in_browser_rounded, size: 20),
                 label: Text(secondaryLabel!),
               ),
+
+            for (final action in extraActions) ...[
+              const SizedBox(height: 12),
+              action,
+            ],
 
             if (hint != null) ...[
               const SizedBox(height: 20),

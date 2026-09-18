@@ -2,8 +2,8 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/utils/url_validator.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_empty.dart';
 import '../../../core/widgets/app_textform.dart';
@@ -57,11 +57,12 @@ class FavoritesPage extends GetView<FavoritesController> {
                   style: const M3EDismissibleListStyle(gap: 8),
                   onTap: (index) {
                     final item = list[index];
-                    final freedium =
-                        UrlValidator.convertToFreediumUrl(item.url) ?? item.url;
                     Get.toNamed(
                       AppRoutes.article,
-                      arguments: {'url': freedium, 'originalUrl': item.url},
+                      arguments: {
+                        'url': ArticleUrl.canonicalize(item.url),
+                        'originalUrl': ArticleUrl.canonicalize(item.url),
+                      },
                     );
                   },
                   onDismiss: (index, _) async {

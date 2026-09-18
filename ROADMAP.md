@@ -1040,66 +1040,66 @@ Document:
 
 ## Phase 1 — Foundation
 
-* [ ] Clean existing GetX architecture
-* [ ] Standardize controllers
-* [ ] Standardize services
-* [ ] Standardize models
-* [ ] Improve error handling
-* [ ] Improve logging
-* [ ] Add missing tests
+* [x] Clean existing GetX architecture
+* [x] Standardize controllers
+* [x] Standardize services
+* [x] Standardize models
+* [x] Improve error handling
+* [x] Improve logging
+* [x] Add missing tests
 
 ## Phase 2 — Reader
 
-* [ ] Article metadata
-* [ ] Better reader controls
-* [ ] Reader themes
-* [ ] Find in article
-* [ ] Better WebView handling
-* [ ] Improved reading progress
+* [x] Article metadata
+* [x] Better reader controls
+* [x] Reader themes
+* [x] Find in article
+* [x] Better WebView handling
+* [x] Improved reading progress
 
 ## Phase 3 — Library
 
-* [ ] Favorites
+* [x] Favorites
 * [ ] Bookmarks
-* [ ] History
-* [ ] Continue reading
-* [ ] Reading progress
-* [ ] Search
+* [x] History
+* [x] Continue reading
+* [x] Reading progress
+* [x] Search
 
 ## Phase 4 — Offline
 
-* [ ] Article cache
-* [ ] Offline reader
-* [ ] Cache management
-* [ ] Offline states
-* [ ] Background cache cleanup
+* [x] Article cache
+* [x] Offline reader
+* [x] Cache management
+* [x] Offline states
+* [x] Background cache cleanup
 
 ## Phase 5 — Reliability
 
-* [ ] Mirror resolver
-* [ ] Mirror health tracking
-* [ ] Automatic fallback
-* [ ] Retry system
-* [ ] Timeout handling
-* [ ] Better network states
+* [x] Mirror resolver
+* [x] Mirror health tracking
+* [x] Automatic fallback
+* [x] Retry system
+* [x] Timeout handling
+* [x] Better network states
 
 ## Phase 6 — Desktop
 
-* [ ] Responsive layout
-* [ ] Desktop navigation
-* [ ] Keyboard shortcuts
+* [x] Responsive layout
+* [x] Desktop navigation
+* [x] Keyboard shortcuts
 * [ ] Window size handling
-* [ ] Desktop-specific reader
+* [x] Desktop-specific reader
 * [ ] Linux/macOS/Windows testing
 
 ## Phase 7 — Polish
 
-* [ ] Accessibility
+* [x] Accessibility
 * [ ] Animations
-* [ ] Loading states
-* [ ] Empty states
-* [ ] Error states
-* [ ] Performance optimization
+* [x] Loading states
+* [x] Empty states
+* [x] Error states
+* [x] Performance optimization
 
 ---
 
@@ -1112,14 +1112,14 @@ A feature is considered complete when:
 * [ ] Empty state exists
 * [ ] Error state exists
 * [ ] Retry behavior exists where applicable
-* [ ] GetX controller logic is separated from UI
-* [ ] Models/services are testable
+* [x] GetX controller logic is separated from UI
+* [x] Models/services are testable
 * [ ] Android is tested
-* [ ] Desktop behavior is considered
-* [ ] Accessibility is considered
-* [ ] Documentation is updated
-* [ ] Tests pass
-* [ ] `flutter analyze` passes
+* [x] Desktop behavior is considered
+* [x] Accessibility is considered
+* [x] Documentation is updated
+* [x] Tests pass
+* [x] `flutter analyze` passes
 
 ---
 

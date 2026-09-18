@@ -1,69 +1,56 @@
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-class StorageService extends GetxService {
-  late final GetStorage _box;
+import '../storage/key_value_store.dart';
+import '../storage/library_store.dart';
+import '../storage/preferences_store.dart';
 
-  static const _themeModeKey = 'theme_mode';
-  static const _fontSizeKey = 'font_size';
-  static const _favoritesKey = 'favorites_list';
-  static const _readingProgressKey = 'reading_progress';
+/// Owns the persistent box and exposes the two focused stores.
+///
+/// Device settings and reading data are kept in separate stores
+/// ([PreferencesStore], [LibraryStore]); this facade only wires them up and
+/// keeps a thin backward-compatible API for the early controllers.
+class StorageService extends GetxService {
+  GetStorage? _box;
+  PreferencesStore? _preferences;
+  LibraryStore? _library;
+  bool _connected = false;
 
   Future<StorageService> init() async {
     _box = GetStorage();
-    await _box.initStorage;
+    await _box!.initStorage;
+    _preferences = PreferencesStore(GetStorageKeyValueStore(_box!));
+    _library = LibraryStore(GetStorageKeyValueStore(_box!));
+    _connected = true;
     return this;
   }
 
-  bool get isDarkMode => _box.read(_themeModeKey) ?? true;
-  set isDarkMode(bool value) => _box.write(_themeModeKey, value);
+  bool get isConnected => _connected;
 
-  double get fontSize => _box.read(_fontSizeKey) ?? 17.0;
-  set fontSize(double value) => _box.write(_fontSizeKey, value);
+  PreferencesStore get preferences =>
+      _preferences ??= PreferencesStore(MemoryKeyValueStore());
 
-  // --- Reading progress ---
+  LibraryStore get library => _library ??= LibraryStore(MemoryKeyValueStore());
 
-  Map<String, dynamic> get _readingProgress =>
-      Map<String, dynamic>.from(_box.read(_readingProgressKey) ?? {});
+  // ─────────────────────────── legacy API ──────────────────────────────
+  // Kept so existing controllers and tests keep working unchanged; all
+  // members now delegate to the focused stores.
 
-  Future<void> saveReadingProgress(String url, double scrollY) async {
-    final data = Map<String, dynamic>.from(_readingProgress);
-    data[url] = {
-      'scrollY': scrollY,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    await _box.write(_readingProgressKey, data);
-  }
+  bool get isDarkMode => preferences.isDarkMode;
+  set isDarkMode(bool value) => preferences.isDarkMode = value;
 
-  double? getReadingProgress(String url) {
-    final entry = _readingProgress[url];
-    if (entry is Map) {
-      return (entry['scrollY'] as num?)?.toDouble();
-    }
-    return null;
-  }
+  double get fontSize => preferences.fontSize;
+  set fontSize(double value) => preferences.fontSize = value;
 
-  // --- Favorites ---
+  RxInt get favoritesRevision => library.favoritesRevision;
 
-  /// Bumped on every add/remove so observers stay in sync.
-  final favoritesRevision = 0.obs;
+  List<dynamic> get favorites => library.favorites;
 
-  List<dynamic> get favorites => _box.read(_favoritesKey) ?? [];
+  Future<void> addToFavorites(Map<String, dynamic> item) =>
+      library.addToFavorites(item);
 
-  Future<void> addToFavorites(Map<String, dynamic> item) async {
-    final list = favorites;
+  Future<void> removeFromFavorites(String url) =>
+      library.removeFromFavorites(url);
 
-    if (list.any((e) => e['url'] == item['url'])) return;
-
-    await _box.write(_favoritesKey, [item, ...list]);
-    favoritesRevision.value++;
-  }
-
-  Future<void> removeFromFavorites(String url) async {
-    final list = favorites..removeWhere((e) => e['url'] == url);
-    await _box.write(_favoritesKey, list);
-    favoritesRevision.value++;
-  }
-
-  bool isFavorite(String url) => favorites.any((e) => e['url'] == url);
+  bool isFavorite(String url) => library.isFavorite(url);
 }

@@ -14,12 +14,29 @@ class ThemeService extends GetxService {
     isDarkMode.value = _storage.isDarkMode;
   }
 
-  ThemeMode get themeMode =>
-      isDarkMode.value ? ThemeMode.dark : ThemeMode.light;
+  /// Full app theme mode, including `ThemeMode.system`.
+  ThemeMode get themeMode {
+    final mode = _storage.preferences.themeMode;
+    return switch (mode) {
+      'light' => ThemeMode.light,
+      'dark' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+  }
+
+  /// The system/light/dark preference backed by storage.
+  String get preferredMode => _storage.preferences.themeMode;
 
   void toggleTheme(bool value) {
-    isDarkMode.value = value;
     _storage.isDarkMode = value;
+    _storage.preferences.themeMode = value ? 'dark' : 'light';
+    isDarkMode.value = _storage.isDarkMode;
+    Get.changeThemeMode(themeMode);
+  }
+
+  void setThemeMode(String mode) {
+    _storage.preferences.themeMode = mode;
+    isDarkMode.value = _storage.isDarkMode;
     Get.changeThemeMode(themeMode);
   }
 

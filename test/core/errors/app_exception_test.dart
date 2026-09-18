@@ -33,10 +33,7 @@ void main() {
         'Could not save your data. Please try again.',
       );
       expect(
-        AppException(
-          type: AppErrorType.unknown,
-          message: 'x',
-        ).userMessage,
+        AppException(type: AppErrorType.unknown, message: 'x').userMessage,
         'Something went wrong. Please try again.',
       );
     });

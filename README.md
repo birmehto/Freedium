@@ -110,6 +110,16 @@ dart format .        # formatting
 
 Please be kind — this is a passion project. 💜
 
+### 📚 Documentation
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) — how the codebase is organized
+- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, guidelines, and release process
+- [CHANGELOG.md](CHANGELOG.md) — version history
+- [PRIVACY.md](PRIVACY.md) — what is stored locally vs. sent to third parties
+- [PRIVACY_POLICY.md](PRIVACY_POLICY.md) — user-facing privacy policy
+- [ROADMAP.md](ROADMAP.md) — product plan and phase status
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) — per-release highlights
+
 ---
 
 ## 💌 Feedback & support

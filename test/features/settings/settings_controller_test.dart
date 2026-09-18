@@ -39,10 +39,7 @@ void main() {
     mockStorage = MockStorageService();
     Get.put<StorageService>(mockStorage);
     Get.put<ThemeService>(MockThemeService());
-    controller = SettingsController(
-      Get.find<ThemeService>(),
-      mockStorage,
-    );
+    controller = SettingsController(Get.find<ThemeService>(), mockStorage);
     controller.onInit();
   });
 

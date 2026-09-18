@@ -34,6 +34,8 @@ class _ArticleWebViewState extends State<ArticleWebView> {
 
   @override
   Widget build(BuildContext context) {
+    final isOffline = _controller.isOfflineCopy.value;
+
     final initialSettings = InAppWebViewSettings(
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       builtInZoomControls: false,
@@ -45,19 +47,17 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       mediaPlaybackRequiresUserGesture: false,
       useShouldOverrideUrlLoading: true,
       mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-      // Performance & caching
       hardwareAcceleration: true,
-      cacheEnabled: true,
+      cacheEnabled: !isOffline,
       domStorageEnabled: true,
       databaseEnabled: true,
       offscreenPreRaster: true,
       useHybridComposition: true,
       allowFileAccess: false,
       allowContentAccess: false,
-      networkAvailable: true,
+      networkAvailable: !isOffline,
       scrollbarFadingEnabled: true,
       overScrollMode: OverScrollMode.IF_CONTENT_SCROLLS,
-      // iOS back/forward swipe gestures
       allowsBackForwardNavigationGestures: true,
     );
 
@@ -68,7 +68,8 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       ),
       UserScript(
         source: ReaderTheme.earlyStyleInjector(
-          isDarkMode: _controller.isDarkMode,
+          settings: _controller.readingSettings.value,
+          systemDark: _controller.isDarkMode,
         ),
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       ),
@@ -85,9 +86,18 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       ),
       initialSettings: initialSettings,
       initialUserScripts: initialUserScripts,
+      findInteractionController: _controller.findController,
       pullToRefreshController: _pullToRefreshController,
       onWebViewCreated: (webViewController) {
         _controller.setWebViewController(webViewController);
+        if (isOffline && _controller.savedHtml.value.isNotEmpty) {
+          unawaited(
+            webViewController.loadData(
+              data: _controller.savedHtml.value,
+              baseUrl: WebUri(_controller.currentUrl.value),
+            ),
+          );
+        }
       },
       onCreateWindow: (controller, createWindowAction) async => false,
       shouldOverrideUrlLoading: (controller, navigationAction) async {
@@ -140,7 +150,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         await _pullToRefreshController.endRefreshing();
       },
       onScrollChanged: (controller, x, y) {
-        // _controller.handleScroll(y);
+        _controller.handleScroll(y.toDouble());
       },
       onProgressChanged: (controller, progress) {
         _controller.updateProgress(progress.toDouble());

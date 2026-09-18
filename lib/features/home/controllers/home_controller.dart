@@ -1,13 +1,14 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/share_intent_service.dart';
 import '../../../core/utils/app_log.dart';
-import '../../../core/utils/url_validator.dart';
 
 class HomeController extends GetxController {
   HomeController(this._clipboardService);
@@ -15,9 +16,21 @@ class HomeController extends GetxController {
   final ClipboardService _clipboardService;
 
   final TextEditingController urlController = TextEditingController();
+  final FocusNode urlFocusNode = FocusNode();
   final RxString urlText = ''.obs;
   final RxString errorMessage = ''.obs;
   final RxBool isLoading = false.obs;
+
+  @override
+  void onClose() {
+    urlController.dispose();
+    urlFocusNode.dispose();
+    super.onClose();
+  }
+
+  void focusUrlField() {
+    urlFocusNode.requestFocus();
+  }
 
   @override
   void onInit() {
@@ -38,19 +51,13 @@ class HomeController extends GetxController {
     }
   }
 
-  @override
-  void onClose() {
-    urlController.dispose();
-    super.onClose();
-  }
-
   bool get canOpenArticle {
     return urlText.isNotEmpty && errorMessage.isEmpty && !isLoading.value;
   }
 
   String? _validateUrl(String url) {
     if (url.isEmpty) return null;
-    final cleaned = UrlValidator.cleanUrl(url);
+    final cleaned = ArticleUrl.cleanUrl(url);
     if (cleaned == null) return 'Please enter a valid URL';
     return null;
   }
@@ -85,22 +92,22 @@ class HomeController extends GetxController {
     if (!canOpenArticle) return;
 
     final url = urlController.text.trim();
-    final cleanedUrl = UrlValidator.cleanUrl(url);
+    final cleanedUrl = ArticleUrl.cleanUrl(url);
     if (cleanedUrl == null) {
       errorMessage.value = AppException.invalidUrl().userMessage;
       return;
     }
     isLoading.value = true;
     try {
-      final freediumUrl = UrlValidator.convertToFreediumUrl(cleanedUrl);
-      if (freediumUrl != null) {
-        await Get.toNamed(
-          AppRoutes.article,
-          arguments: {'url': freediumUrl, 'originalUrl': cleanedUrl},
-        );
-      } else {
+      final canonical = ArticleUrl.canonicalize(cleanedUrl);
+      if (canonical.isEmpty) {
         errorMessage.value = AppException.invalidUrl().userMessage;
+        return;
       }
+      await Get.toNamed(
+        AppRoutes.article,
+        arguments: {'url': canonical, 'originalUrl': canonical},
+      );
     } catch (e, stackTrace) {
       final exception = AppException.from(e, context: 'openArticle');
       appLog(exception.toString(), name: 'Home', level: LogLevel.error);

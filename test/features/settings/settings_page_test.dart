@@ -42,10 +42,7 @@ void main() {
     Get.put<StorageService>(MockStorageService());
     Get.put<ThemeService>(MockThemeService());
     Get.put(
-      SettingsController(
-        Get.find<ThemeService>(),
-        Get.find<StorageService>(),
-      ),
+      SettingsController(Get.find<ThemeService>(), Get.find<StorageService>()),
     );
   });
 
@@ -64,6 +61,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Dark Mode'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Send Feedback'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Send Feedback'), findsOneWidget);
 
     final errors = tester.takeException();

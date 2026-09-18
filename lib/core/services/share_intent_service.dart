@@ -6,8 +6,8 @@ import 'package:get/get.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../features/home/controllers/home_controller.dart';
+import '../network/article_url.dart';
 import '../utils/app_log.dart';
-import '../utils/url_validator.dart';
 
 class ShareIntentService extends GetxService {
   String? pendingUrl;
@@ -50,10 +50,10 @@ class ShareIntentService extends GetxService {
   }
 
   void _process(String? text) {
-    final url = UrlValidator.extractUrlFromText(text ?? '');
+    final url = ArticleUrl.extractFirstUrl(text);
     if (url == null) return;
 
-    final cleanUrl = UrlValidator.cleanTextiseUrl(url);
+    final cleanUrl = ArticleUrl.cleanUrl(url) ?? url;
     if (cleanUrl.isEmpty) return;
 
     if (Get.isRegistered<HomeController>()) {

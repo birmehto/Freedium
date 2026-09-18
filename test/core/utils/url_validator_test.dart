@@ -42,7 +42,10 @@ void main() {
     );
 
     test('isValidUrl accepts standard medium.com URLs', () {
-      expect(UrlValidator.isValidUrl('https://medium.com/story-title-abc'), true);
+      expect(
+        UrlValidator.isValidUrl('https://medium.com/story-title-abc'),
+        true,
+      );
       expect(
         UrlValidator.isValidUrl('https://medium.com/@user/post-123'),
         true,
@@ -51,10 +54,7 @@ void main() {
         UrlValidator.isValidUrl('https://plainenglish.medium.com/post-456'),
         true,
       );
-      expect(
-        UrlValidator.isValidUrl('https://sub.medium.com/x/y/z'),
-        true,
-      );
+      expect(UrlValidator.isValidUrl('https://sub.medium.com/x/y/z'), true);
     });
 
     test('isValidUrl rejects malformed URLs', () {
@@ -85,7 +85,8 @@ void main() {
     });
 
     test('extractUrlFromText strips trailing punctuation', () {
-      const text = 'Check this: https://medium.com/post-123?utm_source=share, thanks!';
+      const text =
+          'Check this: https://medium.com/post-123?utm_source=share, thanks!';
       final result = UrlValidator.extractUrlFromText(text);
       expect(result, 'https://medium.com/post-123?utm_source=share');
     });
