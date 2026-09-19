@@ -88,7 +88,7 @@ StorageService (facade, GetxService)
                       saved articles (HTML), reading stats, cached metadata
 ```
 
-`GetStorageKeyValueStore` is the production backend; `MemoryKeyValueStore` is used in tests. `favoritesRevision` / `libraryRevision` Rx counters notify list views of mutations. The old storage API (`isDarkMode`, `fontSize`, `favorites`, …) is kept on the facade so early code and tests continue to work unchanged.
+`DriftKeyValueStore` is the production backend (a single JSON `kv` table in a SQLite database via Drift, kept in sync with an in-memory cache for synchronous reads); `MemoryKeyValueStore` is used in tests. `favoritesRevision` / `libraryRevision` Rx counters notify list views of mutations. The old storage API (`isDarkMode`, `fontSize`, `favorites`, …) is kept on the facade so early code and tests continue to work unchanged.
 
 ## Theming
 

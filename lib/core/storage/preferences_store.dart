@@ -63,15 +63,10 @@ class PreferencesStore {
   }
 
   /// Convenience accessor kept for feature parity with the earlier API.
-  double get fontSize {
-    final legacy = _box.read('font_size');
-    if (legacy is num) return legacy.toDouble();
-    return readerSettings.fontSize;
-  }
+  double get fontSize => readerSettings.fontSize;
 
   set fontSize(double value) {
     readerSettings = readerSettings.copyWith(fontSize: value);
-    _box.write('font_size', value);
   }
 
   // ─────────────────────────── search history ──────────────────────────

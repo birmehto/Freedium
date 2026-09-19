@@ -6,7 +6,7 @@ This document is the developer-facing privacy model. The end-user version is in 
 
 ## What data is stored locally
 
-All user data lives on-device in `get_storage` and is split across two stores:
+All user data lives on-device in a local SQLite database (managed by Drift) and is split across two stores:
 
 | Store | Data |
 |-------|------|

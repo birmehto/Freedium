@@ -10,7 +10,7 @@ Thanks for helping out! This is a small, friendly, open-source project — code 
 git clone https://github.com/birmehto/Freedium.git
 cd Freedium
 flutter pub get
-flutter run          # mobile or desktop target
+flutter run          # Android or iOS target
 ```
 
 ## Development workflow
@@ -32,7 +32,7 @@ Before diving in, read [ARCHITECTURE.md](ARCHITECTURE.md). In short:
 
 - GetX-based, feature-first folders (`features/<name>/{controllers,models,views,widgets,bindings}`).
 - Shared UI lives in `core/widgets/`; external operations in `core/services/`.
-- Storage is split into `PreferencesStore` (settings) and `LibraryStore` (content) behind a `KeyValueStore` interface; tests use `MemoryKeyValueStore`.
+- Storage is split into `PreferencesStore` (settings) and `LibraryStore` (content) behind a `KeyValueStore` interface; the production backend is a Drift/SQLite `kv` table, and tests use `MemoryKeyValueStore`. After touching a Drift table in `core/storage/app_database.dart`, regenerate code with `dart run build_runner build`.
 - Reader theming and metadata are driven from `core/constants/reader_theme.dart`.
 
 ## Guidelines
@@ -42,7 +42,6 @@ Before diving in, read [ARCHITECTURE.md](ARCHITECTURE.md). In short:
 - **Add tests** for new models, URL/store logic, and important widget flows. Run them with `flutter test`.
 - **Match existing code style** — single quotes, trailing commas, M3 Expressive widgets (`M3E*`) from `material_3_expressive`, shared `App*` widgets for buttons/empty/error states.
 - **Accessibility** — don't rely on icons alone; provide tooltips / semantic labels.
-- **Desktop awareness** — anything you touch should behave on wide layouts (the shell switches to a navigation rail at ≥ 720 px).
 - **Privacy** — never log or transmit article URLs or user data beyond what is needed; nothing is ever sent to external telemetry.
 
 ## Topic workflows

@@ -25,16 +25,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - "Continue reading?" resume prompt with Continue / Start over actions.
   - Find-in-page with match count navigation (Ctrl/Cmd+F).
   - Reader actions: save offline, favorite, share, copy link, copy article text, open in browser, find.
-- **Desktop & keyboard support**
-  - Responsive shell: navigation rail on wide layouts, navigation bar on narrow ones.
+- **Keyboard support**
   - Keyboard shortcuts: Ctrl/Cmd+K focus the URL field, Ctrl/Cmd+F find, Ctrl/Cmd+S save, Ctrl/Cmd+D favorite, Ctrl/Cmd+= / Ctrl/Cmd+− font size, Esc closes find.
-  - Centered, width-constrained home form on large screens.
 - **Storage split** into two focused stores behind a `KeyValueStore` abstraction (`preferences` for device settings, `library` for content), keeping the old facade API for compatibility.
 - **Theme modes** — System / Light / Dark full-app theme selection.
 - **Settings page reorganized** into Appearance, Reader, Source, Library & Storage, and About sections, including a local reading-statistics overview (articles opened, completed, minutes read).
 - **Local reading statistics** — count of articles opened/completed and total reading minutes, stored on-device only.
 - **Tests** for the URL parser, mirror resolver, library store, reader settings/models, and article models (101 tests total).
-- **CI workflow** (`.github/workflows/ci.yml`) — format check, `flutter analyze`, `flutter test`, and a Linux debug build on every pull request.
+- **CI workflow** (`.github/workflows/ci.yml`) — format check, `flutter analyze`, `flutter test`, and an Android debug build on every pull request.
 
 ## [1.1.1] - 2026-09-?? (Unreleased portion below)
 

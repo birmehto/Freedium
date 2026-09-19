@@ -1,26 +1,25 @@
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 
+import '../storage/app_database.dart';
 import '../storage/key_value_store.dart';
 import '../storage/library_store.dart';
 import '../storage/preferences_store.dart';
 
-/// Owns the persistent box and exposes the two focused stores.
+/// Owns the on-device database and exposes the two focused stores.
 ///
 /// Device settings and reading data are kept in separate stores
 /// ([PreferencesStore], [LibraryStore]); this facade only wires them up and
 /// keeps a thin backward-compatible API for the early controllers.
 class StorageService extends GetxService {
-  GetStorage? _box;
   PreferencesStore? _preferences;
   LibraryStore? _library;
   bool _connected = false;
 
   Future<StorageService> init() async {
-    _box = GetStorage();
-    await _box!.initStorage;
-    _preferences = PreferencesStore(GetStorageKeyValueStore(_box!));
-    _library = LibraryStore(GetStorageKeyValueStore(_box!));
+    final store = DriftKeyValueStore(AppDatabase.open());
+    await store.init();
+    _preferences = PreferencesStore(store);
+    _library = LibraryStore(store);
     _connected = true;
     return this;
   }

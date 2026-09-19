@@ -5,7 +5,7 @@
 **Read any Medium story — free, clean, and offline-ready.**
 
 [![Version](https://img.shields.io/badge/Release-v1.1.1-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Linux%20%7C%20iOS-blue?style=flat-square)]()
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue?style=flat-square)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Visitors](https://api.visitorbadge.io/api/VisitorHit?user=birmehto&repo=Freedium&countColor=%232E8B57&style=flat-square)](https://github.com/birmehto/Freedium)
 
@@ -44,8 +44,7 @@
 | Platform | Get it |
 |----------|--------|
 | 🤖 **Android** | [Download the latest APK](https://github.com/birmehto/Freedium/releases/latest) |
-| 🐧 **Linux** | Build from source — see [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 🍎 **iOS** | Coming soon |
+| 🍎 **iOS** | Build from source — see [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 > On Android, enable "Install unknown apps" for your browser to install the APK.
 

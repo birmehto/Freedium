@@ -19,7 +19,7 @@ Freedium is a reader for Medium. You paste or share a Medium article URL, and Fr
 
 ## Data stored locally on your device
 
-Everything below is saved **only on your device** using local storage (`get_storage`). Nothing is transmitted to us or to any server:
+Everything below is saved **only on your device** in the app's local SQLite database (managed by Drift). Nothing is transmitted to us or to any server:
 
 | What | Why it's stored |
 |------|-----------------|
