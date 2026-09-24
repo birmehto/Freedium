@@ -88,37 +88,6 @@ void showMirrorDialog(BuildContext context) {
   );
 }
 
-void showClearSavedDialog(BuildContext context) {
-  final controller = Get.find<SettingsController>();
-
-  M3EDialog.show<void>(
-    context,
-    dialog: Material(
-      child: M3EDialog(
-        title: 'Delete saved articles?',
-        content: const Text(
-          'This removes all articles saved for offline reading from this '
-          'device.',
-        ),
-        actions: [
-          AppButton(
-            variant: AppButtonVariant.text,
-            onPressed: () => Navigator.of(context).pop(),
-            label: const Text('Cancel'),
-          ),
-          AppButton(
-            onPressed: () {
-              controller.clearSavedArticles();
-              Navigator.of(context).pop();
-            },
-            label: const Text('Delete'),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 void showCreditsDialog(BuildContext context) {
   M3EDialog.show<void>(
     context,

@@ -127,24 +127,6 @@ class SettingsPage extends GetView<SettingsController> {
               () => Column(
                 children: [
                   AppSettingsTile(
-                    title: 'Saved articles',
-                    supportingText:
-                        '${controller.savedCount.value} articles • '
-                        '${controller.savedSizeLabel}',
-                    icon: M3EIcons.download_rounded,
-                    iconColor: c.onSecondaryContainer,
-                    backgroundColor: c.secondaryContainer.withValues(
-                      alpha: 0.6,
-                    ),
-                    onTap: controller.savedCount.value > 0
-                        ? () => showClearSavedDialog(context)
-                        : null,
-                    trailing: controller.savedCount.value > 0
-                        ? const Icon(M3EIcons.delete_rounded)
-                        : null,
-                  ),
-                  const M3EDivider(),
-                  AppSettingsTile(
                     title: 'Recent searches',
                     supportingText:
                         '${controller.recentSearchCount.value} saved',
@@ -159,18 +141,6 @@ class SettingsPage extends GetView<SettingsController> {
                     trailing: controller.recentSearchCount.value > 0
                         ? const Icon(M3EIcons.delete_rounded)
                         : null,
-                  ),
-                  const M3EDivider(),
-                  AppSettingsTile(
-                    title: 'Reading statistics',
-                    supportingText:
-                        '${controller.completedCount.value} finished • '
-                        '${controller.readingMinutes.value} min read',
-                    icon: M3EIcons.insights_rounded,
-                    iconColor: c.onSecondaryContainer,
-                    backgroundColor: c.secondaryContainer.withValues(
-                      alpha: 0.6,
-                    ),
                   ),
                 ],
               ),

@@ -4,7 +4,6 @@ import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/widgets/app_app_bar.dart';
-import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_pill.dart';
 import '../controllers/article_controller.dart';
@@ -20,16 +19,10 @@ class ArticlePage extends GetView<ArticleController> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    ever(controller.showResumePrompt, (show) {
-      if (show) _showResumeDialog(context);
-    });
-
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.keyF, control: true):
             controller.startFind,
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            controller.saveOffline,
         const SingleActivator(LogicalKeyboardKey.keyD, control: true):
             controller.toggleFavorite,
         const SingleActivator(LogicalKeyboardKey.equal, control: true):
@@ -56,16 +49,6 @@ class ArticlePage extends GetView<ArticleController> {
                     : const SizedBox.shrink(),
               ),
               const SizedBox(width: 4),
-              M3EIconButton(
-                icon: const Icon(M3EIcons.search_rounded),
-                tooltip: 'Find in page',
-                onPressed: controller.startFind,
-              ),
-              M3EIconButton(
-                icon: const Icon(M3EIcons.share_rounded),
-                tooltip: 'Share article',
-                onPressed: controller.shareArticle,
-              ),
               Obx(
                 () => M3EIconButton(
                   icon: Icon(
@@ -143,100 +126,15 @@ class ArticlePage extends GetView<ArticleController> {
         onPressed: () => showReaderSettingsSheet(context),
       ),
       M3EFabMenuItem(
-        icon: const Icon(M3EIcons.search_rounded),
-        label: 'Find in page',
-        onPressed: controller.startFind,
-      ),
-      M3EFabMenuItem(
-        icon: const Icon(M3EIcons.copy_rounded),
+        icon: const Icon(M3EIcons.link_rounded),
         label: 'Copy link',
         onPressed: controller.copyLink,
-      ),
-      M3EFabMenuItem(
-        icon: const Icon(M3EIcons.content_copy_rounded),
-        label: 'Copy article text',
-        onPressed: () => _copyArticleText(context),
-      ),
-      M3EFabMenuItem(
-        icon: Icon(
-          controller.isSavedOffline.value
-              ? M3EIcons.download_done_rounded
-              : M3EIcons.download_rounded,
-          color: controller.isSavedOffline.value
-              ? theme.colorScheme.primary
-              : null,
-        ),
-        label: controller.isSavedOffline.value
-            ? 'Delete offline copy'
-            : 'Save offline',
-        onPressed: controller.isSavedOffline.value
-            ? controller.deleteOffline
-            : controller.saveOffline,
       ),
       M3EFabMenuItem(
         icon: const Icon(M3EIcons.open_in_browser_rounded),
         label: 'Open in browser',
         onPressed: controller.openInBrowser,
       ),
-      M3EFabMenuItem(
-        icon: Icon(
-          controller.isFavorite.value
-              ? M3EIcons.favorite_rounded
-              : M3EIcons.favorite_border_rounded,
-          color: controller.isFavorite.value ? theme.colorScheme.error : null,
-        ),
-        label: 'Favorite',
-        onPressed: controller.toggleFavorite,
-      ),
     ];
-  }
-
-  Future<void> _copyArticleText(BuildContext context) async {
-    final text = await controller.copyText();
-    if (!context.mounted) return;
-    final words = text?.trim().isEmpty == false
-        ? text!.trim().split(RegExp(r'\s+')).length
-        : 0;
-    M3ESnackbar.show(
-      context,
-      message: words > 0
-          ? 'Copied $words words to clipboard'
-          : 'Nothing to copy yet',
-    );
-  }
-
-  void _showResumeDialog(BuildContext context) {
-    final percent = (controller.resumeProgress.value * 100).round();
-    M3EDialog.show<bool>(
-      context,
-      dialog: Material(
-        child: M3EDialog(
-          title: 'Continue reading?',
-          content: Text(
-            'You were $percent% through this article. Pick up where you left '
-            'off or start over.',
-          ),
-          actions: [
-            AppButton(
-              variant: AppButtonVariant.text,
-              onPressed: () => Navigator.of(context).pop(false),
-              label: const Text('Start over'),
-            ),
-            AppButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              label: const Text('Continue'),
-            ),
-          ],
-        ),
-      ),
-    ).then((resume) {
-      if (resume == true) {
-        controller.resumeReading();
-      } else if (resume == false) {
-        controller.startOverReading();
-      } else {
-        controller.dismissResumePrompt();
-      }
-    });
   }
 }

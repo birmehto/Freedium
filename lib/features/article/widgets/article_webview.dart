@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
@@ -22,14 +23,17 @@ class ArticleWebView extends StatefulWidget {
 
 class _ArticleWebViewState extends State<ArticleWebView> {
   late final ArticleController _controller = Get.find<ArticleController>();
-  late final PullToRefreshController _pullToRefreshController;
+  PullToRefreshController? _pullToRefreshController;
 
   @override
   void initState() {
     super.initState();
-    _pullToRefreshController = PullToRefreshController(
-      onRefresh: () => _controller.requestRefresh(),
-    );
+    if (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
+      _pullToRefreshController = PullToRefreshController(
+        onRefresh: () => _controller.requestRefresh(),
+      );
+    }
   }
 
   @override
@@ -147,17 +151,14 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         await Future.delayed(const Duration(milliseconds: 60));
         _controller.onPageLoaded();
         _controller.injectCustomCSS();
-        await _pullToRefreshController.endRefreshing();
-      },
-      onScrollChanged: (controller, x, y) {
-        _controller.handleScroll(y.toDouble());
+        await _pullToRefreshController?.endRefreshing();
       },
       onProgressChanged: (controller, progress) {
         _controller.updateProgress(progress.toDouble());
       },
       onReceivedError: (controller, request, error) {
         if (request.isForMainFrame ?? false) {
-          _pullToRefreshController.endRefreshing();
+          _pullToRefreshController?.endRefreshing();
 
           String errorMsg = 'Failed to load article';
 

@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/material.dart' show ThemeMode, WidgetsBinding;
+import 'package:flutter/widgets.dart' show WidgetsBindingObserver;
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
 
-class ThemeService extends GetxService {
+class ThemeService extends GetxService with WidgetsBindingObserver {
   final StorageService _storage = Get.find();
 
   final isDarkMode = true.obs;
@@ -12,6 +13,19 @@ class ThemeService extends GetxService {
   void onInit() {
     super.onInit();
     isDarkMode.value = _storage.isDarkMode;
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangePlatformBrightness() {
+    if (preferredMode != 'system') return;
+    isDarkMode.value = _storage.isDarkMode;
+  }
+
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
   }
 
   /// Full app theme mode, including `ThemeMode.system`.

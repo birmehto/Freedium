@@ -16,11 +16,8 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_log.dart';
 import '../../favorites/models/favorite_article.dart';
-import '../../library/models/history_entry.dart';
 import '../../settings/models/reader_settings.dart';
 import '../models/article_meta.dart';
-import '../models/reading_progress.dart';
-import '../models/saved_article.dart';
 
 class ArticleController extends GetxController {
   ArticleController(
@@ -44,7 +41,6 @@ class ArticleController extends GetxController {
   final isLoading = true.obs;
   final isInitialLoad = true.obs;
   final loadingProgress = 0.0.obs;
-  final scrollProgress = 0.0.obs;
 
   // Extracted metadata
   final articleTitle = ''.obs;
@@ -56,15 +52,9 @@ class ArticleController extends GetxController {
 
   // Library state
   final isFavorite = false.obs;
-  final isSavedOffline = false.obs;
-  final savedCopyAvailable = false.obs;
 
   // Reader preferences
   final readingSettings = const ReaderSettings().obs;
-
-  // Resume reading
-  final showResumePrompt = false.obs;
-  final resumeProgress = 0.0.obs;
 
   // Find in page
   final isFindActive = false.obs;
@@ -78,12 +68,6 @@ class ArticleController extends GetxController {
   double? _contentHeight;
   double? _viewportHeight;
   Timer? _loadingTimer;
-  Timer? _progressSaveTimer;
-  Timer? _readingMinutesTimer;
-  DateTime? _sessionStartedAt;
-  int _elapsedSeconds = 0;
-  bool _resumePromptShown = false;
-  bool _wasCompleted = false;
 
   bool get isDarkMode => _themeService.isDarkMode.value;
 
@@ -125,8 +109,6 @@ class ArticleController extends GetxController {
     _resolver.autoFallback = _storage.preferences.autoFallback;
 
     isFavorite.value = _storage.library.isFavorite(canonical);
-    isSavedOffline.value = _storage.library.isSaved(canonical);
-    savedCopyAvailable.value = _storage.library.isSaved(canonical);
 
     // Pre-fill metadata from cache
     final cached = _storage.library.cachedMeta[canonical];
@@ -140,8 +122,6 @@ class ArticleController extends GetxController {
     } else if (articleTitle.isEmpty) {
       articleTitle.value = _titleFromUrl(canonical);
     }
-
-    _beginSession();
 
     if (isOfflineCopy.value) {
       currentUrl.value = canonical;
@@ -173,31 +153,6 @@ class ArticleController extends GetxController {
     });
   }
 
-  void _beginSession() {
-    final now = DateTime.now();
-    final previous = _storage.library.historyFor(originalUrl.value);
-    _storage.library.recordHistory(
-      HistoryEntry(
-        title: articleTitle.value,
-        url: originalUrl.value,
-        author: articleAuthor.value.isNotEmpty ? articleAuthor.value : null,
-        publication: articlePublication.value.isNotEmpty
-            ? articlePublication.value
-            : null,
-        openedAt: previous?.openedAt ?? now,
-        lastReadAt: now,
-        progress: previous?.progress ?? 0,
-        completed: previous?.completed ?? false,
-        saved: isSavedOffline.value,
-      ),
-    );
-    _storage.library.recordReadSession(openCountDelta: 1);
-    _sessionStartedAt ??= now;
-    _readingMinutesTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      _elapsedSeconds += 60;
-    });
-  }
-
   // ────────────────────────────── load lifecycle ──────────────────────
 
   void onPageLoaded() {
@@ -205,12 +160,9 @@ class ArticleController extends GetxController {
     isLoading.value = false;
     isInitialLoad.value = false;
     loadingProgress.value = 1.0;
-    _sessionStartedAt ??= DateTime.now();
     unawaited(_extractMetadata());
-    unawaited(_maybeRestoreScroll());
     unawaited(_refreshLayoutMetrics());
     _resolver.reportSuccess(_resolver.lastSourceId ?? '');
-    _maybePromptResume();
   }
 
   void onPageError(String message) {
@@ -220,10 +172,6 @@ class ArticleController extends GetxController {
     isInitialLoad.value = false;
     loadingProgress.value = 0.0;
     _resolver.reportFailure(_resolver.lastSourceId ?? '');
-    if (!isOfflineCopy.value) {
-      savedCopyAvailable.value = _storage.library.isSaved(originalUrl.value);
-    }
-    _saveSessionMinutes();
   }
 
   Future<void> _extractMetadata() async {
@@ -244,16 +192,6 @@ class ArticleController extends GetxController {
           readingTime.value = meta.readingTimeMinutes;
           publishedAt.value = meta.publishedAt;
           _storage.library.cacheMeta(originalUrl.value, meta);
-          _storage.library.updateHistory(
-            _storage.library
-                    .historyFor(originalUrl.value)
-                    ?.copyWith(
-                      title: meta.title,
-                      author: meta.author,
-                      publication: meta.publication,
-                    ) ??
-                _historySnapshot(),
-          );
         }
       }
     } catch (e) {
@@ -264,130 +202,6 @@ class ArticleController extends GetxController {
       );
       appLog(e.toString(), name: 'Reader');
     }
-  }
-
-  HistoryEntry _historySnapshot() {
-    return HistoryEntry(
-      title: articleTitle.value,
-      url: originalUrl.value,
-      author: articleAuthor.value.isNotEmpty ? articleAuthor.value : null,
-      publication: articlePublication.value.isNotEmpty
-          ? articlePublication.value
-          : null,
-      lastReadAt: DateTime.now(),
-      progress: scrollProgress.value,
-    );
-  }
-
-  // ─────────────────────────────── scroll ─────────────────────────────
-
-  void handleScroll(double y) {
-    if (isClosed) return;
-    if (_contentHeight == null || _viewportHeight == null) {
-      unawaited(_refreshLayoutMetrics());
-    }
-    final scrollable = ((_contentHeight ?? 0) - (_viewportHeight ?? 0))
-        .toDouble();
-    final progress = scrollable > 0 ? (y / scrollable).clamp(0.0, 1.0) : 0.0;
-    scrollProgress.value = progress;
-    _scheduleProgressSave();
-  }
-
-  void _scheduleProgressSave() {
-    if (_progressSaveTimer?.isActive ?? false) return;
-    _progressSaveTimer = Timer(const Duration(seconds: 2), saveProgress);
-  }
-
-  Future<void> saveProgress() async {
-    if (isClosed) return;
-    final progress = scrollProgress.value;
-    if (progress <= 0.0) return;
-
-    final previous = _storage.library.getReadingProgress(originalUrl.value);
-    final isComplete = progress >= 0.98;
-    final scrollable = ((_contentHeight ?? 0) - (_viewportHeight ?? 0))
-        .toDouble();
-    final now = DateTime.now();
-
-    _storage.library.saveReadingProgress(
-      originalUrl.value,
-      ReadingProgress(
-        progress: progress,
-        scrollY: scrollable > 0 ? progress * scrollable : 0,
-        startedAt: previous.startedAt ?? _sessionStartedAt ?? now,
-        lastReadAt: now,
-        completedAt: isComplete
-            ? (previous.completedAt ?? now)
-            : previous.completedAt,
-      ),
-    );
-
-    final completedNow = isComplete && !_wasCompleted;
-    if (completedNow) _wasCompleted = true;
-    if (!isComplete) _wasCompleted = false;
-
-    final entry = _storage.library.historyFor(originalUrl.value);
-    _storage.library.updateHistory(
-      entry?.copyWith(
-            progress: progress,
-            completed: isComplete,
-            lastReadAt: now,
-          ) ??
-          _historySnapshot().copyWith(
-            progress: progress,
-            completed: isComplete,
-          ),
-    );
-
-    if (completedNow) {
-      _storage.library.recordReadSession(completed: true);
-    }
-  }
-
-  Future<void> _maybeRestoreScroll() async {
-    if (isOfflineCopy.value) return;
-    final progress = _storage.library.getReadingProgress(originalUrl.value);
-    if (progress.scrollY > 4 && (progress.progress < 0.95)) {
-      unawaited(
-        webViewController?.evaluateJavascript(
-          source: ReaderTheme.restoreScrollJs(progress.scrollY),
-        ),
-      );
-    }
-  }
-
-  void _maybePromptResume() {
-    if (_resumePromptShown || isOfflineCopy.value) return;
-    final progress = _storage.library.getReadingProgress(originalUrl.value);
-    if (progress.progress >= 0.03 && progress.progress < 0.95) {
-      _resumePromptShown = true;
-      resumeProgress.value = progress.progress;
-      showResumePrompt.value = true;
-    }
-  }
-
-  void resumeReading() {
-    showResumePrompt.value = false;
-    final progress = _storage.library.getReadingProgress(originalUrl.value);
-    unawaited(
-      webViewController?.evaluateJavascript(
-        source: ReaderTheme.restoreScrollJs(progress.scrollY),
-      ),
-    );
-  }
-
-  void startOverReading() {
-    showResumePrompt.value = false;
-    _storage.library.clearReadingProgress(originalUrl.value);
-    unawaited(
-      webViewController?.evaluateJavascript(
-        source: ReaderTheme.restoreScrollJs(0),
-      ),
-    );
-  }
-
-  void dismissResumePrompt() {
-    showResumePrompt.value = false;
   }
 
   // ─────────────────────────── layout metrics ─────────────────────────
@@ -456,81 +270,6 @@ class ArticleController extends GetxController {
     _startLoadingTimer();
     unawaited(
       webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri(next))),
-    );
-  }
-
-  // ─────────────────────────── offline (saved) ────────────────────────
-
-  Future<void> saveOffline() async {
-    if (isOfflineCopy.value || originalUrl.isEmpty) return;
-    if (isClosed || webViewController == null) {
-      savedCopyAvailable.value = false;
-      return;
-    }
-    try {
-      final result = await webViewController?.evaluateJavascript(
-        source: ReaderTheme.captureArticleHtmlJs,
-      );
-      if (result is String && result.isNotEmpty) {
-        final data = jsonDecode(result) as Map<String, dynamic>;
-        final html = data['html'] as String? ?? '';
-        if (html.isEmpty) return;
-        final images = (data['images'] as num?)?.toInt() ?? 0;
-        final kept = _storage.library.saveArticle(
-          SavedArticle(
-            title: articleTitle.value,
-            url: originalUrl.value,
-            html: html,
-            author: articleAuthor.value.isNotEmpty ? articleAuthor.value : null,
-            publication: articlePublication.value.isNotEmpty
-                ? articlePublication.value
-                : null,
-            savedAt: DateTime.now(),
-            imageCount: images,
-          ),
-        );
-        isSavedOffline.value = kept;
-        savedCopyAvailable.value = kept;
-        _storage.library.updateHistory(
-          _storage.library
-                  .historyFor(originalUrl.value)
-                  ?.copyWith(saved: kept) ??
-              _historySnapshot().copyWith(saved: kept),
-        );
-      }
-    } catch (e) {
-      appLog(
-        'Failed to save article offline',
-        name: 'Reader',
-        level: LogLevel.warning,
-      );
-      appLog(e.toString(), name: 'Reader');
-    }
-  }
-
-  void deleteOffline() {
-    _storage.library.removeSavedArticle(originalUrl.value);
-    isSavedOffline.value = false;
-    savedCopyAvailable.value = false;
-  }
-
-  Future<void> openSavedCopy() async {
-    final saved = _storage.library.savedArticleFor(originalUrl.value);
-    if (saved == null) return;
-    isOfflineCopy.value = true;
-    savedHtml.value = saved.html;
-    currentUrl.value = originalUrl.value;
-    articleTitle.value = saved.title;
-    errorMessage.value = '';
-    isLoading.value = true;
-    isInitialLoad.value = true;
-    loadingProgress.value = 0.0;
-    _startLoadingTimer();
-    unawaited(
-      webViewController?.loadData(
-        data: saved.html,
-        baseUrl: WebUri(originalUrl.value),
-      ),
     );
   }
 
@@ -731,19 +470,9 @@ class ArticleController extends GetxController {
     _loadingTimer = null;
   }
 
-  void _saveSessionMinutes() {
-    _readingMinutesTimer?.cancel();
-    if (_elapsedSeconds > 0) {
-      _storage.library.recordReadSession(readingMinutes: _elapsedSeconds ~/ 60);
-      _elapsedSeconds = 0;
-    }
-  }
-
   @override
   void onClose() {
     _cancelLoadingTimer();
-    _progressSaveTimer?.cancel();
-    _saveSessionMinutes();
     findController?.dispose();
     super.onClose();
   }

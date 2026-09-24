@@ -29,13 +29,7 @@ class SettingsController extends GetxController {
   final autoFallback = true.obs;
 
   // Library & storage
-  final savedCount = 0.obs;
-  final savedSizeBytes = 0.obs;
   final recentSearchCount = 0.obs;
-
-  // Local statistics
-  final completedCount = 0.obs;
-  final readingMinutes = 0.obs;
 
   bool get isDarkMode => _themeService.isDarkMode.value;
 
@@ -52,12 +46,7 @@ class SettingsController extends GetxController {
   }
 
   void refreshLibrary() {
-    savedCount.value = _storage.library.savedArticles.length;
-    savedSizeBytes.value = _storage.library.savedBytes;
     recentSearchCount.value = _storage.preferences.recentSearches.length;
-    final stats = _storage.library.readingStats;
-    completedCount.value = (stats['completedCount'] as num?)?.toInt() ?? 0;
-    readingMinutes.value = (stats['readingMinutes'] as num?)?.toInt() ?? 0;
   }
 
   // ─────────────────────────────── appearance ─────────────────────────
@@ -97,23 +86,9 @@ class SettingsController extends GetxController {
 
   // ───────────────────────────── storage mgmt ─────────────────────────
 
-  void clearSavedArticles() {
-    _storage.library.clearSavedArticles();
-    refreshLibrary();
-  }
-
   void clearRecentSearches() {
     _storage.preferences.clearRecentSearches();
     refreshLibrary();
-  }
-
-  String get savedSizeLabel {
-    const kb = 1024;
-    const mb = 1024 * 1024;
-    final bytes = savedSizeBytes.value;
-    if (bytes >= mb) return '${(bytes / mb).toStringAsFixed(1)} MB';
-    if (bytes >= kb) return '${(bytes / kb).toStringAsFixed(0)} KB';
-    return '$bytes B';
   }
 
   // ─────────────────────────────── about ──────────────────────────────

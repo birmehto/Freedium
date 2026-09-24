@@ -24,7 +24,7 @@ flutter run          # Android or iOS target
    flutter test
    ```
 4. Commit with a concise, conventional message (e.g. `feat(reader): add sepia theme`).
-5. Open a pull request against `main`.
+5. Open a pull request against `main` and explain in the description **what** you changed and **why** — reference any related issue (e.g. `Closes #12`).
 
 ## Architecture
 
