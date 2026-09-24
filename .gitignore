@@ -82,6 +82,11 @@ credentials.json
 secrets/
 *.secret
 
+# Keystores & signing keys
+/info/
+*.jks
+*.keystore
+
 # Tooling auth
 .gradle/
 .credentials
