@@ -120,33 +120,6 @@ class SettingsPage extends GetView<SettingsController> {
             ),
           ),
 
-          const AppSectionHeader(title: 'Library & Storage'),
-          M3ECard(
-            variant: M3ECardVariant.filled,
-            child: Obx(
-              () => Column(
-                children: [
-                  AppSettingsTile(
-                    title: 'Recent searches',
-                    supportingText:
-                        '${controller.recentSearchCount.value} saved',
-                    icon: M3EIcons.search_rounded,
-                    iconColor: c.onSecondaryContainer,
-                    backgroundColor: c.secondaryContainer.withValues(
-                      alpha: 0.6,
-                    ),
-                    onTap: controller.recentSearchCount.value > 0
-                        ? controller.clearRecentSearches
-                        : null,
-                    trailing: controller.recentSearchCount.value > 0
-                        ? const Icon(M3EIcons.delete_rounded)
-                        : null,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
           const AppSectionHeader(title: 'About'),
           M3ECard(
             variant: M3ECardVariant.filled,

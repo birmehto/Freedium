@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -332,16 +331,6 @@ class ArticleController extends GetxController {
 
   // ─────────────────────────── actions ────────────────────────────────
 
-  Future<void> shareArticle() async {
-    if (originalUrl.isEmpty) return;
-    SharePlus.instance.share(
-      ShareParams(
-        uri: Uri.parse(originalUrl.value),
-        subject: articleTitle.value.isNotEmpty ? articleTitle.value : null,
-      ),
-    );
-  }
-
   Future<void> openInBrowser() async {
     if (originalUrl.isEmpty) return;
     final uri = Uri.tryParse(originalUrl.value);
@@ -355,27 +344,6 @@ class ArticleController extends GetxController {
   Future<void> copyLink() async {
     if (originalUrl.isEmpty) return;
     await _clipboardService.copyToClipboard(originalUrl.value);
-  }
-
-  Future<String?> copyText() async {
-    if (webViewController == null) return null;
-    try {
-      final result = await webViewController?.evaluateJavascript(
-        source: ReaderTheme.selectedOrBodyTextJs,
-      );
-      if (result is String && result.isNotEmpty) {
-        final data = jsonDecode(result) as Map<String, dynamic>;
-        final text = data['text'] as String? ?? '';
-        if (text.isNotEmpty) {
-          await _clipboardService.copyToClipboard(text);
-          return text;
-        }
-      }
-    } catch (e) {
-      appLog('Failed to copy text', name: 'Reader', level: LogLevel.warning);
-      appLog(e.toString(), name: 'Reader');
-    }
-    return null;
   }
 
   Future<void> toggleFavorite() async {
