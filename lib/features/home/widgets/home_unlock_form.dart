@@ -30,14 +30,16 @@ class HomeUnlockForm extends StatelessWidget {
             errorText: controller.errorMessage.value.isEmpty
                 ? null
                 : controller.errorMessage.value,
-            trailing: InkWell(
-              onTap: hasText
-                  ? controller.clearUrl
-                  : controller.pasteFromClipboard,
-              child: Icon(
-                hasText
-                    ? M3EIcons.clear_rounded
-                    : M3EIcons.content_paste_rounded,
+            trailing: Material(
+              child: InkWell(
+                onTap: hasText
+                    ? controller.clearUrl
+                    : controller.pasteFromClipboard,
+                child: Icon(
+                  hasText
+                      ? M3EIcons.clear_rounded
+                      : M3EIcons.content_paste_rounded,
+                ),
               ),
             ),
           ),
