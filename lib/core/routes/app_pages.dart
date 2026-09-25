@@ -5,7 +5,6 @@ import '../../features/article/views/article_page.dart';
 import '../../features/favorites/bindings/favorites_binding.dart';
 import '../../features/favorites/views/favorites_page.dart';
 import '../../features/home/bindings/home_binding.dart';
-import '../../features/library/bindings/library_binding.dart';
 import '../../features/settings/bindings/settings_binding.dart';
 import '../../features/settings/views/settings_page.dart';
 import '../widgets/app_shell.dart';
@@ -18,7 +17,6 @@ class AppPages {
       page: () => const AppShell(),
       bindings: [
         HomeBinding(),
-        LibraryBinding(),
         FavoritesBinding(),
         SettingsBinding(),
       ],

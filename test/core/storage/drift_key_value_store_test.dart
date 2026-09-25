@@ -47,8 +47,6 @@ void main() {
     expect(store.getKeys(), ['k']);
   });
 
-
-
   test('a fresh store reloads persisted values from disk', () async {
     await store.write('prefs', {'theme': 'dark', 'font': 21});
     final reloaded = DriftKeyValueStore(database);

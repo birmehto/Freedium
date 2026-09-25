@@ -103,6 +103,7 @@ class ArticlePage extends GetView<ArticleController> {
             () => controller.isFindActive.value
                 ? const ArticleFindBar()
                 : M3EFabMenu(
+                    size: M3EFabSize.regular,
                     icon: const Icon(M3EIcons.more_horiz_rounded),
                     items: _buildFabItems(context, theme),
                   ),

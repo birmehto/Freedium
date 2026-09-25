@@ -26,14 +26,14 @@ class AppEmpty extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(25),
               decoration: BoxDecoration(
                 color: c.primaryContainer.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                size: 80,
+                size: 70,
                 color: c.primary.withValues(alpha: 0.5),
               ),
             ),

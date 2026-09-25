@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../features/settings/models/reader_settings.dart';
 import '../../features/settings/models/reader_theme_mode.dart';
 
@@ -109,22 +111,18 @@ class ReaderTheme {
     };
   }
 
-  /// Inject minimal CSS at document start to prevent white/dark flash.
-  /// Must be safe for injection before DOM is fully ready.
   static String earlyStyleInjector({
     required ReaderSettings settings,
     required bool systemDark,
   }) {
-    final colors = _palette(settings.themeMode, systemDark: systemDark);
-    final dark = readerIsDark(settings, systemDark: systemDark);
-    final scheme = dark ? 'dark' : 'light';
+    final css = getCss(settings: settings, systemDark: systemDark);
 
     return '''
 (function() {
   try {
     var s = document.createElement('style');
     s.id = '$_earlyCssId';
-    s.textContent = 'html, body { background: ${colors.background} !important; color: ${colors.text} !important; color-scheme: $scheme !important; transition: none !important; } * { transition: none !important; }';
+    s.textContent = ${jsonEncode(css)};
     (document.head || document.documentElement).appendChild(s);
   } catch(e) {}
 })();
@@ -276,16 +274,54 @@ class ReaderTheme {
 })();
 ''';
 
-  /// Snapshots the current (cleaned) document so it can be stored off-line.
   static const String captureArticleHtmlJs = '''
 (function() {
   try {
-    var root = document.documentElement;
-    var html = root ? root.outerHTML : '';
-    return JSON.stringify({
-      html: html,
-      images: document.querySelectorAll('img').length
-    });
+    var source = document.querySelector('article') || document.querySelector('main');
+    if (!source) {
+      return JSON.stringify({ html: '', images: 0 });
+    }
+
+    var clone = source.cloneNode(true);
+    var images = clone.querySelectorAll('img').length;
+    var unwanted = clone.querySelectorAll(
+      'nav, footer, #progress, [data-nosnippet], ' +
+      'section[aria-label*="Notifications"], ' +
+      '[role="region"][aria-label*="Notifications"], ' +
+      'section[aria-labelledby="toc-heading"], ' +
+      '[data-dialog-content], [data-dialog-overlay], ' +
+      '[data-drawer-content], [data-drawer-overlay], ' +
+      '[data-dropdown-menu-content], [data-menu-content], ' +
+      '[data-popover-content], [data-tooltip-content], ' +
+      '[role="dialog"], [role="alertdialog"], [role="menu"], ' +
+      '[data-sonner-toaster], [data-sonner-toast]'
+    );
+    for (var i = 0; i < unwanted.length; i++) {
+      if (unwanted[i] && unwanted[i].parentNode) {
+        unwanted[i].parentNode.removeChild(unwanted[i]);
+      }
+    }
+
+    function makeAbsolute(attribute) {
+      var nodes = clone.querySelectorAll('[' + attribute + ']');
+      for (var j = 0; j < nodes.length; j++) {
+        var value = nodes[j].getAttribute(attribute);
+        if (!value || value.charAt(0) === '#') continue;
+        try {
+          var resolver = document.createElement('a');
+          resolver.href = value;
+          nodes[j].setAttribute(attribute, resolver.href);
+        } catch (e) {}
+      }
+    }
+
+    makeAbsolute('href');
+    makeAbsolute('src');
+    makeAbsolute('data-zoom-src');
+
+    var base = (document.baseURI || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="' + base + '"></head><body>' + clone.outerHTML + '</body></html>';
+    return JSON.stringify({ html: html, images: images });
   } catch(e) {
     return JSON.stringify({ html: '', images: 0 });
   }
@@ -359,15 +395,68 @@ class ReaderTheme {
         $fontFamily
       }
 
+      html,
+      body {
+        min-height: 100% !important;
+      }
+
+      body > div[style*="display: contents"] {
+        display: block !important;
+      }
+
+      body > div[style*="display: contents"] > div {
+        min-height: 0 !important;
+      }
+
+      main {
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
+      }
+
       ::selection {
         background: ${colors.selection} !important;
       }
 
       article {
+        width: 100% !important;
         max-width: ${settings.contentWidthEm}em !important;
+        min-height: 0 !important;
         margin-left: auto !important;
         margin-right: auto !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        color: ${colors.text} !important;
         text-align: ${settings.textAlign} !important;
+      }
+
+      article > header {
+        padding: 0 0 1.5em !important;
+        background: transparent !important;
+        border: 0 !important;
+      }
+
+      article > div:not([data-nosnippet]) {
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+      }
+
+      article > div[data-nosnippet],
+      article nav,
+      article > section[aria-labelledby="toc-heading"] {
+        display: none !important;
+      }
+
+      article .prose {
+        max-width: none !important;
+        padding: 0 !important;
       }
 
       p {
@@ -407,16 +496,10 @@ class ReaderTheme {
       .header-nav,
       footer,
       #progress,
+      [role="banner"],
+      [role="contentinfo"],
       section[aria-label*="Notifications"],
       [role="region"][aria-label*="Notifications"] {
-        display: none !important;
-      }
-
-      article nav {
-        display: none !important;
-      }
-
-      section[aria-labelledby="toc-heading"] {
         display: none !important;
       }
 

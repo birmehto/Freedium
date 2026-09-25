@@ -96,3 +96,4 @@ secrets/
 *.history
 notes/
 NOTES*
+/info/

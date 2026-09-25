@@ -7,7 +7,7 @@ class HomeHeaderIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colors = theme.colorScheme;
 
     return Container(
       width: 120,
@@ -16,7 +16,7 @@ class HomeHeaderIcon extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+          color: colors.primary.withValues(alpha: 0.2),
           width: 2,
         ),
       ),
@@ -27,13 +27,13 @@ class HomeHeaderIcon extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              theme.colorScheme.primaryContainer.withValues(alpha: 0.8),
-              theme.colorScheme.primary,
+              colors.primaryContainer.withValues(alpha: 0.8),
+              colors.primary,
             ],
           ),
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.3),
+              color: colors.primary.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -42,42 +42,43 @@ class HomeHeaderIcon extends StatelessWidget {
         child: Icon(
           M3EIcons.auto_stories_rounded,
           size: 48,
-          color: isDark ? theme.colorScheme.onPrimary : Colors.white,
+          color: colors.onPrimary,
         ),
       ),
     );
   }
 }
 
-/// Home hero: header icon, headline and tagline.
 class HomeHero extends StatelessWidget {
   const HomeHero({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final text = theme.textTheme;
 
     return Column(
       children: [
         const SizedBox(height: 20),
-        const Center(child: HomeHeaderIcon()),
+        const HomeHeaderIcon(),
         const SizedBox(height: 30),
         Text(
           'Read Freely',
           textAlign: TextAlign.center,
-          style: theme.textTheme.displaySmall?.copyWith(
+          style: text.displaySmall?.copyWith(
             fontWeight: FontWeight.w900,
             letterSpacing: -1.5,
-            height: 1.0,
-            color: theme.colorScheme.onSurface,
+            height: 1,
+            color: colors.onSurface,
           ),
         ),
         const SizedBox(height: 16),
         Text(
           'Unlock premium Medium content instantly.\nNo limits. No paywalls.',
           textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+          style: text.titleMedium?.copyWith(
+            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
             height: 1.5,
             fontWeight: FontWeight.w500,
           ),

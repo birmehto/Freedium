@@ -1,8 +1,8 @@
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../features/favorites/views/favorites_page.dart';
 import '../../features/home/views/home_page.dart';
-import '../../features/library/views/library_page.dart';
 import '../../features/settings/views/settings_page.dart';
 
 /// Root shell: top-level navigation via a bottom navigation bar.
@@ -33,7 +33,7 @@ class _AppShellState extends State<AppShell> {
 
   static const List<Widget> _pages = [
     HomePage(),
-    LibraryPage(),
+    FavoritesPage(),
     SettingsPage(),
   ];
 

@@ -16,8 +16,6 @@ class SettingsPage extends GetView<SettingsController> {
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: const AppAppBar(title: 'Settings'),
       body: ListView(
@@ -45,8 +43,6 @@ class SettingsPage extends GetView<SettingsController> {
                     title: 'Theme',
                     supportingText: controller.themeMode.value,
                     icon: M3EIcons.palette_rounded,
-                    iconColor: c.onPrimaryContainer,
-                    backgroundColor: c.primaryContainer.withValues(alpha: 0.6),
                     onTap: () => showThemeDialog(context),
                     trailing: const Icon(M3EIcons.chevron_right_rounded),
                   ),
@@ -56,8 +52,7 @@ class SettingsPage extends GetView<SettingsController> {
                     supportingText:
                         'Theme, font, spacing and alignment used in the reader',
                     icon: M3EIcons.auto_awesome_rounded,
-                    iconColor: c.onPrimaryContainer,
-                    backgroundColor: c.primaryContainer.withValues(alpha: 0.6),
+
                     onTap: () => showReaderAppearanceSheet(context),
                     trailing: const Icon(M3EIcons.chevron_right_rounded),
                   ),
@@ -69,19 +64,16 @@ class SettingsPage extends GetView<SettingsController> {
           const AppSectionHeader(title: 'Reader'),
           M3ECard(
             variant: M3ECardVariant.filled,
-            child: Column(
-              children: [
-                AppSettingsTile(
-                  title: 'Default Font Size',
-                  supportingText:
-                      '${controller.fontSize.value.toStringAsFixed(0)} px',
-                  icon: M3EIcons.format_size_rounded,
-                  iconColor: c.onPrimaryContainer,
-                  backgroundColor: c.primaryContainer.withValues(alpha: 0.6),
-                  onTap: () => showFontSizeSheet(context),
-                  trailing: const Icon(M3EIcons.chevron_right_rounded),
-                ),
-              ],
+            child: Obx(
+              () => AppSettingsTile(
+                title: 'Default Font Size',
+                supportingText:
+                    '${controller.fontSize.value.toStringAsFixed(0)} px',
+                icon: M3EIcons.format_size_rounded,
+
+                onTap: () => showFontSizeSheet(context),
+                trailing: const Icon(M3EIcons.chevron_right_rounded),
+              ),
             ),
           ),
 
@@ -95,8 +87,7 @@ class SettingsPage extends GetView<SettingsController> {
                     title: 'Preferred Mirror',
                     supportingText: controller.preferredMirror.value ?? 'Auto',
                     icon: M3EIcons.swap_horiz_rounded,
-                    iconColor: c.onTertiaryContainer,
-                    backgroundColor: c.tertiaryContainer.withValues(alpha: 0.6),
+
                     onTap: () => showMirrorDialog(context),
                     trailing: const Icon(M3EIcons.chevron_right_rounded),
                   ),
@@ -108,8 +99,7 @@ class SettingsPage extends GetView<SettingsController> {
                     supportingText:
                         'Switch to another source when a mirror fails',
                     icon: M3EIcons.autorenew_rounded,
-                    iconColor: c.onTertiaryContainer,
-                    backgroundColor: c.tertiaryContainer.withValues(alpha: 0.6),
+
                     trailing: M3ESwitch(
                       value: controller.autoFallback.value,
                       onChanged: controller.setAutoFallback,
@@ -128,8 +118,7 @@ class SettingsPage extends GetView<SettingsController> {
                 AppSettingsTile(
                   title: 'Send Feedback',
                   icon: M3EIcons.mail_outline_rounded,
-                  iconColor: c.onTertiaryContainer,
-                  backgroundColor: c.tertiaryContainer.withValues(alpha: 0.6),
+
                   onTap: controller.sendFeedback,
                 ),
                 const M3EDivider(),
@@ -137,16 +126,14 @@ class SettingsPage extends GetView<SettingsController> {
                   title: 'GitHub',
                   supportingText: 'View the Freedium source code',
                   icon: M3EIcons.code_rounded,
-                  iconColor: c.onTertiaryContainer,
-                  backgroundColor: c.tertiaryContainer.withValues(alpha: 0.6),
+
                   onTap: controller.openGitHub,
                 ),
                 const M3EDivider(),
                 AppSettingsTile(
                   title: 'Version',
                   icon: M3EIcons.info_outline_rounded,
-                  iconColor: c.onSecondaryContainer,
-                  backgroundColor: c.secondaryContainer.withValues(alpha: 0.6),
+
                   trailing: Obx(
                     () => AppPill(label: controller.appVersion.value),
                   ),
@@ -155,13 +142,13 @@ class SettingsPage extends GetView<SettingsController> {
                 AppSettingsTile(
                   title: 'Licenses & Credits',
                   icon: M3EIcons.gavel_rounded,
-                  iconColor: c.onSecondaryContainer,
-                  backgroundColor: c.secondaryContainer.withValues(alpha: 0.6),
+
                   onTap: () => showCreditsDialog(context),
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: 48),
         ],
       ),
