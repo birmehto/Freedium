@@ -95,8 +95,10 @@ class _LoadingIndicator extends GetView<ArticleController> {
       child: IgnorePointer(
         child: Align(
           alignment: Alignment.topCenter,
-          child: M3EProgressIndicator.linear(
-            value: progress > 0 && progress < 1 ? progress : null,
+          child:           M3EProgressIndicator.linear(
+            // A determinate bar that is already full, rather than flipping to
+            // an indeterminate spinner at exactly 100%.
+            value: progress >= 1 ? 1 : (progress > 0 ? progress : null),
             color: context.colors.primary,
           ),
         ),

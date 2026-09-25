@@ -124,9 +124,10 @@ class _ArticleWebViewState extends State<ArticleWebView> {
             handledByClient: true,
           ),
       onLoadStart: (controller, url) {
-        _controller.isLoading.value = true;
-        _controller.errorMessage.value = '';
-        if (url != null) _controller.currentUrl.value = url.toString();
+        _controller.onPageStart(url?.toString());
+      },
+      onPageCommitVisible: (controller, url) {
+        _controller.onPageCommitVisible();
       },
       onLoadStop: (controller, url) async {
         await _endRefreshing();

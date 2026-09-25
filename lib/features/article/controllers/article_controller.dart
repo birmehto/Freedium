@@ -166,6 +166,28 @@ class ArticleController extends GetxController {
 
   // ────────────────────────────── WebView ────────────────────────────────
 
+  /// A new navigation has begun.
+  ///
+  /// Arms the watchdog again: a mirror that redirects, or a second navigation
+  /// started by the page itself, would otherwise leave the reader loading
+  /// forever, because the previous load already cancelled the timer.
+  void onPageStart(String? url) {
+    errorMessage.value = '';
+    isLoading.value = true;
+    _startLoadingTimer();
+
+    if (url != null) currentUrl.value = url;
+  }
+
+  /// The new document is painted and visible to the reader.
+  ///
+  /// `onLoadStop` can lag behind this by a noticeable amount, or be skipped
+  /// entirely on some platforms, so the blocking loader is dismissed here
+  /// rather than waiting for it.
+  void onPageCommitVisible() {
+    if (isLoading.value || isInitialLoad.value) _stopLoading();
+  }
+
   void setWebViewController(InAppWebViewController controller) {
     webViewController = controller;
   }
@@ -200,8 +222,16 @@ class ArticleController extends GetxController {
     isInitialLoad.value = false;
   }
 
+  /// Reports WebView load progress as a 0..1 fraction.
+  ///
+  /// A completed load is treated as "done" here as well as in
+  /// [onPageLoaded]. Waiting for `onLoadStop` alone is what left the reader
+  /// spinning on an article that had already finished loading.
   void updateProgress(double progress) {
-    loadingProgress.value = progress / 100;
+    final value = (progress / 100).clamp(0.0, 1.0).toDouble();
+    loadingProgress.value = value;
+
+    if (value >= 1.0 && isLoading.value) _stopLoading();
   }
 
   Future<void> requestRefresh() async {
