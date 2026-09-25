@@ -13,7 +13,6 @@ class ReaderTheme {
   // JavaScript compatibility
   // ---------------------------------------------------------------------------
 
-  /// ES2022/ES2023 polyfills for older Android WebViews.
   static const String esCompatPolyfills = '''
 (function () {
   'use strict';
@@ -33,6 +32,7 @@ class ReaderTheme {
           return this[i];
         }
       }
+
       return undefined;
     };
   }
@@ -44,6 +44,7 @@ class ReaderTheme {
           return i;
         }
       }
+
       return -1;
     };
   }
@@ -78,6 +79,8 @@ class ReaderTheme {
     text: '#2b2823',
     secondaryText: '#625d55',
     selection: 'rgba(43, 40, 35, 0.10)',
+    codeBackground: '#f3f2ef',
+    codeBorder: 'rgba(0, 0, 0, 0.10)',
   );
 
   static const _dark = _ThemeColors(
@@ -85,6 +88,8 @@ class ReaderTheme {
     text: '#e7e1d6',
     secondaryText: '#b8b1a5',
     selection: 'rgba(231, 225, 214, 0.14)',
+    codeBackground: '#24211c',
+    codeBorder: 'rgba(255, 255, 255, 0.10)',
   );
 
   static const _sepia = _ThemeColors(
@@ -92,6 +97,8 @@ class ReaderTheme {
     text: '#5b4636',
     secondaryText: '#7a6654',
     selection: 'rgba(91, 70, 54, 0.18)',
+    codeBackground: '#ebe1c8',
+    codeBorder: 'rgba(91, 70, 54, 0.15)',
   );
 
   static const _oled = _ThemeColors(
@@ -99,6 +106,8 @@ class ReaderTheme {
     text: '#c9c7c2',
     secondaryText: '#999793',
     selection: 'rgba(201, 199, 194, 0.18)',
+    codeBackground: '#111111',
+    codeBorder: 'rgba(255, 255, 255, 0.12)',
   );
 
   static _ThemeColors _palette(
@@ -159,9 +168,11 @@ class ReaderTheme {
   function silenceJsDialogs() {
     try {
       window.alert = function () {};
+
       window.confirm = function () {
         return false;
       };
+
       window.prompt = function () {
         return null;
       };
@@ -222,11 +233,7 @@ class ReaderTheme {
       if (link && link.target === '_blank') {
         event.preventDefault();
         event.stopImmediatePropagation();
-        return;
       }
-
-      // Do not block normal Freedium controls.
-      // Only prevent external popup links.
     },
     true,
   );
@@ -544,13 +551,17 @@ class ReaderTheme {
 
     final isDark = readerIsDark(settings, systemDark: systemDark);
 
+    final linkColor = isDark ? '#7dd3fc' : '#2563eb';
+
+    final inlineCodeBackground = isDark
+        ? 'rgba(255, 255, 255, 0.10)'
+        : 'rgba(0, 0, 0, 0.06)';
+
     final fontFamily = settings.isSystemFont
         ? ''
         : '''
           font-family: ${settings.fontFamily} !important;
         ''';
-
-    final linkColor = isDark ? '#7dd3fc' : '#2563eb';
 
     return '''
       /* ============================================================
@@ -564,6 +575,7 @@ class ReaderTheme {
       html {
         background: ${colors.background} !important;
         color: ${colors.text} !important;
+
         -webkit-text-size-adjust: 100% !important;
       }
 
@@ -610,6 +622,7 @@ class ReaderTheme {
         width: 100% !important;
         max-width: none !important;
         min-height: 0 !important;
+
         margin: 0 auto !important;
         padding: 0 !important;
 
@@ -628,7 +641,6 @@ class ReaderTheme {
         overflow: visible !important;
 
         background: transparent !important;
-
         color: ${colors.text} !important;
 
         border: 0 !important;
@@ -640,13 +652,12 @@ class ReaderTheme {
         max-width: none !important;
         padding: 0 !important;
 
+        background: transparent !important;
         color: ${colors.text} !important;
       }
 
       /* ============================================================
-         IMPORTANT:
-         Freedium uses Tailwind text colors.
-         Override those colors for reader themes.
+         Article text
          ============================================================ */
 
       article > header,
@@ -675,7 +686,6 @@ class ReaderTheme {
         color: ${colors.text} !important;
       }
 
-      /* Text outside .prose */
       article > div > p,
       article > div > h1,
       article > div > h2,
@@ -687,7 +697,6 @@ class ReaderTheme {
         color: ${colors.text} !important;
       }
 
-      /* Secondary text */
       article small,
       article .text-sm,
       article .text-xs {
@@ -700,6 +709,7 @@ class ReaderTheme {
 
       article .prose a {
         color: $linkColor !important;
+
         text-decoration: underline !important;
         text-underline-offset: 2px !important;
       }
@@ -713,7 +723,7 @@ class ReaderTheme {
       }
 
       /* ============================================================
-         Spacing
+         Paragraph spacing
          ============================================================ */
 
       p {
@@ -721,7 +731,7 @@ class ReaderTheme {
       }
 
       /* ============================================================
-         Media
+         Images / media
          ============================================================ */
 
       img,
@@ -741,29 +751,112 @@ class ReaderTheme {
       }
 
       /* ============================================================
-         Code
+         INLINE CODE
+         ============================================================ */
+
+      article .prose :not(pre) > code {
+        display: inline-block !important;
+
+        background: $inlineCodeBackground !important;
+
+        color: ${colors.text} !important;
+
+        padding: 0.12em 0.35em !important;
+
+        border-radius: 0.35em !important;
+
+        border: 0 !important;
+
+        font-size: 0.9em !important;
+        font-weight: 500 !important;
+
+        white-space: normal !important;
+      }
+
+      /* ============================================================
+         CODE BLOCK
          ============================================================ */
 
       pre {
+        width: 100% !important;
         max-width: 100% !important;
-        overflow-x: auto !important;
+
         box-sizing: border-box !important;
 
-        -webkit-overflow-scrolling: touch !important;
-      }
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
 
-      code {
-        max-width: 100% !important;
+        -webkit-overflow-scrolling: touch !important;
+
+        margin: 1.5em 0 !important;
+
+        padding: 16px !important;
+
+        background: ${colors.codeBackground} !important;
+
+        border: 1px solid ${colors.codeBorder} !important;
+
+        border-radius: 12px !important;
+
+        color: ${colors.text} !important;
+
+        font-size: 0.9em !important;
+
+        line-height: 1.6 !important;
       }
 
       /*
-       * Do NOT force color on code/pre.
-       * Freedium syntax highlighting needs its own colors.
+       * The actual code element should not add another
+       * background or border.
        */
-
-      pre,
+      pre > code,
       pre code {
-        color: inherit;
+        display: block !important;
+
+        max-width: none !important;
+
+        padding: 0 !important;
+
+        margin: 0 !important;
+
+        background: transparent !important;
+
+        border: 0 !important;
+
+        border-radius: 0 !important;
+
+        font-size: inherit !important;
+
+        line-height: inherit !important;
+
+        white-space: pre !important;
+      }
+
+      /*
+       * Remove unwanted backgrounds from syntax-highlight
+       * wrappers, but DO NOT override their colors.
+       *
+       * This preserves Freedium's syntax highlighting.
+       */
+      pre span,
+      pre div {
+        background-color: transparent !important;
+      }
+
+      /*
+       * Only provide a fallback color when an element does
+       * not already have a syntax-highlighting color.
+       */
+      pre {
+        --reader-code-color: ${colors.text};
+      }
+
+      /* ============================================================
+         CODE COPY BUTTON
+         ============================================================ */
+
+      pre button {
+        color: inherit !important;
       }
 
       /* ============================================================
@@ -771,8 +864,13 @@ class ReaderTheme {
          ============================================================ */
 
       table {
+        display: block !important;
+
         max-width: 100% !important;
+
         overflow-x: auto !important;
+
+        box-sizing: border-box !important;
       }
 
       /* ============================================================
@@ -798,6 +896,7 @@ class ReaderTheme {
         padding: 0 0 1.5em !important;
 
         background: transparent !important;
+
         border: 0 !important;
       }
 
@@ -805,16 +904,9 @@ class ReaderTheme {
         padding: 0 !important;
 
         background: transparent !important;
+
         border: 0 !important;
       }
-
-      article .prose {
-        background: transparent !important;
-      }
-
-      /* ============================================================
-         Hide unwanted Freedium elements
-         ============================================================ */
 
       article > div[data-nosnippet],
       article nav,
@@ -844,7 +936,7 @@ class ReaderTheme {
       }
 
       /* ============================================================
-         Keep image zoom/click behavior available
+         Image zoom
          ============================================================ */
 
       .image-zoom-figure,
@@ -853,13 +945,12 @@ class ReaderTheme {
       }
 
       /* ============================================================
-         Horizontal overflow protection
+         Overflow protection
          ============================================================ */
 
       pre,
       table,
       .overflow-x-auto {
-        overflow-x: auto !important;
         max-width: 100% !important;
       }
     ''';
@@ -872,10 +963,14 @@ class _ThemeColors {
     required this.text,
     required this.secondaryText,
     required this.selection,
+    required this.codeBackground,
+    required this.codeBorder,
   });
 
   final String background;
   final String text;
   final String secondaryText;
   final String selection;
+  final String codeBackground;
+  final String codeBorder;
 }
