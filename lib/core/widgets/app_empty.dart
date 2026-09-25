@@ -26,7 +26,7 @@ class AppEmpty extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(25),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: c.primaryContainer.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
@@ -37,7 +37,7 @@ class AppEmpty extends StatelessWidget {
                 color: c.primary.withValues(alpha: 0.5),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 20),
             Text(
               title,
               style: theme.textTheme.headlineSmall?.copyWith(

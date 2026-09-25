@@ -57,6 +57,7 @@ class ArticlePage extends GetView<ArticleController> {
     final favorite = controller.isFavorite.value;
 
     return M3EIconButton(
+      size: M3EIconButtonSize.xs,
       icon: Icon(
         favorite ? M3EIcons.favorite_rounded : M3EIcons.favorite_border_rounded,
         color: favorite ? theme.colorScheme.onPrimary : null,

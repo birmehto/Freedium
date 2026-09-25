@@ -6,43 +6,40 @@ class HomeHeaderIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final colors = Theme.of(context).colorScheme;
 
     return Container(
-      width: 120,
-      height: 120,
-      padding: const EdgeInsets.all(12),
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        color: colors.primaryContainer,
         border: Border.all(
-          color: colors.primary.withValues(alpha: 0.2),
-          width: 2,
+          color: colors.primary.withValues(alpha: 0.15),
+          width: 1.5,
         ),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colors.primaryContainer.withValues(alpha: 0.8),
-              colors.primary,
+      child: Center(
+        child: Container(
+          width: 82,
+          height: 82,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: colors.primary,
+            boxShadow: [
+              BoxShadow(
+                color: colors.primary.withValues(alpha: 0.22),
+                blurRadius: 24,
+                spreadRadius: -4,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: colors.primary.withValues(alpha: 0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Icon(
-          M3EIcons.auto_stories_rounded,
-          size: 48,
-          color: colors.onPrimary,
+          child: Icon(
+            M3EIcons.auto_stories_rounded,
+            size: 40,
+            color: colors.onPrimary,
+          ),
         ),
       ),
     );
@@ -58,33 +55,45 @@ class HomeHero extends StatelessWidget {
     final colors = theme.colorScheme;
     final text = theme.textTheme;
 
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        const HomeHeaderIcon(),
-        const SizedBox(height: 30),
-        Text(
-          'Read Freely',
-          textAlign: TextAlign.center,
-          style: text.displaySmall?.copyWith(
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1.5,
-            height: 1,
-            color: colors.onSurface,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+
+          const HomeHeaderIcon(),
+
+          const SizedBox(height: 28),
+
+          Text(
+            'Read Freely',
+            textAlign: TextAlign.center,
+            style: text.displaySmall?.copyWith(
+              color: colors.onSurface,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -1.8,
+              height: 1.05,
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Unlock premium Medium content instantly.\nNo limits. No paywalls.',
-          textAlign: TextAlign.center,
-          style: text.titleMedium?.copyWith(
-            color: colors.onSurfaceVariant.withValues(alpha: 0.7),
-            height: 1.5,
-            fontWeight: FontWeight.w500,
+
+          const SizedBox(height: 12),
+
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Text(
+              'Read the stories you love without limits or paywalls.',
+              textAlign: TextAlign.center,
+              style: text.bodyLarge?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                height: 1.5,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 30),
-      ],
+
+          const SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }

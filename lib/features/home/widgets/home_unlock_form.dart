@@ -43,7 +43,7 @@ class HomeUnlockForm extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             AppButton(
               label: const Text('Unlock Article'),
               size: M3EButtonSize.md,
