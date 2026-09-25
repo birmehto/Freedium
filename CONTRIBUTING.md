@@ -10,7 +10,7 @@ Thanks for helping out! This is a small, friendly, open-source project — code 
 git clone https://github.com/birmehto/Freedium.git
 cd Freedium
 flutter pub get
-flutter run          # Android or iOS target
+flutter run          # Android or Linux target
 ```
 
 ## Development workflow
@@ -50,9 +50,10 @@ Before diving in, read [ARCHITECTURE.md](ARCHITECTURE.md). In short:
 
 - Mirror definitions live in `lib/core/config/mirror_source.dart`. Resolver behavior is unit-tested in `test/features/network/article_resolver_test.dart` — add a case when you change fallback logic.
 
-### Reader / offline
+### Reader
 
-- Reader CSS + JS live in `lib/core/constants/reader_theme.dart`; the controller in `lib/features/article/controllers/article_controller.dart`; offline save in `LibraryStore.saveArticle`.
+- Reader CSS lives in `lib/core/constants/reader_theme.dart`; the controller in `lib/features/article/controllers/article_controller.dart`.
+- There is no offline download path. Article metadata is cached for fast list rendering, but the WebView always loads over the network.
 
 ### Storage
 

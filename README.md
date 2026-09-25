@@ -2,10 +2,10 @@
 
 # 📖 Freedium
 
-**Read any Medium story — free, clean, and offline-ready.**
+**Read any Medium story — free, clean, and distraction-free.**
 
 [![Version](https://img.shields.io/badge/Release-v1.1.1-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-blue?style=flat-square)]()
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Linux-blue?style=flat-square)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/birmehto/Freedium/ci.yml?style=flat-square&label=CI)](https://github.com/birmehto/Freedium/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
@@ -23,13 +23,11 @@
 ## ✨ Features
 
 - **🛡️ Unlock any Medium story** — paste a link or share one from any app and read the whole article.
-- **📚 Your Library** — Continue Reading, Favorites, Saved, and History, all in one place (with search).
-- **💾 Read offline** — save any article and open it later without a connection.
-- **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family, font size, line height, paragraph spacing, content width, and text alignment.
-- **🔎 Find in article** — search inside a story and jump between matches.
+- **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
+- **🔒 On-device library** — favorites, settings, and article metadata are stored locally; nothing is uploaded.
+- **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
-- **📊 Local reading statistics** — articles opened, completed, and minutes read, stored on-device only.
-- **🔐 Truly private** — no account, no ads, no tracking. Everything stays on your device.
+- **🔐 Truly private** — no account, no ads, no analytics. Everything stays on your device.
 
 ---
 
@@ -62,7 +60,7 @@ flutter run
 | Platform | Get it |
 |----------|--------|
 | 🤖 **Android** | [Download the latest APK](https://github.com/birmehto/Freedium/releases/latest) |
-| 🍎 **iOS** | Build from source — see [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 🐧 **Linux** | Build from source — see [CONTRIBUTING.md](CONTRIBUTING.md) |
 
 > On Android, enable "Install unknown apps" for your browser to install the APK.
 
@@ -79,7 +77,7 @@ flutter run
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 101 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
+| Quality | `flutter_lints`, 111 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
 
 ---
 
@@ -88,7 +86,7 @@ flutter run
 Planned items are clearly marked below — nothing here is claimed to ship yet.
 
 ### ✅ Current
-Freedium today ships: unlock & read Medium articles, Library (favorites, history, saved, continue reading), offline reading, reader customization, find-in-article, automatic mirror fallback, themes, keyboard shortcuts, and local reading statistics.
+Freedium today ships: unlock & read Medium articles, favorites, reader customization, automatic mirror fallback, and app themes.
 
 ### 🚧 Next
 - **Bookmarks** — additionally bookmark articles in the Library *(planned, not yet implemented)*.

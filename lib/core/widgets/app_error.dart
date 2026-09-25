@@ -1,6 +1,7 @@
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../theme/app_spacing.dart';
 import 'app_button.dart';
 
 /// Centered error state with an optional retry and secondary action.
@@ -40,12 +41,12 @@ class AppError extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(28),
+        padding: const EdgeInsets.all(AppSpacing.xl + AppSpacing.xs),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 64, color: c.error),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
 
             Text(
               title,
@@ -55,7 +56,7 @@ class AppError extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
 
             Text(
               message,
@@ -64,7 +65,7 @@ class AppError extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.xxl),
 
             if (onRetry != null)
               AppButton(
@@ -74,7 +75,7 @@ class AppError extends StatelessWidget {
                 label: Text(retryLabel),
               ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
 
             if (secondaryLabel != null && onSecondary != null)
               AppButton(
@@ -86,12 +87,12 @@ class AppError extends StatelessWidget {
               ),
 
             for (final action in extraActions) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               action,
             ],
 
             if (hint != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xl),
               Text(
                 hint!,
                 style: theme.textTheme.bodySmall?.copyWith(

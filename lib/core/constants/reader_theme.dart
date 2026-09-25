@@ -268,41 +268,6 @@ class ReaderTheme {
 ''';
 
   // ---------------------------------------------------------------------------
-  // Article text
-  // ---------------------------------------------------------------------------
-
-  static const String extractArticleTextJs = r'''
-(function() {
-  try {
-    var article =
-      document.querySelector('article') ||
-      document.querySelector('main') ||
-      document.body;
-
-    var text = article
-      ? article.innerText || article.textContent || ''
-      : '';
-
-    var words = text
-      .trim()
-      .split(/\s+/)
-      .filter(function(w) {
-        return w.length > 0;
-      })
-      .length;
-
-    return JSON.stringify({
-      words: words
-    });
-  } catch(e) {
-    return JSON.stringify({
-      words: 0
-    });
-  }
-})();
-''';
-
-  // ---------------------------------------------------------------------------
   // Metadata
   // ---------------------------------------------------------------------------
 
@@ -386,162 +351,30 @@ class ReaderTheme {
 ''';
 
   // ---------------------------------------------------------------------------
-  // Capture article HTML
-  // ---------------------------------------------------------------------------
-
-  static const String captureArticleHtmlJs = '''
-(function() {
-  try {
-    var source =
-      document.querySelector('article') ||
-      document.querySelector('main');
-
-    if (!source) {
-      return JSON.stringify({
-        html: '',
-        images: 0
-      });
-    }
-
-    var clone = source.cloneNode(true);
-
-    var images = clone.querySelectorAll('img').length;
-
-    var unwanted = clone.querySelectorAll(
-      'nav, footer, #progress, [data-nosnippet], ' +
-      'section[aria-label*="Notifications"], ' +
-      '[role="region"][aria-label*="Notifications"], ' +
-      'section[aria-labelledby="toc-heading"], ' +
-      '[data-dialog-content], [data-dialog-overlay], ' +
-      '[data-drawer-content], [data-drawer-overlay], ' +
-      '[data-dropdown-menu-content], [data-menu-content], ' +
-      '[data-popover-content], [data-tooltip-content], ' +
-      '[role="dialog"], [role="alertdialog"], [role="menu"], ' +
-      '[data-sonner-toaster], [data-sonner-toast]'
-    );
-
-    for (var i = 0; i < unwanted.length; i++) {
-      if (
-        unwanted[i] &&
-        unwanted[i].parentNode
-      ) {
-        unwanted[i].parentNode.removeChild(
-          unwanted[i],
-        );
-      }
-    }
-
-    function makeAbsolute(attribute) {
-      var nodes = clone.querySelectorAll(
-        '[' + attribute + ']',
-      );
-
-      for (var j = 0; j < nodes.length; j++) {
-        var value = nodes[j].getAttribute(attribute);
-
-        if (!value || value.charAt(0) === '#') {
-          continue;
-        }
-
-        try {
-          var resolver = document.createElement('a');
-          resolver.href = value;
-
-          nodes[j].setAttribute(
-            attribute,
-            resolver.href,
-          );
-        } catch (e) {}
-      }
-    }
-
-    makeAbsolute('href');
-    makeAbsolute('src');
-    makeAbsolute('data-zoom-src');
-
-    var base = (document.baseURI || '')
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-
-    var html =
-      '<!doctype html>' +
-      '<html>' +
-      '<head>' +
-      '<meta charset="utf-8">' +
-      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-      '<base href="' +
-      base +
-      '">' +
-      '</head>' +
-      '<body>' +
-      clone.outerHTML +
-      '</body>' +
-      '</html>';
-
-    return JSON.stringify({
-      html: html,
-      images: images
-    });
-  } catch(e) {
-    return JSON.stringify({
-      html: '',
-      images: 0
-    });
-  }
-})();
-''';
-
-  // ---------------------------------------------------------------------------
-  // Selected/body text
-  // ---------------------------------------------------------------------------
-
-  static const String selectedOrBodyTextJs = r'''
-(function() {
-  try {
-    var sel = window.getSelection
-      ? window.getSelection().toString()
-      : '';
-
-    if (sel && sel.trim()) {
-      return JSON.stringify({
-        text: sel
-      });
-    }
-  } catch(e) {}
-
-  try {
-    var article =
-      document.querySelector('article') ||
-      document.querySelector('main') ||
-      document.body;
-
-    var text = article
-      ? article.innerText || article.textContent || ''
-      : '';
-
-    var clean = text
-      .split(/\s+/)
-      .filter(function(w) {
-        return w.length > 0;
-      })
-      .join(' ');
-
-    return JSON.stringify({
-      text: clean.substring(0, 20000)
-    });
-  } catch(e) {
-    return JSON.stringify({
-      text: ''
-    });
-  }
-})();
-''';
-
-  // ---------------------------------------------------------------------------
   // CSS
   // ---------------------------------------------------------------------------
+
+  /// Script that replaces the reader stylesheet inside the loaded document.
+  ///
+  /// [css] is JSON-encoded rather than interpolated into a template literal, so
+  /// a backtick, `${…}` or a line separator in the generated stylesheet can never
+  /// break out into executable JavaScript.
+  static String injectCssScript(String css) {
+    return '''
+(function() {
+  try {
+    var previous = document.getElementById('${jsonEncode(customCssId)}');
+    if (previous) previous.remove();
+
+    var style = document.createElement('style');
+    style.id = ${jsonEncode(customCssId)};
+    style.textContent = ${jsonEncode(css)};
+
+    (document.head || document.documentElement).appendChild(style);
+  } catch (e) {}
+})();
+''';
+  }
 
   static String getCss({
     required ReaderSettings settings,

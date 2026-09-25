@@ -1,56 +1,66 @@
-import 'package:flutter/widgets.dart';
+import 'package:material_ui/material_ui.dart' show WidgetsBinding, Brightness;
 
 import '../../features/settings/models/reader_settings.dart';
 import 'key_value_store.dart';
 
-/// Device-level preferences: theme, typography, search & mirror options.
+/// Device-level preferences: theme, reader typography and mirror options.
 ///
-/// Kept separate from [LibraryStore] so reading data and device settings do
-/// not share one blob of responsibility.
+/// Kept separate from [LibraryStore] so reading data and device settings never
+/// share a single blob of responsibility.
 class PreferencesStore {
-  PreferencesStore(this._box);
+  PreferencesStore(this._store);
 
-  static const kThemeMode = 'theme_mode';
-  static const kReaderSettings = 'reader_settings';
-  static const kPreferredMirror = 'preferred_mirror';
-  static const kAutoFallback = 'auto_fallback';
+  static const String themeModeKey = 'theme_mode';
+  static const String readerSettingsKey = 'reader_settings';
+  static const String preferredMirrorKey = 'preferred_mirror';
+  static const String autoFallbackKey = 'auto_fallback';
 
-  final KeyValueStore _box;
+  static const String modeSystem = 'system';
+  static const String modeLight = 'light';
+  static const String modeDark = 'dark';
+
+  final KeyValueStore _store;
 
   // ─────────────────────────────── theme ───────────────────────────────
 
-  /// One of `system`, `light`, `dark`.
+  /// One of [modeSystem], [modeLight] or [modeDark].
   String get themeMode {
-    final raw = _box.read(kThemeMode);
-    if (raw is bool) {
-      return raw ? 'dark' : 'light';
-    }
-    return (raw as String?) ?? 'system';
+    final raw = _store.read(themeModeKey);
+
+    // Pre-1.0 builds persisted a boolean instead of the mode name.
+    if (raw is bool) return raw ? modeDark : modeLight;
+    if (raw is String && raw.isNotEmpty) return raw;
+
+    return modeSystem;
   }
 
   set themeMode(String value) {
-    _box.write(kThemeMode, value);
+    _store.write(themeModeKey, value);
   }
 
-  /// Effective brightness taking the platform into account for `system`.
-  bool get isDarkMode {
-    final mode = themeMode;
-    if (mode == 'light') return false;
-    if (mode == 'dark') return true;
+  /// Effective brightness, resolving [modeSystem] against the platform.
+  bool get isDarkMode => switch (themeMode) {
+    modeLight => false,
+    modeDark => true,
+    _ => platformBrightness == Brightness.dark,
+  };
+
+  set isDarkMode(bool value) => themeMode = value ? modeDark : modeLight;
+
+  /// The brightness the OS is currently reporting.
+  Brightness get platformBrightness {
     try {
-      return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-          Brightness.dark;
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness;
     } catch (_) {
-      return false;
+      // No binding available (early boot or a pure Dart test).
+      return Brightness.light;
     }
   }
-
-  set isDarkMode(bool value) => themeMode = value ? 'dark' : 'light';
 
   // ─────────────────────────── reader settings ─────────────────────────
 
   ReaderSettings get readerSettings {
-    final raw = _box.read(kReaderSettings);
+    final raw = _store.read(readerSettingsKey);
     if (raw is Map) {
       return ReaderSettings.fromJson(Map<String, dynamic>.from(raw));
     }
@@ -58,29 +68,25 @@ class PreferencesStore {
   }
 
   set readerSettings(ReaderSettings settings) {
-    _box.write(kReaderSettings, settings.toJson());
-  }
-
-  /// Convenience accessor kept for feature parity with the earlier API.
-  double get fontSize => readerSettings.fontSize;
-
-  set fontSize(double value) {
-    readerSettings = readerSettings.copyWith(fontSize: value);
+    _store.write(readerSettingsKey, settings.toJson());
   }
 
   // ───────────────────────────── mirror options ────────────────────────
 
-  String? get preferredMirror => _box.read(kPreferredMirror) as String?;
+  /// The user-pinned mirror id, or `null` to let the resolver choose.
+  String? get preferredMirror => _store.read(preferredMirrorKey) as String?;
 
   set preferredMirror(String? value) {
     if (value == null) {
-      _box.remove(kPreferredMirror);
+      _store.remove(preferredMirrorKey);
     } else {
-      _box.write(kPreferredMirror, value);
+      _store.write(preferredMirrorKey, value);
     }
   }
 
-  bool get autoFallback => _box.read(kAutoFallback) as bool? ?? true;
+  bool get autoFallback => _store.read(autoFallbackKey) as bool? ?? true;
 
-  set autoFallback(bool value) => _box.write(kAutoFallback, value);
+  set autoFallback(bool value) {
+    _store.write(autoFallbackKey, value);
+  }
 }

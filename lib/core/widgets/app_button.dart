@@ -1,6 +1,8 @@
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../theme/app_spacing.dart';
+
 /// Visual variants mapped to [M3EButtonStyle].
 enum AppButtonVariant { filled, tonal, outlined, elevated, text }
 
@@ -55,7 +57,7 @@ class AppButton extends StatelessWidget {
               child: M3EProgressIndicator.circular(size: 20),
             ),
             if (label case final Widget label?) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               label,
             ],
           ],

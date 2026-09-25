@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_spacing.dart';
+
 /// A titled row of single-select [ChoiceChip]s.
 class AppChoiceChips extends StatelessWidget {
   const AppChoiceChips({
@@ -23,7 +25,7 @@ class AppChoiceChips extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(title, style: theme.textTheme.titleSmall),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -36,7 +38,7 @@ class AppChoiceChips extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.lg),
       ],
     );
   }

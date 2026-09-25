@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_empty.dart';
 import '../../../core/widgets/app_textform.dart';
@@ -18,12 +19,17 @@ class FavoritesPage extends GetView<FavoritesController> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: const AppAppBar(title: 'Favorites'),
+      appBar: const AppAppBar(title: Text('Favorites')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.sm,
+            ),
             child: AppTextForm(
               label: 'Search your library...',
               onChanged: controller.onSearchChanged,
@@ -50,7 +56,12 @@ class FavoritesPage extends GetView<FavoritesController> {
               }
 
               return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
                 child: M3EDismissibleColumn(
                   itemCount: list.length,
                   style: const M3EDismissibleListStyle(gap: 8),

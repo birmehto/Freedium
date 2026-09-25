@@ -20,25 +20,17 @@ class Freedium extends StatelessWidget {
     return Obx(() {
       final isDark = themeService.isDarkMode.value;
 
-      final m3eTheme = isDark
-          ? M3EThemeData.dark(seedColor: seedColor)
-          : M3EThemeData.light(seedColor: seedColor);
-
-      final flutterTheme = fm.ThemeData(
-        useMaterial3: true,
-        colorScheme: fm.ColorScheme.fromSeed(
-          seedColor: seedColor,
-          brightness: isDark ? fm.Brightness.dark : fm.Brightness.light,
-        ),
-      );
-
       return M3ETheme(
-        data: m3eTheme,
+        data: isDark
+            ? M3EThemeData.dark(seedColor: seedColor)
+            : M3EThemeData.light(seedColor: seedColor),
         child: GetMaterialApp(
           title: 'Freedium',
-          theme: flutterTheme,
-          darkTheme: flutterTheme,
-          themeMode: isDark ? fm.ThemeMode.dark : fm.ThemeMode.light,
+          // Light and dark are separate themes, and `themeMode` keeps the
+          // `system` preference working instead of pinning the resolved value.
+          theme: _materialTheme(Brightness.light),
+          darkTheme: _materialTheme(Brightness.dark),
+          themeMode: themeService.themeMode,
           debugShowCheckedModeBanner: false,
           localizationsDelegates: const [
             ui.DefaultMaterialLocalizations.delegate,
@@ -49,4 +41,12 @@ class Freedium extends StatelessWidget {
       );
     });
   }
+
+  static fm.ThemeData _materialTheme(fm.Brightness brightness) => fm.ThemeData(
+    useMaterial3: true,
+    colorScheme: fm.ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    ),
+  );
 }

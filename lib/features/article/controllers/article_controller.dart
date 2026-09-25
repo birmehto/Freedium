@@ -18,27 +18,33 @@ import '../../../core/utils/app_log.dart';
 import '../../favorites/models/favorite_article.dart';
 import '../../settings/models/reader_settings.dart';
 import '../models/article_meta.dart';
+import '../models/article_request.dart';
 
+/// Owns the state of one open article: the loaded URL, extracted metadata,
+/// reader typography, favorite status and find-in-article.
 class ArticleController extends GetxController {
   ArticleController(
     this._clipboard,
     this._storage,
-    this._theme, {
-    ArticleResolver? resolver,
-  }) : _resolver = resolver ?? ArticleResolver();
+    this._theme,
+    this._resolver,
+  );
 
   final ClipboardService _clipboard;
   final StorageService _storage;
   final ThemeService _theme;
   final ArticleResolver _resolver;
 
-  // State
+  // ─────────────────────────────── state ────────────────────────────────
+
+  /// URL currently loaded in the WebView (a mirror-proxied URL).
   final currentUrl = ''.obs;
+
+  /// Canonical URL of the article on the publisher's site.
   final originalUrl = ''.obs;
-  final savedHtml = ''.obs;
+
   final errorMessage = ''.obs;
 
-  final isOfflineCopy = false.obs;
   final isLoading = true.obs;
   final isInitialLoad = true.obs;
   final loadingProgress = 0.0.obs;
@@ -50,72 +56,70 @@ class ArticleController extends GetxController {
   final wordCount = 0.obs;
   final readingTime = 0.obs;
 
-  final isFavorite = false.obs;
   final readingSettings = const ReaderSettings().obs;
 
-  final findQuery = ''.obs;
-  final findMatchCount = 0.obs;
-  final findMatchIndex = 0.obs;
-
   InAppWebViewController? webViewController;
-  FindInteractionController? findController;
 
   Timer? _loadingTimer;
+  final List<Worker> _workers = [];
+
+  /// Mirrors tried for the current article, newest first. Backs the reader's
+  /// "switch source" affordance.
+  final RxList<String> attemptedMirrors = <String>[].obs;
+
+  // ────────────────────────────── derived ────────────────────────────────
 
   bool get isDarkMode => _theme.isDarkMode.value;
 
   double get fontSize => readingSettings.value.fontSize;
 
+  /// Derived from the library store, so there is only one favorites state.
+  bool get isFavorite => _storage.library.isFavorite(originalUrl.value);
+
+  String get articleDomain => ArticleUrl.hostOf(originalUrl.value) ?? '';
+
+  /// Hosts the reader may navigate to: every configured mirror plus the host
+  /// that is currently loaded. Anything else is treated as an off-site link and
+  /// handed to the browser instead of being silently cancelled.
+  Set<String> get allowedNavigationHosts => {
+    for (final source in _resolver.sources) source.host.toLowerCase(),
+    if (Uri.tryParse(currentUrl.value)?.host case final host?)
+      host.toLowerCase(),
+  };
+
+  // ───────────────────────────── lifecycle ───────────────────────────────
+
   @override
   void onInit() {
     super.onInit();
 
-    final args = Get.arguments as Map<String, dynamic>?;
-    final rawUrl = args?['url'] as String?;
-    final original = args?['originalUrl'] as String?;
-    final data = args?['articleData'] as Map<String, dynamic>?;
+    final request = ArticleRequest.fromArguments(Get.arguments);
 
-    final url = ArticleUrl.canonicalize(original ?? rawUrl ?? '');
-
-    if (url.isEmpty) {
+    if (!request.isValid) {
       errorMessage.value = AppException.invalidUrl().userMessage;
       isLoading.value = false;
       return;
     }
 
+    final url = request.sourceUrl;
     originalUrl.value = url;
-    isOfflineCopy.value = data != null;
 
-    _loadSavedArticle(data, url);
     _loadPreferences(url);
-
-    currentUrl.value = isOfflineCopy.value
-        ? url
-        : _resolver.resolve(url) ?? url;
-
-    _startLoadingTimer();
-
-    findController = FindInteractionController(
-      onFindResultReceived: (_, active, matches, _) {
-        findMatchCount.value = matches;
-        findMatchIndex.value = matches > 0 ? active + 1 : 0;
-      },
-    );
+    _startLoading(request.url);
 
     _setupReactions();
   }
 
-  void _loadSavedArticle(Map<String, dynamic>? data, String url) {
-    if (data?['html'] is! String) return;
+  @override
+  void onClose() {
+    _loadingTimer?.cancel();
 
-    savedHtml.value = data!['html'] as String;
+    for (final worker in _workers) {
+      worker.dispose();
+    }
+    _workers.clear();
 
-    articleTitle.value = (data['title'] as String?)?.isNotEmpty == true
-        ? data['title'] as String
-        : _titleFromUrl(url);
-
-    articleAuthor.value = data['author'] as String? ?? '';
-    articlePublication.value = data['publication'] as String? ?? '';
+    super.onClose();
   }
 
   void _loadPreferences(String url) {
@@ -124,13 +128,9 @@ class ArticleController extends GetxController {
     readingSettings.value = preferences.readerSettings;
 
     _resolver.setPreferred(preferences.preferredMirror);
-
     _resolver.autoFallback = preferences.autoFallback;
 
-    isFavorite.value = _storage.library.isFavorite(url);
-
-    final cached = _storage.library.cachedMeta[url];
-
+    final cached = _storage.library.metaFor(url);
     if (cached != null) {
       articleTitle.value = cached.title;
       articleAuthor.value = cached.author ?? '';
@@ -138,24 +138,33 @@ class ArticleController extends GetxController {
       wordCount.value = cached.wordCount;
       readingTime.value = cached.readingTimeMinutes;
       publishedAt.value = cached.publishedAt;
-    } else if (articleTitle.value.isEmpty) {
+    } else {
       articleTitle.value = _titleFromUrl(url);
     }
   }
 
   void _setupReactions() {
-    ever(_theme.isDarkMode, (_) => injectCustomCSS());
+    // Worker-backed reactions must be disposed; an untracked `ever` would keep
+    // firing after the reader is closed.
+    _workers.add(ever(_theme.isDarkMode, (_) => injectCustomCSS()));
 
-    ever(readingSettings, (_) {
-      _storage.preferences.readerSettings = readingSettings.value;
-
-      injectCustomCSS();
-    });
+    _workers.add(
+      ever(readingSettings, (settings) {
+        _storage.preferences.readerSettings = settings;
+        injectCustomCSS();
+      }),
+    );
   }
 
-  // ---------------------------------------------------------------------------
-  // WebView
-  // ---------------------------------------------------------------------------
+  void _startLoading(String url) {
+    final resolved = _resolver.resolve(url);
+    if (resolved != null) attemptedMirrors.add(resolved);
+
+    currentUrl.value = resolved ?? url;
+    _startLoadingTimer();
+  }
+
+  // ────────────────────────────── WebView ────────────────────────────────
 
   void setWebViewController(InAppWebViewController controller) {
     webViewController = controller;
@@ -163,57 +172,86 @@ class ArticleController extends GetxController {
 
   void onPageLoaded() {
     _stopLoading();
+    _resolver.reportSuccess();
 
     unawaited(_extractMetadata());
-    _resolver.reportSuccess(_resolver.lastSourceId ?? '');
   }
 
   void onPageError(String message) {
     _stopLoading();
 
+    _resolver.reportFailure();
+
+    // Try the next mirror before surfacing the failure: a single dead backend
+    // should not end the reading session.
+    final fallback = _resolver.nextFallback();
+    if (fallback != null) {
+      attemptedMirrors.add(fallback);
+      errorMessage.value = '';
+      isLoading.value = true;
+      _startLoadingTimer();
+      unawaited(_loadUrl(fallback));
+      return;
+    }
+
     errorMessage.value = message;
     loadingProgress.value = 0;
     isLoading.value = false;
     isInitialLoad.value = false;
-
-    _resolver.reportFailure(_resolver.lastSourceId ?? '');
   }
 
   void updateProgress(double progress) {
     loadingProgress.value = progress / 100;
   }
 
-  void requestRefresh() {
+  Future<void> requestRefresh() async {
     errorMessage.value = '';
     isLoading.value = true;
     loadingProgress.value = 0;
     _startLoadingTimer();
 
-    unawaited(webViewController?.reload());
+    await webViewController?.reload();
   }
 
-  // ---------------------------------------------------------------------------
-  // Reader
-  // ---------------------------------------------------------------------------
+  /// Handles the HTTP status codes a mirror can answer with.
+  void handleServerError(int statusCode) {
+    onPageError(switch (statusCode) {
+      502 => 'Bad Gateway (502). Server unavailable.',
+      503 => 'Service Unavailable (503).',
+      _ => 'Server error ($statusCode)',
+    });
+  }
+
+  Future<void> _loadUrl(String url) async {
+    if (webViewController == null) {
+      // The WebView is not mounted yet; the initial load uses `initialUrlRequest`.
+      currentUrl.value = url;
+      return;
+    }
+
+    await webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
+  }
+
+  // ─────────────────────────────── reader ────────────────────────────────
 
   void updateReaderSettings(ReaderSettings settings) {
     readingSettings.value = settings;
   }
 
   void setFontSize(double size) {
-    final value = size.clamp(
-      ReaderSettings.kMinFontSize,
-      ReaderSettings.kMaxFontSize,
+    updateReaderSettings(
+      readingSettings.value.copyWith(
+        fontSize: size.clamp(
+          ReaderSettings.kMinFontSize,
+          ReaderSettings.kMaxFontSize,
+        ),
+      ),
     );
-
-    updateReaderSettings(readingSettings.value.copyWith(fontSize: value));
-
-    _storage.preferences.fontSize = value;
   }
 
+  /// Re-applies typography and color scheme to the loaded document.
   Future<void> injectCustomCSS() async {
     final controller = webViewController;
-
     if (isClosed || controller == null) return;
 
     final css = ReaderTheme.getCss(
@@ -223,32 +261,21 @@ class ArticleController extends GetxController {
 
     try {
       await controller.evaluateJavascript(
-        source:
-            '''
-          document.getElementById(
-            '${ReaderTheme.customCssId}'
-          )?.remove();
-
-          var style = document.createElement('style');
-          style.id = '${ReaderTheme.customCssId}';
-          style.textContent = `${css.replaceAll('`', r'\`')}`;
-
-          document.head.appendChild(style);
-        ''',
+        source: ReaderTheme.injectCssScript(css),
       );
-    } catch (e) {
-      appLog('Error injecting CSS', name: 'Reader', level: LogLevel.warning);
-      appLog(e.toString(), name: 'Reader');
+    } catch (error) {
+      appLog(
+        'Could not inject CSS: $error',
+        name: 'Reader',
+        level: LogLevel.warning,
+      );
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Article
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────── article ───────────────────────────────
 
   Future<void> _extractMetadata() async {
     final controller = webViewController;
-
     if (isClosed || controller == null) return;
 
     try {
@@ -271,38 +298,32 @@ class ArticleController extends GetxController {
       readingTime.value = meta.readingTimeMinutes;
       publishedAt.value = meta.publishedAt;
 
-      _storage.library.cacheMeta(originalUrl.value, meta);
-    } catch (e) {
+      await _storage.library.cacheMeta(originalUrl.value, meta);
+    } catch (error) {
       appLog(
-        'Failed to extract metadata',
+        'Could not extract metadata: $error',
         name: 'Reader',
         level: LogLevel.warning,
       );
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Actions
-  // ---------------------------------------------------------------------------
+  // ─────────────────────────────── actions ──────────────────────────────
 
   Future<void> openInBrowser() async {
     final uri = Uri.tryParse(originalUrl.value);
-
-    if (uri == null) {
-      errorMessage.value = 'Invalid URL';
+    if (uri == null || originalUrl.value.isEmpty) {
+      errorMessage.value = AppException.invalidUrl().userMessage;
       return;
     }
 
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  Future<void> copyLink() {
-    return _clipboard.copyToClipboard(originalUrl.value);
-  }
+  Future<void> copyLink() => _clipboard.copyToClipboard(originalUrl.value);
 
   Future<void> shareArticle() async {
     final url = originalUrl.value;
-
     if (url.isEmpty) return;
 
     await SharePlus.instance.share(
@@ -314,55 +335,35 @@ class ArticleController extends GetxController {
   }
 
   Future<void> toggleFavorite() async {
-    final url = originalUrl.value.isNotEmpty
-        ? originalUrl.value
-        : currentUrl.value;
-
+    final url = originalUrl.value;
     if (url.isEmpty) return;
 
-    if (isFavorite.value) {
-      await _storage.library.removeFromFavorites(url);
-    } else {
-      await _storage.library.addToFavorites(
-        FavoriteArticle(
-          title: articleTitle.value,
-          url: url,
-          visitedAt: DateTime.now(),
-          author: articleAuthor.value.isNotEmpty ? articleAuthor.value : null,
-          domain: articleDomain,
-        ).toJson(),
-      );
-    }
-    isFavorite.toggle();
-  }
+    final article = FavoriteArticle(
+      title: articleTitle.value,
+      url: url,
+      visitedAt: DateTime.now(),
+      author: articleAuthor.value.isEmpty ? null : articleAuthor.value,
+      domain: articleDomain.isEmpty ? null : articleDomain,
+    );
 
-  String get articleDomain {
-    final host = Uri.tryParse(originalUrl.value)?.host ?? '';
-
-    return host.startsWith('www.') ? host.substring(4) : host;
+    await _storage.library.toggleFavorite(article);
   }
 
   String _titleFromUrl(String url) {
     final segments = Uri.tryParse(url)?.pathSegments;
-
-    if (segments == null || segments.isEmpty) {
-      return 'Article';
-    }
+    if (segments == null || segments.isEmpty) return 'Article';
 
     return segments.last
         .replaceAll('-', ' ')
         .split(' ')
-        .map(
-          (word) => word.isEmpty
-              ? word
-              : '${word[0].toUpperCase()}${word.substring(1)}',
-        )
+        .map((word) {
+          if (word.isEmpty) return word;
+          return '${word[0].toUpperCase()}${word.substring(1)}';
+        })
         .join(' ');
   }
 
-  // ---------------------------------------------------------------------------
-  // Lifecycle
-  // ---------------------------------------------------------------------------
+  // ──────────────────────────────── timer ────────────────────────────────
 
   void _startLoadingTimer() {
     _loadingTimer?.cancel();
@@ -383,20 +384,5 @@ class ArticleController extends GetxController {
     isLoading.value = false;
     isInitialLoad.value = false;
     loadingProgress.value = 1;
-  }
-
-  @override
-  void onClose() {
-    _loadingTimer?.cancel();
-    findController?.dispose();
-    super.onClose();
-  }
-
-  void handleServerError(int statusCode) {
-    onPageError(switch (statusCode) {
-      502 => 'Bad Gateway (502). Server unavailable.',
-      503 => 'Service Unavailable (503).',
-      _ => 'Server error ($statusCode)',
-    });
   }
 }

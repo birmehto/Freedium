@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
+import '../theme/app_spacing.dart';
+
 /// A labeled [M3ESlider] row with the value shown next to the label.
 class AppSliderRow extends StatelessWidget {
   const AppSliderRow({
@@ -27,7 +29,7 @@ class AppSliderRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           Expanded(

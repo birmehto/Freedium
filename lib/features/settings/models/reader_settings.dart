@@ -39,8 +39,6 @@ class ReaderSettings {
     ReaderThemeMode? themeMode,
     String? fontFamily,
     double? fontSize,
-    double? lineHeight,
-    String? textAlign,
   }) {
     return ReaderSettings(
       themeMode: themeMode ?? this.themeMode,

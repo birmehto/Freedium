@@ -32,14 +32,10 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "**/*.gr.dart"
-    - "**/*.config.dart"
     - "**/generated_plugin_registrant.dart"
-    - "lib/generated/**"
     - "build/**"
-    - "test/.test_coverage.dart"
     - "integration_test/**"
     - android/**
-    - ios/**
     - linux/**
 
 linter:

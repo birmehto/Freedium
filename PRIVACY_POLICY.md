@@ -23,12 +23,15 @@ Everything below is saved **only on your device** in the app's local SQLite data
 
 | What | Why it's stored |
 |------|-----------------|
-| Favorite articles (title, URL, author, domain, image) | So your saved library appears offline |
-| Reading progress per article | So you can resume where you left off |
-| Theme (dark/light) and font size preferences | To remember your reading setup |
+| Favorite articles (title, URL, author, domain) | So your favorites list is available without refetching |
+| Cached article metadata (title, author, publication, word count, reading time) | So a favorited article renders instantly when you reopen it |
+| Theme, reader theme, font family, and font size preferences | To remember your reading setup |
+| Preferred mirror source and auto-fallback flag | So article loading behaves the way you configured it |
 | App version | Displayed in the Settings screen |
 
-You can clear all of this anytime by uninstalling the app or clearing the app data.
+Article text and HTML are **not** stored — the reader loads each article over the network and discards it when you leave.
+
+You can clear all of this anytime by removing favorites in the app, uninstalling it, or clearing the app data. Android cloud backup and device transfer are disabled, so this data does not leave the device.
 
 ## Data sent to third parties
 

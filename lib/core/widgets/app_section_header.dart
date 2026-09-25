@@ -1,13 +1,19 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../extensions/context_ext.dart';
+import '../theme/app_spacing.dart';
 
 /// Uppercase section label used to group settings/content sections.
 class AppSectionHeader extends StatelessWidget {
   const AppSectionHeader({
     required this.title,
     super.key,
-    this.padding = const EdgeInsets.fromLTRB(12, 28, 12, 12),
+    this.padding = const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      AppSpacing.xl + AppSpacing.xs,
+      AppSpacing.md,
+      AppSpacing.md,
+    ),
   });
 
   final String title;

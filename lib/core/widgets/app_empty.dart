@@ -1,6 +1,8 @@
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../theme/app_spacing.dart';
+
 /// Centered empty state with an icon, title and subtitle.
 class AppEmpty extends StatelessWidget {
   const AppEmpty({
@@ -21,12 +23,12 @@ class AppEmpty extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               decoration: BoxDecoration(
                 color: c.primaryContainer.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
@@ -37,7 +39,7 @@ class AppEmpty extends StatelessWidget {
                 color: c.primary.withValues(alpha: 0.5),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.xl),
             Text(
               title,
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -46,7 +48,7 @@ class AppEmpty extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               subtitle,
               style: theme.textTheme.bodyLarge?.copyWith(

@@ -52,7 +52,7 @@ void showMirrorDialog(BuildContext context) {
 
   final options = <(String, String, String?)>[
     ('Auto', '', 'Let Freedium choose'),
-    for (final mirror in MirrorCatalog.defaults)
+    for (final mirror in MirrorCatalog.createDefaults())
       (mirror.name, mirror.id, mirror.url),
   ];
 

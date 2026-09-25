@@ -1034,7 +1034,7 @@ Document:
 * [x] Article metadata
 * [x] Better reader controls
 * [x] Reader themes
-* [x] Find in article
+* [ ] Find in article
 * [x] Better WebView handling
 * [x] Improved reading progress
 
@@ -1042,18 +1042,18 @@ Document:
 
 * [x] Favorites
 * [ ] Bookmarks
-* [x] History
-* [x] Continue reading
-* [x] Reading progress
+* [ ] History
+* [ ] Continue reading
+* [ ] Reading progress
 * [x] Search
 
 ## Phase 4 — Offline
 
-* [x] Article cache
-* [x] Offline reader
-* [x] Cache management
-* [x] Offline states
-* [x] Background cache cleanup
+* [ ] Article cache
+* [ ] Offline reader
+* [ ] Cache management
+* [ ] Offline states
+* [ ] Background cache cleanup
 
 ## Phase 5 — Reliability
 
@@ -1105,7 +1105,7 @@ A feature is considered complete when:
 
 # Long-Term Product Direction
 
-Freedium should evolve from a simple article-opening utility into a complete cross-platform reading application:
+Freedium should evolve from a simple article-opening utility into a complete reading application:
 
 ```text
                  Freedium
@@ -1122,8 +1122,8 @@ Freedium should evolve from a simple article-opening utility into a complete cro
                     │
               Cross Platform
                     │
-       Android · iOS · Windows
-       macOS · Linux
+       Android · Linux
+       (desktop)
 ```
 
 The existing **GetX + Controllers + Services + Models + Views + Widgets** approach should remain the foundation. The priority is to make that architecture more consistent, modular, testable, and scalable rather than replacing the state-management solution.

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      The reader intentionally accepts http:// article URLs (see
+      ArticleUrl.isSupported), and the default Android policy blocks cleartext
+      for targetSdk 28+. Without this, a user who pastes or shares a plain
+      http:// link would get a silently blank WebView instead of an article.
+
+      Cleartext is therefore permitted for arbitrary hosts. If a future release
+      wants strict transport security, the correct change is to drop http://
+      support in ArticleUrl and delete this file, not to weaken it further.
+    -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
-import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../controllers/settings_controller.dart';
+import '../models/reader_settings.dart';
 
 void showFontSizeSheet(BuildContext context) {
   final controller = Get.find<SettingsController>();
@@ -20,38 +21,38 @@ void showFontSizeSheet(BuildContext context) {
             children: [
               IconButton(
                 tooltip: 'Decrease font size',
-                onPressed: () => _adjustSize(-AppConstants.fontSizeStep),
+                onPressed: () => _adjustSize(-ReaderSettings.kFontSizeStep),
                 icon: const Icon(M3EIcons.remove_rounded),
               ),
               Expanded(
                 child: Obx(
                   () => M3ESlider(
-                    value: controller.fontSize.value,
-                    min: AppConstants.minFontSize,
-                    max: AppConstants.maxFontSize,
+                    value: controller.fontSize,
+                    min: ReaderSettings.kMinFontSize,
+                    max: ReaderSettings.kMaxFontSize,
                     divisions:
-                        ((AppConstants.maxFontSize -
-                                    AppConstants.minFontSize) ~/
-                                AppConstants.fontSizeStep)
+                        ((ReaderSettings.kMaxFontSize -
+                                    ReaderSettings.kMinFontSize) ~/
+                                ReaderSettings.kFontSizeStep)
                             .toInt(),
-                    label: controller.fontSize.value.toStringAsFixed(0),
+                    label: controller.fontSize.toStringAsFixed(0),
                     onChanged: controller.setFontSize,
                   ),
                 ),
               ),
               IconButton(
                 tooltip: 'Increase font size',
-                onPressed: () => _adjustSize(AppConstants.fontSizeStep),
+                onPressed: () => _adjustSize(ReaderSettings.kFontSizeStep),
                 icon: const Icon(M3EIcons.add_rounded),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () =>
-                  controller.setFontSize(AppConstants.defaultFontSize),
+                  controller.setFontSize(ReaderSettings.kDefaultFontSize),
               child: const Text('Reset to default'),
             ),
           ),
@@ -65,8 +66,9 @@ void showFontSizeSheet(BuildContext context) {
 
 void _adjustSize(double delta) {
   final controller = Get.find<SettingsController>();
-  final next = controller.fontSize.value + delta;
-  if (next >= AppConstants.minFontSize && next <= AppConstants.maxFontSize) {
+  final next = controller.fontSize + delta;
+  if (next >= ReaderSettings.kMinFontSize &&
+      next <= ReaderSettings.kMaxFontSize) {
     controller.setFontSize(next);
   }
 }

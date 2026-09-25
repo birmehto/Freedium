@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../core/network/article_resolver.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
@@ -13,6 +14,7 @@ class ArticleBinding extends Bindings {
         Get.find<ClipboardService>(),
         Get.find<StorageService>(),
         Get.find<ThemeService>(),
+        Get.find<ArticleResolver>(),
       ),
     );
   }

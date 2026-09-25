@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_choice_chips.dart';
 import '../../../core/widgets/app_slider_row.dart';
@@ -56,7 +57,7 @@ void showReaderSettingsSheet(BuildContext context) {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(

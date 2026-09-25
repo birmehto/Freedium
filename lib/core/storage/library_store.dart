@@ -1,82 +1,113 @@
-import 'package:get/get_rx/get_rx.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
+import 'package:get/get.dart';
 
 import '../../features/article/models/article_meta.dart';
+import '../../features/favorites/models/favorite_article.dart';
 import 'key_value_store.dart';
 
-/// Reading data: favorites.
+/// Reading data owned by the user: the favorites list and cached article
+/// metadata.
 ///
-/// Separate from [PreferencesStore] so content data stays isolated from
-/// device settings.
+/// The store is the single source of truth for both. Views read the reactive
+/// collections directly instead of keeping their own copies in sync.
 class LibraryStore {
-  LibraryStore(this._box);
+  LibraryStore(this._store);
 
-  static const kFavorites = 'favorites_list';
+  /// Keys are kept stable so an existing saved library survives the refactor.
+  static const String favoritesKey = 'favorites_list';
+  static const String metaKey = 'cached_meta';
 
-  final KeyValueStore _box;
+  final KeyValueStore _store;
 
-  /// Emits on every favorites mutation so list views can rebuild reactively.
-  final RxInt favoritesRevision = 0.obs;
+  final RxList<FavoriteArticle> _favorites = <FavoriteArticle>[].obs;
 
-  // ─────────────────────────────── favorites ───────────────────────────
+  bool _loaded = false;
 
-  List<Map<String, dynamic>> get favorites {
-    final raw = _box.read(kFavorites);
-    if (raw is List) {
-      return raw
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-    return [];
+  /// Favorites, most recently added first.
+  ///
+  /// Exposed as the reactive list itself so views and tests observe mutations
+  /// directly instead of polling a copy.
+  RxList<FavoriteArticle> get favorites {
+    _ensureLoaded();
+    return _favorites;
   }
 
   bool isFavorite(String url) {
     final target = url.trim();
-    return favorites.any((f) => (f['url'] as String? ?? '').trim() == target);
+    return favorites.any((item) => item.url.trim() == target);
   }
 
-  Future<void> addToFavorites(Map<String, dynamic> item) async {
-    final existing = List<Map<String, dynamic>>.from(favorites);
-    existing.removeWhere(
-      (f) => (f['url'] as String? ?? '').trim() == (item['url'] ?? '').trim(),
+  /// Adds [article] to favorites, replacing any earlier entry for the same URL
+  /// so a URL can never appear twice.
+  Future<void> addToFavorites(FavoriteArticle article) {
+    return _saveFavorites([
+      article,
+      ...favorites.where((item) => item.url != article.url),
+    ]);
+  }
+
+  Future<void> removeFromFavorites(String url) {
+    final target = url.trim();
+    return _saveFavorites(
+      favorites.where((item) => item.url.trim() != target).toList(),
     );
-    existing.insert(0, item);
-    await _box.write(kFavorites, existing);
-    favoritesRevision.value++;
   }
 
-  Future<void> removeFromFavorites(String url) async {
-    final existing = favorites
-        .where((f) => (f['url'] as String? ?? '').trim() != url.trim())
-        .toList();
-    await _box.write(kFavorites, existing);
-    favoritesRevision.value++;
-  }
-
-  Future<void> clearFavorites() async {
-    await _box.write(kFavorites, <Map<String, dynamic>>[]);
-    favoritesRevision.value++;
-  }
-
-  // ─────────────────────────────── metadata ────────────────────────────
-
-  Map<String, ArticleMeta> get cachedMeta {
-    final raw = _box.read('cached_meta');
-    if (raw is Map) {
-      return Map<String, dynamic>.from(raw).map(
-        (key, value) => MapEntry(
-          key,
-          ArticleMeta.fromJson(Map<String, dynamic>.from(value as Map)),
-        ),
-      );
+  /// Adds [article] when absent, removes it when present, and returns the
+  /// resulting state so the caller does not have to guess.
+  Future<bool> toggleFavorite(FavoriteArticle article) async {
+    if (isFavorite(article.url)) {
+      await removeFromFavorites(article.url);
+      return false;
     }
-    return {};
+    await addToFavorites(article);
+    return true;
   }
 
-  void cacheMeta(String url, ArticleMeta meta) {
-    final current = cachedMeta;
-    current[url] = meta;
-    _box.write('cached_meta', current.map((k, v) => MapEntry(k, v.toJson())));
+  /// Metadata cached for [url], or `null` when nothing is cached.
+  ArticleMeta? metaFor(String url) {
+    final raw = _rawMeta()[url];
+    if (raw is! Map) return null;
+    return ArticleMeta.fromJson(Map<String, dynamic>.from(raw));
+  }
+
+  /// Caches [meta] for [url]. Only that one entry is re-encoded, so a long
+  /// reading history does not cost a full read/parse/rewrite per article.
+  Future<void> cacheMeta(String url, ArticleMeta meta) async {
+    final current = Map<String, dynamic>.from(_rawMeta());
+    current[url] = meta.toJson();
+    await _store.write(metaKey, current);
+  }
+
+  Future<void> _saveFavorites(List<FavoriteArticle> next) async {
+    // Update the observable list first so the UI reacts immediately; the
+    // persistence layer logs any failure instead of breaking the interaction.
+    _favorites.assignAll(next);
+    await _store.write(favoritesKey, [for (final item in next) item.toJson()]);
+  }
+
+  Map<String, dynamic> _rawMeta() {
+    _ensureLoaded();
+    final raw = _store.read(metaKey);
+    return raw is Map ? Map<String, dynamic>.from(raw) : {};
+  }
+
+  /// Hydrates from the (already in-memory) key-value store on first access.
+  void _ensureLoaded() {
+    if (_loaded) return;
+    _loaded = true;
+
+    final raw = _store.read(favoritesKey);
+    if (raw is! List) return;
+
+    final articles = <FavoriteArticle>[];
+    for (final entry in raw) {
+      if (entry is Map) {
+        articles.add(
+          FavoriteArticle.fromJson(Map<String, dynamic>.from(entry)),
+        );
+      }
+    }
+
+    _favorites.assignAll(articles);
   }
 }

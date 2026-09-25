@@ -7,29 +7,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
-- **Library screen** with four sections: Continue Reading, Favorites, Saved, and History.
-  - Continue Reading shows per-article scroll progress bars and resumes where you stopped.
-  - History is grouped by recency (Today / Yesterday / This week / Earlier).
-  - Swipe-to-remove and clear actions per list.
-- **Offline reading**
-  - "Save offline" captures the cleaned article HTML for later reading without a connection.
-  - Saved copies open directly from Library or from the reader's error state.
-  - Cache budget enforcement with oldest-entry eviction (64 MB soft cap) and a settings overview of count + size.
 - **Mirror / source system**
-  - Dedicated `ArticleResolver` with per-source health tracking (availability, failures, last success) and automatic fallback to the next healthy mirror.
+  - Dedicated `ArticleResolver` with per-source health tracking and automatic fallback to the next healthy mirror.
   - Preferred-source and auto-fallback controls in Settings.
 - **Reader improvements**
   - Article metadata extraction (title, author, publication, word count, reading time, published date).
-  - Rich reading settings: reader theme (System / Light / Dark / Sepia / OLED), font family, font size, line height, paragraph spacing, content width, and text alignment.
-  - "Continue reading?" resume prompt with Continue / Start over actions.
-  - Find-in-page with match count navigation (Ctrl/Cmd+F).
-  - Reader actions: save offline, favorite, share, copy link, copy article text, open in browser, find.
-- **Storage split** into two focused stores behind a `KeyValueStore` abstraction (`preferences` for device settings, `library` for content), keeping the old facade API for compatibility.
+  - Reader theme selection (System / Light / Dark / Sepia / OLED), font family, and font size.
+  - Reader actions: favorite, share, copy link, open in browser, find.
 - **Theme modes** — System / Light / Dark full-app theme selection.
-- **Settings page reorganized** into Appearance, Reader, Source, Library & Storage, and About sections, including a local reading-statistics overview (articles opened, completed, minutes read).
-- **Local reading statistics** — count of articles opened/completed and total reading minutes, stored on-device only.
-- **Tests** for the URL parser, mirror resolver, library store, reader settings/models, and article models (101 tests total).
+- **Tests** for the URL source of truth, mirror resolver, library store, reader settings/models, article models, and widget flows (111 tests total).
 - **CI workflow** (`.github/workflows/ci.yml`) — format check, `flutter analyze`, `flutter test`, and an Android debug build on every pull request.
+
+### Changed
+- **iOS support removed.** The `ios/` project and its metadata references are gone; the supported targets are Android and Linux. Android share intents, the WebView reader, and Drift storage are unaffected.
+- **Storage** is split into `PreferencesStore` (settings) and `LibraryStore` (favorites + article metadata) behind a `KeyValueStore` interface, backed by Drift/SQLite in production and `MemoryKeyValueStore` in tests. Writes are serialized so concurrent updates cannot interleave.
+- **URL handling** has a single source of truth in `ArticleUrl`: it normalizes markdown links, bare hosts, and shared text, strips tracking parameters, and is the only validator used by the home form, share intents, favorites, and the resolver.
+- **Share intents** are Android-only and reactive, so a link shared while the app is open is picked up without a restart.
+- **Android manifest** no longer claims `http`/`https` `VIEW` filters it never handled, and backups are disabled with explicit data-extraction rules.
+- **Release signing** is now conditional on `android/key.properties`; a fresh clone can still produce a debug-signed release build instead of failing.
+
+### Removed
+- **Find-in-article** — the find bar, its WebView `findInteractionController` wiring, and the associated controller state were removed. Android's native find-in-page remains available in the WebView.
+- Dead offline/save-article scaffolding (`SavedArticle`, `LibraryStore.saveArticle`) that no code path could reach.
+- Unused URL-validator wrapper, logging helpers, dead routes, and duplicate reactive state.
+- All `// ignore:` lint suppressions from `lib/`.
 
 ## [1.1.1] - 2026-09-?? (Unreleased portion below)
 

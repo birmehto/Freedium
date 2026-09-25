@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
+import '../../../core/theme/app_spacing.dart';
+
 class HomeHeaderIcon extends StatelessWidget {
   const HomeHeaderIcon({super.key});
 
@@ -56,14 +58,14 @@ class HomeHero extends StatelessWidget {
     final text = theme.textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.lg),
 
           const HomeHeaderIcon(),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.xl + AppSpacing.xs),
 
           Text(
             'Read Freely',
@@ -76,7 +78,7 @@ class HomeHero extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
@@ -91,7 +93,7 @@ class HomeHero extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
         ],
       ),
     );

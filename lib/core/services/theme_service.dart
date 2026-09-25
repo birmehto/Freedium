@@ -1,25 +1,33 @@
-import 'package:flutter/material.dart' show ThemeMode, WidgetsBinding;
-import 'package:flutter/widgets.dart' show WidgetsBindingObserver;
+import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/widgets.dart'
+    show WidgetsBinding, WidgetsBindingObserver;
 import 'package:get/get.dart';
 
-import 'storage_service.dart';
+import '../storage/preferences_store.dart';
 
+/// Owns the app theme mode and keeps it in sync with the OS setting.
+///
+/// Injected with a [PreferencesStore] rather than reaching for a global, so the
+/// service is testable and its dependency is explicit.
 class ThemeService extends GetxService with WidgetsBindingObserver {
-  final StorageService _storage = Get.find();
+  ThemeService(this._preferences);
 
+  final PreferencesStore _preferences;
+
+  /// Effective dark/light state, resolving `system` against the platform.
   final isDarkMode = true.obs;
 
   @override
   void onInit() {
     super.onInit();
-    isDarkMode.value = _storage.isDarkMode;
+    isDarkMode.value = _preferences.isDarkMode;
     WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangePlatformBrightness() {
-    if (preferredMode != 'system') return;
-    isDarkMode.value = _storage.isDarkMode;
+    if (preferredMode != PreferencesStore.modeSystem) return;
+    isDarkMode.value = _preferences.isDarkMode;
   }
 
   @override
@@ -28,33 +36,29 @@ class ThemeService extends GetxService with WidgetsBindingObserver {
     super.onClose();
   }
 
-  /// Full app theme mode, including `ThemeMode.system`.
-  ThemeMode get themeMode {
-    final mode = _storage.preferences.themeMode;
-    return switch (mode) {
-      'light' => ThemeMode.light,
-      'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
-    };
-  }
+  /// Full app theme mode, including [ThemeMode.system].
+  ThemeMode get themeMode => switch (preferredMode) {
+    PreferencesStore.modeLight => ThemeMode.light,
+    PreferencesStore.modeDark => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
-  /// The system/light/dark preference backed by storage.
-  String get preferredMode => _storage.preferences.themeMode;
-
-  void toggleTheme(bool value) {
-    _storage.isDarkMode = value;
-    _storage.preferences.themeMode = value ? 'dark' : 'light';
-    isDarkMode.value = _storage.isDarkMode;
-    Get.changeThemeMode(themeMode);
-  }
+  /// The `system` / `light` / `dark` preference backed by storage.
+  String get preferredMode => _preferences.themeMode;
 
   void setThemeMode(String mode) {
-    _storage.preferences.themeMode = mode;
-    isDarkMode.value = _storage.isDarkMode;
-    Get.changeThemeMode(themeMode);
+    _preferences.themeMode = mode;
+    _sync();
   }
 
-  void toggleDarkMode() {
-    toggleTheme(!isDarkMode.value);
+  void toggleTheme(bool dark) {
+    setThemeMode(dark ? PreferencesStore.modeDark : PreferencesStore.modeLight);
+  }
+
+  void toggleDarkMode() => toggleTheme(!isDarkMode.value);
+
+  void _sync() {
+    isDarkMode.value = _preferences.isDarkMode;
+    Get.changeThemeMode(themeMode);
   }
 }

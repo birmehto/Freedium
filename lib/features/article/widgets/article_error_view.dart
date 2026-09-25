@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../core/extensions/context_ext.dart';
 import '../../../core/widgets/app_error.dart';
 import '../controllers/article_controller.dart';
 
@@ -10,23 +11,27 @@ class ArticleErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final controller = Get.find<ArticleController>();
+    // Reactive: `errorMessage` is set after the page is built, so reading it
+    // outside an `Obx` meant this view never appeared.
+    return Obx(() {
+      final controller = Get.find<ArticleController>();
+      final message = controller.errorMessage.value;
 
-    if (controller.errorMessage.isEmpty) return const SizedBox.shrink();
+      if (message.isEmpty) return const SizedBox.shrink();
 
-    return Positioned.fill(
-      child: Material(
-        color: theme.scaffoldBackgroundColor,
-        child: AppError(
-          title: 'Failed to Load Article',
-          message: controller.errorMessage.value,
-          onRetry: controller.requestRefresh,
-          secondaryLabel: 'Open in Browser',
-          onSecondary: controller.openInBrowser,
-          hint: 'Try refreshing or opening the article in your browser.',
+      return Positioned.fill(
+        child: Material(
+          color: context.colors.surface,
+          child: AppError(
+            title: 'Failed to Load Article',
+            message: message,
+            onRetry: controller.requestRefresh,
+            secondaryLabel: 'Open in Browser',
+            onSecondary: controller.openInBrowser,
+            hint: 'Try refreshing or opening the article in your browser.',
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

@@ -1,5 +1,3 @@
-// ignore_for_file: avoid_redundant_argument_values
-
 import 'dart:async';
 import 'dart:collection';
 
@@ -8,13 +6,24 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/reader_theme.dart';
 import '../../../core/utils/app_log.dart';
 import '../controllers/article_controller.dart';
 
+/// Hosts the reader itself. Medium's desktop UA is used because the mirror
+/// backends serve the paywalled desktop layout.
+const String _readerUserAgent =
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
+    '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 class ArticleWebView extends StatefulWidget {
   const ArticleWebView({required this.url, super.key});
+
+  /// The mirror-proxied URL to load first.
+  ///
+  /// Read once when the WebView is created. Later navigations are driven by the
+  /// controller, so this widget is never rebuilt just because the loaded URL
+  /// changed.
   final String url;
 
   @override
@@ -23,46 +32,34 @@ class ArticleWebView extends StatefulWidget {
 
 class _ArticleWebViewState extends State<ArticleWebView> {
   late final ArticleController _controller = Get.find<ArticleController>();
+
   PullToRefreshController? _pullToRefreshController;
 
   @override
   void initState() {
     super.initState();
-    if (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS) {
+
+    // Pull-to-refresh is only implemented for Android in this plugin.
+    if (defaultTargetPlatform == TargetPlatform.android) {
       _pullToRefreshController = PullToRefreshController(
-        onRefresh: () => _controller.requestRefresh(),
+        onRefresh: _controller.requestRefresh,
       );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final isOffline = _controller.isOfflineCopy.value;
+  void dispose() {
+    _pullToRefreshController = null;
+    super.dispose();
+  }
 
+  @override
+  Widget build(BuildContext context) {
     final initialSettings = InAppWebViewSettings(
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      builtInZoomControls: false,
-      displayZoomControls: false,
+      userAgent: _readerUserAgent,
       supportZoom: false,
-      useWideViewPort: true,
-      loadWithOverviewMode: true,
-      allowsInlineMediaPlayback: true,
-      mediaPlaybackRequiresUserGesture: false,
       useShouldOverrideUrlLoading: true,
       mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-      hardwareAcceleration: true,
-      cacheEnabled: !isOffline,
-      domStorageEnabled: true,
-      databaseEnabled: true,
-      offscreenPreRaster: true,
-      useHybridComposition: true,
-      allowFileAccess: false,
-      allowContentAccess: false,
-      networkAvailable: !isOffline,
-      scrollbarFadingEnabled: true,
-      overScrollMode: OverScrollMode.IF_CONTENT_SCROLLS,
-      allowsBackForwardNavigationGestures: true,
     );
 
     final initialUserScripts = UnmodifiableListView<UserScript>([
@@ -90,19 +87,8 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       ),
       initialSettings: initialSettings,
       initialUserScripts: initialUserScripts,
-      findInteractionController: _controller.findController,
       pullToRefreshController: _pullToRefreshController,
-      onWebViewCreated: (webViewController) {
-        _controller.setWebViewController(webViewController);
-        if (isOffline && _controller.savedHtml.value.isNotEmpty) {
-          unawaited(
-            webViewController.loadData(
-              data: _controller.savedHtml.value,
-              baseUrl: WebUri(_controller.currentUrl.value),
-            ),
-          );
-        }
-      },
+      onWebViewCreated: _controller.setWebViewController,
       onCreateWindow: (controller, createWindowAction) async => false,
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         final requestUrl = navigationAction.request.url;
@@ -116,13 +102,10 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         final isMainFrame = navigationAction.targetFrame?.isMainFrame ?? true;
         if (!isMainFrame) return NavigationActionPolicy.ALLOW;
 
-        final targetHost = requestUrl.host.toLowerCase();
-        final freediumHost = Uri.parse(AppConstants.freediumUrl).host
-            .toLowerCase();
-        final currentHost = Uri.tryParse(_controller.currentUrl.value)?.host
-            .toLowerCase();
+        final allowed = _controller.allowedNavigationHosts.contains(
+          requestUrl.host.toLowerCase(),
+        );
 
-        final allowed = targetHost == freediumHost || targetHost == currentHost;
         return allowed
             ? NavigationActionPolicy.ALLOW
             : NavigationActionPolicy.CANCEL;
@@ -143,64 +126,62 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       onLoadStart: (controller, url) {
         _controller.isLoading.value = true;
         _controller.errorMessage.value = '';
-        if (url != null) {
-          _controller.currentUrl.value = url.toString();
-        }
+        if (url != null) _controller.currentUrl.value = url.toString();
       },
       onLoadStop: (controller, url) async {
-        await Future.delayed(const Duration(milliseconds: 60));
+        await _endRefreshing();
+
         _controller.onPageLoaded();
-        _controller.injectCustomCSS();
-        await _pullToRefreshController?.endRefreshing();
+        await _controller.injectCustomCSS();
       },
       onProgressChanged: (controller, progress) {
         _controller.updateProgress(progress.toDouble());
       },
       onReceivedError: (controller, request, error) {
         if (request.isForMainFrame ?? false) {
-          _pullToRefreshController?.endRefreshing();
-
-          String errorMsg = 'Failed to load article';
-
-          final description = error.description.toLowerCase();
-          if (description.contains('host') || description.contains('dns')) {
-            errorMsg =
-                'Cannot connect to server. Check your internet connection.';
-          } else if (description.contains('connect') ||
-              description.contains('network')) {
-            errorMsg = 'Connection failed. Please try again.';
-          } else if (description.contains('timeout') ||
-              description.contains('time')) {
-            errorMsg = 'Request timed out. Please try again.';
-          } else {
-            errorMsg = 'Failed to load article: ${error.description}';
-          }
-
-          _controller.onPageError(errorMsg);
+          unawaited(_endRefreshing());
+          _controller.onPageError(_describe(error.description));
         }
       },
       onReceivedHttpError: (controller, request, errorResponse) {
-        if (request.isForMainFrame ?? false) {
-          final statusCode = errorResponse.statusCode ?? 0;
+        if (!(request.isForMainFrame ?? false)) return;
 
-          if (statusCode >= 500) {
-            _controller.handleServerError(statusCode);
-          } else if (statusCode >= 400) {
-            String errorMsg = 'Server error ($statusCode)';
-
-            if (statusCode == 404) {
-              errorMsg = 'Article not found (404).';
-            }
-
-            _controller.onPageError(errorMsg);
-          }
+        final statusCode = errorResponse.statusCode ?? 0;
+        if (statusCode >= 500) {
+          _controller.handleServerError(statusCode);
+        } else if (statusCode >= 400) {
+          _controller.onPageError(
+            statusCode == 404
+                ? 'Article not found (404).'
+                : 'Server error ($statusCode)',
+          );
         }
       },
       onConsoleMessage: (controller, consoleMessage) {
         if (consoleMessage.messageLevel == ConsoleMessageLevel.ERROR) {
-          appLog('Console: ${consoleMessage.message}');
+          appLog('Console: ${consoleMessage.message}', name: 'Reader');
         }
       },
     );
+  }
+
+  Future<void> _endRefreshing() async {
+    await _pullToRefreshController?.endRefreshing();
+  }
+
+  /// Turns a WebView error into a message that tells the user what to try.
+  static String _describe(String description) {
+    final text = description.toLowerCase();
+
+    if (text.contains('host') || text.contains('dns')) {
+      return 'Cannot connect to server. Check your internet connection.';
+    }
+    if (text.contains('connect') || text.contains('network')) {
+      return 'Connection failed. Please try again.';
+    }
+    if (text.contains('timeout') || text.contains('time')) {
+      return 'Request timed out. Please try again.';
+    }
+    return 'Failed to load article: $description';
   }
 }

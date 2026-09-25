@@ -33,51 +33,79 @@ void main() {
         'https://medium.com/p/abc',
       );
     });
+
+    test('the same article produces the same URL regardless of tracking', () {
+      expect(
+        ArticleUrl.canonicalize(
+          'https://medium.com/p/abc?utm_source=newsletter',
+        ),
+        ArticleUrl.canonicalize('https://medium.com/p/abc?fbclid=xyz'),
+      );
+    });
   });
 
-  group('ArticleUrl.cleanUrl', () {
-    test('adds https to bare www and medium.com host', () {
+  group('ArticleUrl.normalize', () {
+    test('adds https to a bare host', () {
       expect(
-        ArticleUrl.cleanUrl('www.medium.com/article'),
+        ArticleUrl.normalize('www.medium.com/article'),
         'https://www.medium.com/article',
       );
       expect(
-        ArticleUrl.cleanUrl('medium.com/@user/demo'),
+        ArticleUrl.normalize('medium.com/@user/demo'),
         'https://medium.com/@user/demo',
       );
     });
 
-    test('extracts URL from markdown link', () {
+    test('extracts the URL from a markdown link', () {
       expect(
-        ArticleUrl.cleanUrl('[Read this](https://medium.com/some-doc)'),
+        ArticleUrl.normalize('[Read this](https://medium.com/some-doc)'),
         'https://medium.com/some-doc',
       );
     });
 
-    test('rejects non-URLs', () {
-      expect(ArticleUrl.cleanUrl('hello world'), isNull);
-      expect(ArticleUrl.cleanUrl(''), isNull);
+    test('rejects non-URLs and unsupported schemes', () {
+      expect(ArticleUrl.normalize('hello world'), isNull);
+      expect(ArticleUrl.normalize(''), isNull);
+      expect(ArticleUrl.normalize('ftp://medium.com/story'), isNull);
+      expect(ArticleUrl.normalize('javascript:alert(1)'), isNull);
     });
   });
 
-  group('ArticleUrl.isMediumUrl', () {
-    test('is true for medium.com and subdomains', () {
-      expect(ArticleUrl.isMediumUrl(Uri.parse('https://medium.com/x')), isTrue);
+  group('ArticleUrl.isValid', () {
+    test('accepts any http(s) URL with a real host', () {
+      expect(ArticleUrl.isValid('https://medium.com/x'), isTrue);
+      expect(ArticleUrl.isValid('https://google.com'), isTrue);
+      expect(ArticleUrl.isValid('http://localhost:8080/a'), isFalse);
+    });
+
+    test('rejects empty, hostless and non-URL input', () {
+      expect(ArticleUrl.isValid(null), isFalse);
+      expect(ArticleUrl.isValid(''), isFalse);
+      expect(ArticleUrl.isValid('not-a-valid-url'), isFalse);
+      expect(ArticleUrl.isValid('https://'), isFalse);
+    });
+  });
+
+  group('ArticleUrl.validationError', () {
+    test('accepts a valid URL', () {
+      expect(ArticleUrl.validationError('https://medium.com/x'), isNull);
+    });
+
+    test('distinguishes empty input from invalid input', () {
+      expect(ArticleUrl.validationError(''), 'Please enter a URL');
       expect(
-        ArticleUrl.isMediumUrl(Uri.parse('https://blog.medium.com/x')),
-        isTrue,
+        ArticleUrl.validationError('not-a-valid-url'),
+        'Please enter a valid URL',
       );
     });
 
-    test('is false for non-Medium hosts including publications', () {
-      expect(
-        ArticleUrl.isMediumUrl(Uri.parse('https://example.com/x')),
-        isFalse,
-      );
-      expect(
-        ArticleUrl.isMediumUrl(Uri.parse('https://towardsdatascience.com/x')),
-        isFalse,
-      );
+    test('agrees with isValid', () {
+      for (final input in ['', 'nope', 'https://medium.com/a']) {
+        expect(
+          ArticleUrl.validationError(input) == null,
+          ArticleUrl.isValid(input),
+        );
+      }
     });
   });
 
@@ -97,7 +125,7 @@ void main() {
       );
     });
 
-    test('free text containing an URL', () {
+    test('free text containing a URL', () {
       expect(
         ArticleUrl.extractFirstUrl(
           'Check out https://towardsdatascience.com/a-b <3',
@@ -109,6 +137,17 @@ void main() {
     test('empty or null payload', () {
       expect(ArticleUrl.extractFirstUrl(null), isNull);
       expect(ArticleUrl.extractFirstUrl('  '), isNull);
+      expect(ArticleUrl.extractFirstUrl('no link here'), isNull);
+    });
+  });
+
+  group('ArticleUrl.hostOf', () {
+    test('drops a leading www', () {
+      expect(ArticleUrl.hostOf('https://www.medium.com/x'), 'medium.com');
+    });
+
+    test('is null for unusable URLs', () {
+      expect(ArticleUrl.hostOf('nope'), isNull);
     });
   });
 }

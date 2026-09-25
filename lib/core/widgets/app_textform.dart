@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/app_spacing.dart';
+
 class AppTextForm extends StatelessWidget {
   const AppTextForm({
     super.key,
@@ -14,6 +16,7 @@ class AppTextForm extends StatelessWidget {
     this.trailing,
     this.obscureText = false,
     this.enabled = true,
+    this.autofocus = false,
     this.keyboardType,
     this.textInputAction,
     this.inputFormatters,
@@ -37,6 +40,7 @@ class AppTextForm extends StatelessWidget {
 
   final bool obscureText;
   final bool enabled;
+  final bool autofocus;
 
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -61,6 +65,7 @@ class AppTextForm extends StatelessWidget {
         focusNode: focusNode,
         obscureText: obscureText,
         enabled: enabled,
+        autofocus: autofocus,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         inputFormatters: inputFormatters,
@@ -83,34 +88,34 @@ class AppTextForm extends StatelessWidget {
             alpha: 0.35,
           ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.lg,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(color: colorScheme.outlineVariant),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(color: colorScheme.outlineVariant),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(color: colorScheme.primary, width: 2),
           ),
 
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(color: colorScheme.error),
           ),
 
           focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(color: colorScheme.error, width: 2),
           ),
 
           disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: BorderSide(
               color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
@@ -123,7 +128,10 @@ class AppTextForm extends StatelessWidget {
           hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
           prefixIconColor: colorScheme.onSurfaceVariant,
           suffixIconColor: colorScheme.onSurfaceVariant,
-          errorStyle: TextStyle(color: colorScheme.error, fontSize: 12),
+          errorStyle: TextStyle(
+            color: colorScheme.error,
+            fontSize: theme.textTheme.labelSmall?.fontSize,
+          ),
         ),
       ),
     );

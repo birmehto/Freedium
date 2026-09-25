@@ -1,32 +1,40 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
-import '../../features/home/controllers/home_controller.dart';
 import '../network/article_url.dart';
 import '../utils/app_log.dart';
 
+/// Listens for URLs shared into Freedium from other Android apps.
+///
+/// The service owns no UI state: it publishes the last shared URL and lets the
+/// Home feature decide what to do with it.
 class ShareIntentService extends GetxService {
-  String? pendingUrl;
-  StreamSubscription? _intentSub;
+  /// Most recent URL received through a share intent.
+  ///
+  /// Reactive so a share that arrives while Home is already on screen is picked
+  /// up without a restart. A share that arrives before Home exists stays in
+  /// this field and is picked up when Home initializes.
+  final RxnString incomingUrl = RxnString();
+
+  StreamSubscription<dynamic>? _intentSub;
 
   Future<ShareIntentService> init() async {
-    if (!Platform.isAndroid && !Platform.isIOS) return this;
+    // Android is the only platform that can share into the app.
+    if (!Platform.isAndroid) return this;
 
     _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen(
       (files) {
         if (files.isNotEmpty) _process(files.first.path);
       },
-      onError: (error) {
+      onError: (error, stackTrace) {
         appLog(
-          'Share intent stream error',
+          'Share intent stream error: $error',
           name: 'ShareIntent',
           level: LogLevel.warning,
         );
-        appLog(error.toString(), name: 'ShareIntent');
       },
     );
 
@@ -39,33 +47,24 @@ class ShareIntentService extends GetxService {
       }
     } catch (error) {
       appLog(
-        'Failed to read initial share intent',
+        'Could not read the initial share intent: $error',
         name: 'ShareIntent',
         level: LogLevel.warning,
       );
-      appLog(error.toString(), name: 'ShareIntent');
     }
 
     return this;
   }
 
+  /// Marks the current share as handled.
+  void consume() => incomingUrl.value = null;
+
   void _process(String? text) {
-    final url = ArticleUrl.extractFirstUrl(text);
+    final url = ArticleUrl.normalize(ArticleUrl.extractFirstUrl(text));
     if (url == null) return;
 
-    final cleanUrl = ArticleUrl.cleanUrl(url) ?? url;
-    if (cleanUrl.isEmpty) return;
-
-    if (Get.isRegistered<HomeController>()) {
-      final controller = Get.find<HomeController>();
-      controller.urlController.text = cleanUrl;
-
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => controller.openArticle(),
-      );
-    } else {
-      pendingUrl = cleanUrl;
-    }
+    appLog('Received shared URL', name: 'ShareIntent');
+    incomingUrl.value = url;
   }
 
   @override

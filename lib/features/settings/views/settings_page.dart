@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_pill.dart';
 import '../../../core/widgets/app_section_header.dart';
@@ -17,9 +18,9 @@ class SettingsPage extends GetView<SettingsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppAppBar(title: 'Settings'),
+      appBar: const AppAppBar(title: Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           const AppSectionHeader(title: 'Appearance'),
           M3ECard(
@@ -67,8 +68,7 @@ class SettingsPage extends GetView<SettingsController> {
             child: Obx(
               () => AppSettingsTile(
                 title: 'Default Font Size',
-                supportingText:
-                    '${controller.fontSize.value.toStringAsFixed(0)} px',
+                supportingText: '${controller.fontSize.toStringAsFixed(0)} px',
                 icon: M3EIcons.format_size_rounded,
 
                 onTap: () => showFontSizeSheet(context),
@@ -149,7 +149,7 @@ class SettingsPage extends GetView<SettingsController> {
             ),
           ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: AppSpacing.xxxl),
         ],
       ),
     );

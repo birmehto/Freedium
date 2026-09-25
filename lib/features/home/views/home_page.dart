@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/home_hero.dart';
@@ -12,9 +13,9 @@ class HomePage extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppAppBar(title: 'Freedium'),
+      appBar: const AppAppBar(title: Text('Freedium')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: const [HomeHero(), HomeUnlockForm(), SizedBox(height: 60)],
       ),
     );

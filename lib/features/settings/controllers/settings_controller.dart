@@ -22,22 +22,20 @@ class SettingsController extends GetxController {
 
   // Reader defaults
   final readerSettings = const ReaderSettings().obs;
-  final fontSize = 17.0.obs;
 
   // Network & source
-  final preferredMirror = Rxn<String>();
+  final preferredMirror = RxnString();
   final autoFallback = true.obs;
 
-  // Library & storage
-  final recentSearchCount = 0.obs;
-
   bool get isDarkMode => _themeService.isDarkMode.value;
+
+  /// Font size is part of the reader settings, not a separate value.
+  double get fontSize => readerSettings.value.fontSize;
 
   @override
   void onInit() {
     super.onInit();
     _loadAppVersion();
-    fontSize.value = _storage.fontSize;
     themeMode.value = _themeService.preferredMode;
     readerSettings.value = _storage.preferences.readerSettings;
     preferredMirror.value = _storage.preferences.preferredMirror;
@@ -56,10 +54,17 @@ class SettingsController extends GetxController {
     themeMode.value = _themeService.preferredMode;
   }
 
+  // ──────────────────────────────── reader ────────────────────────────
+
   void setFontSize(double size) {
-    fontSize.value = size;
-    _storage.fontSize = size;
-    updateReaderSettings(readerSettings.value.copyWith(fontSize: size));
+    updateReaderSettings(
+      readerSettings.value.copyWith(
+        fontSize: size.clamp(
+          ReaderSettings.kMinFontSize,
+          ReaderSettings.kMaxFontSize,
+        ),
+      ),
+    );
   }
 
   void updateReaderSettings(ReaderSettings settings) {
@@ -79,61 +84,52 @@ class SettingsController extends GetxController {
     _storage.preferences.autoFallback = value;
   }
 
-  // ─────────────────────────────── about ──────────────────────────────
+  // ──────────────────────────────── about ────────────────────────────
 
   Future<void> sendFeedback() async {
+    const address = 'birmehto@gmail.com';
+
     final uri = Uri(
       scheme: 'mailto',
-      path: 'birmehto@gmail.com',
-      queryParameters: {'subject': 'Freedium Feedback'},
+      path: address,
+      queryParameters: const {'subject': 'Freedium Feedback'},
     );
 
-    try {
-      final canLaunch = await canLaunchUrl(uri);
-      if (!canLaunch) {
-        M3ESnackbar.show(
-          // ignore: use_build_context_synchronously
-          Get.context!,
-          message: 'No email app found. Email us at birmehto@gmail.com',
-        );
-        return;
-      }
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      final exception = AppException.from(e, context: 'sendFeedback');
-      appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
-      M3ESnackbar.show(Get.context!, message: "Couldn't open email app");
+    if (!await _openExternal(uri)) {
+      _showMessage('No email app found. Email us at $address');
     }
   }
 
-  Future<void> openGitHub() async {
-    await _openExternal('https://github.com/birmehto/Freedium');
-  }
+  Future<void> openGitHub() =>
+      _openExternal(Uri.parse('https://github.com/birmehto/Freedium'));
 
-  Future<void> _openExternal(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
+  Future<bool> _openExternal(Uri uri) async {
     try {
-      final canLaunch = await canLaunchUrl(uri);
-      if (!canLaunch) {
-        M3ESnackbar.show(Get.context!, message: 'Could not open link');
-        return;
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return true;
       }
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      final exception = AppException.from(e, context: '_openExternal');
+    } catch (error) {
+      final exception = AppException.from(error, context: 'openExternal');
       appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
-      M3ESnackbar.show(Get.context!, message: "Couldn't open link");
     }
+
+    _showMessage('Could not open link');
+    return false;
   }
 
   Future<void> _loadAppVersion() async {
     try {
-      final info = await PackageInfo.fromPlatform();
-      appVersion.value = info.version;
-    } catch (e) {
-      final exception = AppException.from(e, context: '_loadAppVersion');
+      appVersion.value = (await PackageInfo.fromPlatform()).version;
+    } catch (error) {
+      final exception = AppException.from(error, context: 'loadAppVersion');
       appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
+    }
+  }
+
+  void _showMessage(String message) {
+    if (Get.context case final context?) {
+      M3ESnackbar.show(context, message: message);
     }
   }
 }

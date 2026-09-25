@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
+import '../../../core/theme/app_spacing.dart';
+
 /// Radio-like option row used inside settings dialogs.
 class SettingsOptionTile extends StatelessWidget {
   const SettingsOptionTile({
@@ -22,9 +24,12 @@ class SettingsOptionTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             Expanded(

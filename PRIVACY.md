@@ -10,8 +10,8 @@ All user data lives on-device in a local SQLite database (managed by Drift) and 
 
 | Store | Data |
 |-------|------|
-| `PreferencesStore` | Theme mode (system/light/dark), reader settings (theme, font family, size, line height, spacing, width, alignment), default font size, preferred mirror, auto-fallback flag, recent searches |
-| `LibraryStore` | Favorites (title, URL, author, domain), reading history, reading progress (progress %, scroll position, timestamps), saved offline articles (cleaned HTML + metadata), local reading stats (articles opened, completed, minutes read), cached article metadata |
+| `PreferencesStore` | Theme mode (system/light/dark), reader settings (reader theme, font family, font size), preferred mirror, auto-fallback flag |
+| `LibraryStore` | Favorites (title, URL, author, domain) and cached article metadata (title, author, publication, word count, reading time, published date) |
 
 Clearing the app data (or uninstalling) wipes everything.
 
@@ -22,8 +22,7 @@ Clearing the app data (or uninstalling) wipes everything.
 
 ## Analytics
 
-- **No analytics, tracking, or crash-reporting SDKs** are bundled.
-- The "reading statistics" shown in Settings (articles opened/completed, minutes read) are derived **locally** from `LibraryStore`. They are never transmitted and are kept separate from any aggregate counters.
+- **No analytics, tracking, or crash-reporting SDKs** are bundled, and the app collects no usage statistics of its own.
 
 ## External services contacted
 
@@ -32,16 +31,15 @@ Clearing the app data (or uninstalling) wipes everything.
 | Mirror sources (`MirrorCatalog.defaults`) | Fetch article content for the URL you opened | On article open / retry |
 | Email / Buy Me a Coffee (links) | Feedback and optional donations | Only when you explicitly use them |
 
-## How cached articles are stored
+## How article content is handled
 
-- Offline articles are stored as **cleaned HTML strings** in `LibraryStore`, capped at a 64 MB soft budget with oldest-entry eviction (`LibraryStore.saveArticle`).
-- Large HTML is never held in reactive controller state; it is only read back into the WebView when an offline copy is opened.
+- Article HTML is **never stored**. The reader loads each article over the network into the WebView and discards it on exit.
+- Only lightweight metadata is cached, so the favorites list can render without refetching. Clearing the library or the app data removes it.
 
 ## How users can clear local data
 
-- **Settings → Library & Storage** provides one-tap "Delete" for saved articles and recent searches.
-- Library lists support per-item removal (swipe) and "Clear" dialogs.
-- Uninstalling / clearing app data removes everything on all platforms.
+- Favorites support per-item removal, and entries can be deleted individually.
+- Uninstalling or clearing app data removes everything. Android backups are disabled (`android:allowBackup="false"` plus explicit data-extraction rules), so data does not leave the device through cloud backup or device transfer.
 
 ## Logging
 

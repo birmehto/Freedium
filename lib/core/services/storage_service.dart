@@ -5,51 +5,47 @@ import '../storage/key_value_store.dart';
 import '../storage/library_store.dart';
 import '../storage/preferences_store.dart';
 
-/// Owns the on-device database and exposes the two focused stores.
+/// Owns the on-device SQLite database and exposes the two focused stores.
 ///
-/// Device settings and reading data are kept in separate stores
-/// ([PreferencesStore], [LibraryStore]); this facade only wires them up and
-/// keeps a thin backward-compatible API for the early controllers.
+/// Registered as a permanent service during startup, so every feature binding
+/// resolves the same [preferences] and [library] instances.
 class StorageService extends GetxService {
-  PreferencesStore? _preferences;
-  LibraryStore? _library;
-  bool _connected = false;
+  /// Production constructor: opens the SQLite database.
+  StorageService();
 
+  /// Test constructor: uses an already-prepared [KeyValueStore].
+  StorageService.withStore(KeyValueStore store) {
+    _keyValueStore = store;
+    _attachStores();
+  }
+
+  late final PreferencesStore preferences;
+  late final LibraryStore library;
+
+  KeyValueStore? _keyValueStore;
+
+  /// Opens the database and warms the synchronous read cache.
   Future<StorageService> init() async {
     final store = DriftKeyValueStore(AppDatabase.open());
     await store.init();
-    _preferences = PreferencesStore(store);
-    _library = LibraryStore(store);
-    _connected = true;
+
+    _keyValueStore = store;
+    _attachStores();
     return this;
   }
 
-  bool get isConnected => _connected;
+  @override
+  void onClose() {
+    // Only close what this service opened; an injected store belongs to the
+    // caller that created it.
+    final store = _keyValueStore;
+    if (store is DriftKeyValueStore) store.close();
+    super.onClose();
+  }
 
-  PreferencesStore get preferences =>
-      _preferences ??= PreferencesStore(MemoryKeyValueStore());
-
-  LibraryStore get library => _library ??= LibraryStore(MemoryKeyValueStore());
-
-  // ─────────────────────────── legacy API ──────────────────────────────
-  // Kept so existing controllers and tests keep working unchanged; all
-  // members now delegate to the focused stores.
-
-  bool get isDarkMode => preferences.isDarkMode;
-  set isDarkMode(bool value) => preferences.isDarkMode = value;
-
-  double get fontSize => preferences.fontSize;
-  set fontSize(double value) => preferences.fontSize = value;
-
-  RxInt get favoritesRevision => library.favoritesRevision;
-
-  List<dynamic> get favorites => library.favorites;
-
-  Future<void> addToFavorites(Map<String, dynamic> item) =>
-      library.addToFavorites(item);
-
-  Future<void> removeFromFavorites(String url) =>
-      library.removeFromFavorites(url);
-
-  bool isFavorite(String url) => library.isFavorite(url);
+  void _attachStores() {
+    final store = _keyValueStore!;
+    preferences = PreferencesStore(store);
+    library = LibraryStore(store);
+  }
 }

@@ -28,14 +28,13 @@ lib/
 │   ├── services/                   StorageService facade, ThemeService,
 │   │                               ShareIntentService, ClipboardService
 │   ├── storage/                    KeyValueStore, PreferencesStore, LibraryStore
-│   ├── utils/                      AppLog, UrlValidator (legacy)
-│   └── widgets/                    AppShell + shared widgets (AppButton, …)
+│   ├── utils/                      AppLog
+│   └── widgets/                    Shared App* widgets (AppButton, AppEmpty, …)
 └── features/
     ├── article/                    Reader: controller, webview, metadata models
     ├── favorites/                  Favorites list + model
     ├── home/                       URL entry screen
-    ├── library/                    Library: Continue/Favorites/Saved/History
-    └── settings/                   Settings: theme, reader, sources, storage
+    └── settings/                   Settings: theme, reader, sources
 ```
 
 Each feature owns its `controllers/`, `models/`, `views/`, `widgets/` and (where needed) `bindings/`. Reusable cross-feature UI lives in `core/widgets/`.
@@ -62,10 +61,10 @@ Bare link / shared URL
        ├─ ReaderTheme.extractMetaJs → ArticleMeta (title/author/publication/…)
        ├─ restore scroll position   LibraryStore.getReadingProgress
        ├─ layout metrics            content height for % progress
-       └─ reading session starts    LibraryStore.recordHistory + stats
+       └─ metadata cached          LibraryStore.cacheMeta
 ```
 
-Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.getCss`. The controller never stores large HTML strings in reactive state — offline HTML is kept in `LibraryStore` only and fed to the WebView on demand.
+Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.getCss`, which is JSON-encoded before injection so reader CSS can never break out of the script string. Article HTML is never stored or held in reactive state; the WebView always loads over the network and only lightweight metadata is cached in `LibraryStore`.
 
 ## Mirror system
 
@@ -79,16 +78,15 @@ Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.get
 Two focused stores behind a thin `KeyValueStore` interface:
 
 ```text
-StorageService (facade, GetxService)
+StorageService (owner, GetxService)
  ├── preferences  → PreferencesStore   light device settings
- │                    themeMode, reader settings, font size,
- │                    preferred mirror, auto fallback, recent searches, save-as
+ │                    theme mode, reader settings,
+ │                    preferred mirror, auto fallback
  └── library      → LibraryStore       content data
-                      favorites, history, reading progress,
-                      saved articles (HTML), reading stats, cached metadata
+                      favorites, cached article metadata
 ```
 
-`DriftKeyValueStore` is the production backend (a single JSON `kv` table in a SQLite database via Drift, kept in sync with an in-memory cache for synchronous reads); `MemoryKeyValueStore` is used in tests. `favoritesRevision` / `libraryRevision` Rx counters notify list views of mutations. The old storage API (`isDarkMode`, `fontSize`, `favorites`, …) is kept on the facade so early code and tests continue to work unchanged.
+`DriftKeyValueStore` is the production backend (a single JSON `kv` table in a SQLite database via Drift, kept in sync with an in-memory cache for synchronous reads); `MemoryKeyValueStore` is used in tests. Writes are serialized through an internal queue so overlapping updates cannot interleave, and `StorageService.withStore` injects an in-memory store for tests. `LibraryStore.favorites` is the single reactive list of record — no duplicate copy is kept in a controller. Storage keys are stable (`favorites_list`, `cached_meta`) so existing installs keep their data.
 
 ## Theming
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_spacing.dart';
+
 /// Modal bottom-sheet scaffold used by settings and the reader.
 ///
 /// Provides the standard rounded surface, drag handle, title, and scrolling
@@ -17,12 +19,19 @@ class AppBottomSheet extends StatelessWidget {
 
     return Material(
       color: c.surfaceContainer,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppRadius.xl),
+      ),
       clipBehavior: Clip.antiAlias,
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.xl,
+            AppSpacing.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,15 +40,15 @@ class AppBottomSheet extends StatelessWidget {
                 child: Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                   decoration: BoxDecoration(
                     color: c.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppSpacing.xs),
                   ),
                 ),
               ),
               Text(title, style: theme.textTheme.titleLarge),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               child,
             ],
           ),

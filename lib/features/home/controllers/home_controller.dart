@@ -4,78 +4,79 @@ import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/errors/app_exception.dart';
-import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/share_intent_service.dart';
 import '../../../core/utils/app_log.dart';
+import '../../article/models/article_request.dart';
 
 class HomeController extends GetxController {
-  HomeController(this._clipboardService);
+  HomeController(this._clipboardService, this._shareIntentService);
 
   final ClipboardService _clipboardService;
+  final ShareIntentService _shareIntentService;
 
   final TextEditingController urlController = TextEditingController();
   final FocusNode urlFocusNode = FocusNode();
+
+  /// Reactive view of [urlController] text, for enabling the submit button.
   final RxString urlText = ''.obs;
+
+  /// Non-empty when an action failed; the field validator handles bad input.
   final RxString errorMessage = ''.obs;
+
   final RxBool isLoading = false.obs;
+
+  late final Worker _shareWorker;
+
+  @override
+  void onInit() {
+    super.onInit();
+
+    urlController.addListener(() {
+      urlText.value = urlController.text;
+    });
+
+    _shareWorker = ever(_shareIntentService.incomingUrl, _openSharedUrl);
+
+    // A share received before Home existed is still waiting in the service.
+    final pending = _shareIntentService.incomingUrl.value;
+    if (pending != null) {
+      _openSharedUrl(pending);
+    }
+  }
 
   @override
   void onClose() {
+    _shareWorker.dispose();
     urlController.dispose();
     urlFocusNode.dispose();
     super.onClose();
   }
 
-  @override
-  void onInit() {
-    super.onInit();
-    urlController.addListener(() {
-      urlText.value = urlController.text;
-    });
-
-    // Process any shared URL received before UI was ready
-    if (Get.isRegistered<ShareIntentService>()) {
-      final shareService = Get.find<ShareIntentService>();
-      if (shareService.pendingUrl != null) {
-        final url = shareService.pendingUrl!;
-        shareService.pendingUrl = null;
-        urlController.text = url;
-        WidgetsBinding.instance.addPostFrameCallback((_) => openArticle());
-      }
-    }
-  }
-
   bool get canOpenArticle {
-    return urlText.isNotEmpty && errorMessage.isEmpty && !isLoading.value;
-  }
-
-  String? _validateUrl(String url) {
-    if (url.isEmpty) return null;
-    final cleaned = ArticleUrl.cleanUrl(url);
-    if (cleaned == null) return 'Please enter a valid URL';
-    return null;
+    return urlText.value.trim().isNotEmpty &&
+        errorMessage.isEmpty &&
+        !isLoading.value;
   }
 
   void onUrlChanged(String value) {
-    errorMessage.value = _validateUrl(value.trim()) ?? '';
+    // Bad input is reported by the field validator; a stale failure message
+    // should not survive the next edit.
+    errorMessage.value = '';
   }
 
   Future<void> pasteFromClipboard() async {
     try {
       final clipboardText = await _clipboardService.getFromClipboard();
-      if (clipboardText != null && clipboardText.isNotEmpty) {
-        urlController.text = clipboardText;
-        onUrlChanged(clipboardText);
-      }
-    } catch (e) {
-      final exception = AppException.from(e, context: 'pasteFromClipboard');
+      if (clipboardText == null || clipboardText.isEmpty) return;
+
+      urlController.text = clipboardText.trim();
+      onUrlChanged(clipboardText);
+    } catch (error) {
+      final exception = AppException.from(error, context: 'pasteFromClipboard');
       appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
-      M3ESnackbar.show(
-        Get.context!,
-        message: 'Failed to paste from clipboard: ${exception.userMessage}',
-      );
+      _showMessage('Failed to paste from clipboard: ${exception.userMessage}');
     }
   }
 
@@ -87,30 +88,37 @@ class HomeController extends GetxController {
   Future<void> openArticle() async {
     if (!canOpenArticle) return;
 
-    final url = urlController.text.trim();
-    final cleanedUrl = ArticleUrl.cleanUrl(url);
-    if (cleanedUrl == null) {
+    final request = ArticleRequest.parse(urlController.text);
+    if (!request.isValid) {
       errorMessage.value = AppException.invalidUrl().userMessage;
       return;
     }
+
     isLoading.value = true;
     try {
-      final canonical = ArticleUrl.canonicalize(cleanedUrl);
-      if (canonical.isEmpty) {
-        errorMessage.value = AppException.invalidUrl().userMessage;
-        return;
-      }
-      await Get.toNamed(
-        AppRoutes.article,
-        arguments: {'url': canonical, 'originalUrl': canonical},
-      );
-    } catch (e, stackTrace) {
-      final exception = AppException.from(e, context: 'openArticle');
-      appLog(exception.toString(), name: 'Home', level: LogLevel.error);
-      appLog(stackTrace.toString(), name: 'Home');
+      await Get.toNamed(AppRoutes.article, arguments: request);
+    } catch (error, stackTrace) {
+      final exception = AppException.from(error, context: 'openArticle');
+      appLog('$exception\n$stackTrace', name: 'Home', level: LogLevel.error);
       errorMessage.value = exception.userMessage;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  void _openSharedUrl(String? url) {
+    if (url == null) return;
+
+    urlController.text = url;
+    _shareIntentService.consume();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => openArticle());
+  }
+
+  /// Shows a transient message, if a context is available at that moment.
+  void _showMessage(String message) {
+    if (Get.context case final context?) {
+      M3ESnackbar.show(context, message: message);
     }
   }
 }

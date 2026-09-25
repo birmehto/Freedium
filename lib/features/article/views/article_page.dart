@@ -2,6 +2,8 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/extensions/context_ext.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_pill.dart';
@@ -15,28 +17,29 @@ class ArticlePage extends GetView<ArticleController> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppAppBar(
-        title: _displayTitle,
         centerTitle: false,
-        actions: [
-          Obx(() => _readingTime()),
-          const SizedBox(width: 2),
-          Obx(() => _favoriteButton(theme)),
-          const SizedBox(width: 2),
+        title: Obx(() => Text(_displayTitle)),
+        actions: const [
+          _ReadingTime(),
+          SizedBox(width: AppSpacing.xxs),
+          _FavoriteButton(),
+          SizedBox(width: AppSpacing.xxs),
         ],
       ),
       body: Stack(
         children: [
-          Obx(() => ArticleWebView(url: controller.currentUrl.value)),
-          Obx(() => _loadingIndicator(theme)),
+          // Deliberately not reactive: the WebView is created once for the
+          // initial URL, and later navigations are driven by the controller.
+          // Rebuilding it here would reload the article on every page load.
+          ArticleWebView(url: controller.currentUrl.value),
+          const _LoadingIndicator(),
           const ArticleErrorView(),
-          Obx(() => _initialLoader()),
+          const _InitialLoader(),
         ],
       ),
-      floatingActionButton: _fabMenu(context, theme),
+      floatingActionButton: const _FabMenu(),
     );
   }
 
@@ -44,30 +47,45 @@ class ArticlePage extends GetView<ArticleController> {
     final title = controller.articleTitle.value;
     return title.length > 42 ? '${title.substring(0, 39)}...' : title;
   }
+}
 
-  Widget _readingTime() {
+class _ReadingTime extends GetView<ArticleController> {
+  const _ReadingTime();
+
+  @override
+  Widget build(BuildContext context) {
     final minutes = controller.readingTime.value;
 
     return minutes > 0
         ? AppPill(label: '$minutes min')
         : const SizedBox.shrink();
   }
+}
 
-  Widget _favoriteButton(ThemeData theme) {
-    final favorite = controller.isFavorite.value;
+class _FavoriteButton extends GetView<ArticleController> {
+  const _FavoriteButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final favorite = controller.isFavorite;
 
     return M3EIconButton(
       size: M3EIconButtonSize.xs,
       icon: Icon(
         favorite ? M3EIcons.favorite_rounded : M3EIcons.favorite_border_rounded,
-        color: favorite ? theme.colorScheme.onPrimary : null,
+        color: favorite ? context.colors.onPrimary : null,
       ),
       tooltip: favorite ? 'Remove from favorites' : 'Save to favorites',
       onPressed: controller.toggleFavorite,
     );
   }
+}
 
-  Widget _loadingIndicator(ThemeData theme) {
+class _LoadingIndicator extends GetView<ArticleController> {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
     final loading = controller.isLoading.value;
     final progress = controller.loadingProgress.value;
 
@@ -79,20 +97,30 @@ class ArticlePage extends GetView<ArticleController> {
           alignment: Alignment.topCenter,
           child: M3EProgressIndicator.linear(
             value: progress > 0 && progress < 1 ? progress : null,
-            color: theme.colorScheme.primary,
+            color: context.colors.primary,
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _initialLoader() {
+class _InitialLoader extends GetView<ArticleController> {
+  const _InitialLoader();
+
+  @override
+  Widget build(BuildContext context) {
     return controller.isInitialLoad.value && controller.errorMessage.isEmpty
         ? const Positioned.fill(child: AppLoading())
         : const SizedBox.shrink();
   }
+}
 
-  Widget _fabMenu(BuildContext context, ThemeData theme) {
+class _FabMenu extends GetView<ArticleController> {
+  const _FabMenu();
+
+  @override
+  Widget build(BuildContext context) {
     return M3EFabMenu(
       size: M3EFabSize.regular,
       icon: const Icon(M3EIcons.more_horiz_rounded),

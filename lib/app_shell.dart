@@ -1,9 +1,9 @@
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../features/favorites/views/favorites_page.dart';
-import '../../features/home/views/home_page.dart';
-import '../../features/settings/views/settings_page.dart';
+import 'features/favorites/views/favorites_page.dart';
+import 'features/home/views/home_page.dart';
+import 'features/settings/views/settings_page.dart';
 
 /// Root shell: top-level navigation via a bottom navigation bar.
 class AppShell extends StatefulWidget {

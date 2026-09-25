@@ -5,58 +5,56 @@ class MirrorSource {
     required this.name,
     required this.url,
     required this.urlTemplate,
-    this.isTextOnly = false,
   });
 
   final String id;
   final String name;
-  final String url;
-  final bool isTextOnly;
 
-  /// Template produces the final proxied URL from an original article URL.
-  /// `{original}` is replaced with the URL-encoded original URL.
+  /// Human-readable origin of the mirror, shown in Settings.
+  final String url;
+
+  /// Produces the proxied URL for an article; `{original}` is replaced with
+  /// the URL-encoded original URL.
   final String urlTemplate;
+
+  String get host => Uri.parse(url).host;
+
+  // ── Health tracking (in-memory for the current session) ────────────────
+
+  /// Consecutive failures before a mirror is taken out of rotation.
+  static const int failureThreshold = 3;
 
   bool available = true;
   int consecutiveFailures = 0;
-  int totalFailures = 0;
-  DateTime? lastSuccessAt;
-  DateTime? lastAttemptAt;
-  Duration? lastResponseTime;
 
   String buildUrl(String originalUrl) =>
       urlTemplate.replaceAll('{original}', Uri.encodeComponent(originalUrl));
 
-  void recordSuccess({Duration? responseTime}) {
+  void recordSuccess() {
     available = true;
     consecutiveFailures = 0;
-    lastSuccessAt = DateTime.now();
-    lastAttemptAt = DateTime.now();
-    lastResponseTime = responseTime;
   }
 
   void recordFailure() {
     consecutiveFailures++;
-    totalFailures++;
-    lastAttemptAt = DateTime.now();
-    if (consecutiveFailures >= 3) {
+    if (consecutiveFailures >= failureThreshold) {
       available = false;
     }
   }
 
-  /// Used by the resolver to retry mirrors that were temporarily disabled.
+  /// Lets the resolver retry a mirror that was taken out of rotation.
   void resetHealth() {
     consecutiveFailures = 0;
     available = true;
   }
 }
 
-/// Known mirror backends. The primary one is used first; the resolver
-/// automatically falls back to the next available source on failure.
-class MirrorCatalog {
-  MirrorCatalog._();
-
-  static final List<MirrorSource> defaults = [
+/// The known mirror backends, in the order they are attempted.
+///
+/// Every call returns fresh [MirrorSource] instances: health state must never be
+/// shared between resolvers.
+abstract final class MirrorCatalog {
+  static List<MirrorSource> createDefaults() => [
     MirrorSource(
       id: 'freedium',
       name: 'Freedium',
@@ -69,7 +67,6 @@ class MirrorCatalog {
       url: 'https://www.textise.net/',
       urlTemplate:
           'https://www.textise.net/showText.aspx?strURL={original}&opt=3',
-      isTextOnly: true,
     ),
   ];
 }

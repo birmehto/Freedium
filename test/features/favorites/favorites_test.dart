@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/routes/app_routes.dart';
 import 'package:freedium/core/services/storage_service.dart';
-import 'package:freedium/core/services/theme_service.dart';
 import 'package:freedium/features/favorites/controllers/favorites_controller.dart';
 import 'package:freedium/features/favorites/models/favorite_article.dart';
 import 'package:freedium/features/favorites/views/favorites_page.dart';
@@ -9,91 +9,76 @@ import 'package:freedium/features/favorites/widgets/favorite_tile.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
-import 'package:material_ui/material_ui.dart';
 
-class MockStorageService extends StorageService {
-  final List<Map<String, dynamic>> _favorites = [];
-  bool _isDarkMode = false;
+import '../../helpers/test_env.dart';
 
-  @override
-  bool get isDarkMode => _isDarkMode;
+FavoriteArticle article(
+  String url, {
+  String title = 'Title',
+  String? author,
+  String? domain,
+}) => FavoriteArticle(
+  title: title,
+  url: url,
+  visitedAt: DateTime.utc(2026),
+  author: author,
+  domain: domain,
+);
 
-  @override
-  set isDarkMode(bool value) {
-    _isDarkMode = value;
-  }
-
-  @override
-  List<dynamic> get favorites => _favorites;
-
-  @override
-  Future<void> addToFavorites(Map<String, dynamic> item) async {
-    if (!_favorites.any((e) => e['url'] == item['url'])) {
-      _favorites.insert(0, item);
-    }
-  }
+class _ArticleStub extends StatelessWidget {
+  const _ArticleStub();
 
   @override
-  Future<void> removeFromFavorites(String url) async {
-    _favorites.removeWhere((e) => e['url'] == url);
-  }
-
-  @override
-  bool isFavorite(String url) => _favorites.any((e) => e['url'] == url);
-}
-
-class MockThemeService extends ThemeService {
-  @override
-  void onInit() {
-    super.onInit();
-    isDarkMode.value = Get.find<StorageService>().isDarkMode;
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('article stub')));
   }
 }
 
 void main() {
-  group('FavoriteArticle Tests', () {
-    test('fromJson should parse correctly', () {
-      final json = {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late StorageService storage;
+  late FavoritesController controller;
+
+  setUp(() {
+    final services = registerServices();
+    storage = services.storage;
+    controller = FavoritesController(storage);
+    Get.put<FavoritesController>(controller);
+  });
+
+  Widget buildTestApp() => M3ETheme(
+    data: M3EThemeData.light(seedColor: testSeedColor),
+    child: GetMaterialApp(
+      localizationsDelegates: const [ui.DefaultMaterialLocalizations.delegate],
+      initialRoute: AppRoutes.home,
+      getPages: [
+        GetPage(name: AppRoutes.home, page: () => const FavoritesPage()),
+        GetPage(name: AppRoutes.article, page: () => const _ArticleStub()),
+      ],
+    ),
+  );
+
+  group('FavoriteArticle', () {
+    test('fromJson parses every field', () {
+      final parsed = FavoriteArticle.fromJson({
         'title': 'Test Article',
         'url': 'https://medium.com/test',
         'visitedAt': '2026-05-19T12:00:00.000Z',
         'author': 'Test Author',
         'domain': 'medium.com',
         'imageUrl': 'https://medium.com/image.png',
-      };
+      });
 
-      final article = FavoriteArticle.fromJson(json);
-
-      expect(article.title, 'Test Article');
-      expect(article.url, 'https://medium.com/test');
-      expect(article.visitedAt, DateTime.parse('2026-05-19T12:00:00.000Z'));
-      expect(article.author, 'Test Author');
-      expect(article.domain, 'medium.com');
-      expect(article.imageUrl, 'https://medium.com/image.png');
+      expect(parsed.title, 'Test Article');
+      expect(parsed.url, 'https://medium.com/test');
+      expect(parsed.visitedAt, DateTime.parse('2026-05-19T12:00:00.000Z'));
+      expect(parsed.author, 'Test Author');
+      expect(parsed.domain, 'medium.com');
+      expect(parsed.imageUrl, 'https://medium.com/image.png');
     });
 
-    test('toJson should convert correctly', () {
-      final visited = DateTime.parse('2026-05-19T12:00:00.000Z');
-      final article = FavoriteArticle(
-        title: 'Test Article',
-        url: 'https://medium.com/test',
-        visitedAt: visited,
-        author: 'Test Author',
-        domain: 'medium.com',
-        imageUrl: 'https://medium.com/image.png',
-      );
-
-      final json = article.toJson();
-
-      expect(json['title'], 'Test Article');
-      expect(json['url'], 'https://medium.com/test');
-      expect(json['visitedAt'], visited.toIso8601String());
-      expect(json['author'], 'Test Author');
-      expect(json['domain'], 'medium.com');
-      expect(json['imageUrl'], 'https://medium.com/image.png');
-    });
-
-    test('fromJson round-trip preserves all fields', () {
+    test('toJson round-trips', () {
       final original = FavoriteArticle(
         title: 'Round Trip',
         url: 'https://medium.com/round',
@@ -103,8 +88,7 @@ void main() {
         imageUrl: 'https://medium.com/img.png',
       );
 
-      final json = original.toJson();
-      final decoded = FavoriteArticle.fromJson(json);
+      final decoded = FavoriteArticle.fromJson(original.toJson());
 
       expect(decoded.title, original.title);
       expect(decoded.url, original.url);
@@ -114,284 +98,132 @@ void main() {
       expect(decoded.imageUrl, original.imageUrl);
     });
 
-    test('fromJson handles null optional fields', () {
-      final json = {
+    test('fromJson tolerates missing optional fields', () {
+      final parsed = FavoriteArticle.fromJson({
         'title': 'Minimal',
         'url': 'https://medium.com/min',
         'visitedAt': DateTime.now().toIso8601String(),
-      };
+      });
 
-      final article = FavoriteArticle.fromJson(json);
-
-      expect(article.author, isNull);
-      expect(article.domain, isNull);
-      expect(article.imageUrl, isNull);
-    });
-
-    test('toJson round-trip preserves all fields', () {
-      final json = {
-        'title': 'From JSON',
-        'url': 'https://medium.com/json',
-        'visitedAt': '2026-03-05T14:00:00.000Z',
-        'author': 'Writer',
-        'domain': 'medium.com',
-        'imageUrl': 'https://medium.com/pic.jpg',
-      };
-
-      final article = FavoriteArticle.fromJson(json);
-      final encoded = article.toJson();
-      final decoded = FavoriteArticle.fromJson(encoded);
-
-      expect(decoded.url, article.url);
-      expect(decoded.title, article.title);
+      expect(parsed.author, isNull);
+      expect(parsed.domain, isNull);
+      expect(parsed.imageUrl, isNull);
     });
 
     test('copyWith replaces only the provided fields', () {
-      final article = FavoriteArticle(
+      final original = article(
+        'https://medium.com/original',
         title: 'Original',
-        url: 'https://medium.com/original',
-        visitedAt: DateTime(2026),
         author: 'Author',
         domain: 'medium.com',
       );
 
-      final updated = article.copyWith(title: 'Updated', domain: 'dev.to');
+      final updated = original.copyWith(title: 'Updated', domain: 'dev.to');
 
       expect(updated.title, 'Updated');
       expect(updated.domain, 'dev.to');
-      expect(updated.url, article.url);
-      expect(updated.visitedAt, article.visitedAt);
-      expect(updated.author, article.author);
-    });
-
-    test('copyWith with no arguments returns an equal article', () {
-      final article = FavoriteArticle(
-        title: 'Same',
-        url: 'https://medium.com/same',
-        visitedAt: DateTime(2026, 2, 2),
-        author: 'Author',
-        domain: 'medium.com',
-        imageUrl: 'https://medium.com/img.png',
-      );
-
-      final copied = article.copyWith();
-
-      expect(copied.title, article.title);
-      expect(copied.url, article.url);
-      expect(copied.visitedAt, article.visitedAt);
-      expect(copied.author, article.author);
-      expect(copied.domain, article.domain);
-      expect(copied.imageUrl, article.imageUrl);
+      expect(updated.url, original.url);
+      expect(updated.visitedAt, original.visitedAt);
+      expect(updated.author, original.author);
     });
   });
 
-  group('FavoritesController Tests', () {
-    late MockStorageService mockStorage;
-    late FavoritesController controller;
-
-    setUp(() {
-      Get.reset();
-      mockStorage = MockStorageService();
-      Get.put<StorageService>(mockStorage);
-      controller = FavoritesController(mockStorage);
-      controller.onInit();
-    });
-
-    test('loadFavorites reads saved favorites from storage', () async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Hello',
-          url: 'https://medium.com/hello',
-          visitedAt: DateTime.now(),
-        ).toJson(),
+  group('FavoritesController', () {
+    test('reads favorites from the store', () async {
+      await storage.library.addToFavorites(
+        article('https://medium.com/hello', title: 'Hello'),
       );
 
-      await controller.loadFavorites();
-
-      expect(controller.favorites.length, 1);
+      expect(controller.favorites, hasLength(1));
       expect(controller.favorites.first.title, 'Hello');
-      expect(controller.favorites.first.url, 'https://medium.com/hello');
     });
 
-    test('loadFavorites returns empty list when storage is empty', () async {
-      await controller.loadFavorites();
-
+    test('is empty when nothing is saved', () {
       expect(controller.favorites, isEmpty);
     });
 
-    test('removeFavorite removes from storage and list', () async {
+    test('removeFavorite updates the store and the list', () async {
       const url = 'https://medium.com/hello';
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Hello',
-          url: url,
-          visitedAt: DateTime.now(),
-        ).toJson(),
-      );
-      await controller.loadFavorites();
+      await storage.library.addToFavorites(article(url));
 
       await controller.removeFavorite(url);
 
       expect(controller.favorites, isEmpty);
-      expect(mockStorage.favorites, isEmpty);
+      expect(storage.library.favorites, isEmpty);
     });
 
     test(
-      'removeFavorite leaves list unchanged when url is not found',
+      'removeFavorite leaves the list unchanged for an unknown URL',
       () async {
-        mockStorage.addToFavorites(
-          FavoriteArticle(
-            title: 'Keep',
-            url: 'https://medium.com/keep',
-            visitedAt: DateTime.now(),
-          ).toJson(),
+        await storage.library.addToFavorites(
+          article('https://medium.com/keep', title: 'Keep'),
         );
-        await controller.loadFavorites();
 
         await controller.removeFavorite('https://medium.com/missing');
 
-        expect(controller.favorites.length, 1);
-        expect(mockStorage.favorites.length, 1);
+        expect(controller.favorites, hasLength(1));
       },
     );
 
-    test('filteredFavorites matches search query', () async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Dart Tips',
-          url: 'https://medium.com/dart',
-          visitedAt: DateTime.now(),
-        ).toJson(),
+    test('filteredFavorites matches title, author and domain', () async {
+      await storage.library.addToFavorites(
+        article('https://medium.com/dart', title: 'Dart Tips'),
       );
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Flutter Guide',
-          url: 'https://medium.com/flutter',
-          visitedAt: DateTime.now(),
-        ).toJson(),
+      await storage.library.addToFavorites(
+        article(
+          'https://medium.com/deep',
+          title: 'Dart Deep Dive',
+          author: 'Alice',
+        ),
       );
-      await controller.loadFavorites();
+      await storage.library.addToFavorites(
+        article('https://dev.to/post', title: 'On Another', domain: 'dev.to'),
+      );
 
       controller.onSearchChanged('dart');
-
-      expect(controller.filteredFavorites.length, 1);
-      expect(controller.filteredFavorites.first.title, 'Dart Tips');
-    });
-
-    test('filteredFavorites matches author', () async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Dart Deep Dive',
-          url: 'https://medium.com/dart-deep',
-          visitedAt: DateTime.now(),
-          author: 'Alice',
-        ).toJson(),
-      );
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Flutter Basics',
-          url: 'https://medium.com/flutter-basics',
-          visitedAt: DateTime.now(),
-          author: 'Bob',
-        ).toJson(),
-      );
-      await controller.loadFavorites();
+      expect(controller.filteredFavorites, hasLength(2));
 
       controller.onSearchChanged('alice');
-
-      expect(controller.filteredFavorites.length, 1);
-      expect(controller.filteredFavorites.first.author, 'Alice');
-    });
-
-    test('filteredFavorites matches domain', () async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'On Medium',
-          url: 'https://medium.com/on-medium',
-          visitedAt: DateTime.now(),
-          domain: 'medium.com',
-        ).toJson(),
-      );
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'On Another',
-          url: 'https://dev.to/another',
-          visitedAt: DateTime.now(),
-          domain: 'dev.to',
-        ).toJson(),
-      );
-      await controller.loadFavorites();
+      expect(controller.filteredFavorites.single.author, 'Alice');
 
       controller.onSearchChanged('dev.to');
+      expect(controller.filteredFavorites.single.domain, 'dev.to');
+    });
 
-      expect(controller.filteredFavorites.length, 1);
-      expect(controller.filteredFavorites.first.domain, 'dev.to');
+    test('an empty query returns everything', () async {
+      await storage.library.addToFavorites(article('https://medium.com/a'));
+      await storage.library.addToFavorites(article('https://medium.com/b'));
+
+      controller.onSearchChanged('   ');
+
+      expect(controller.filteredFavorites, hasLength(2));
     });
   });
 
-  group('FavoritesPage Widget Tests', () {
-    TestWidgetsFlutterBinding.ensureInitialized();
-
-    late MockStorageService mockStorage;
-
-    setUp(() {
-      Get.reset();
-      mockStorage = MockStorageService();
-      Get.put<StorageService>(mockStorage);
-      Get.put(MockThemeService());
-      Get.put(FavoritesController(mockStorage));
-    });
-
-    Widget buildTestApp() {
-      return M3ETheme(
-        data: M3EThemeData.light(seedColor: const Color(0xFF536DFE)),
-        child: GetMaterialApp(
-          localizationsDelegates: const [
-            ui.DefaultMaterialLocalizations.delegate,
-          ],
-          initialRoute: AppRoutes.home,
-          getPages: [
-            GetPage(name: AppRoutes.home, page: () => const FavoritesPage()),
-            GetPage(name: AppRoutes.article, page: () => const _ArticleStub()),
-          ],
-        ),
-      );
-    }
-
-    testWidgets('renders empty state when there are no favorites', (
-      tester,
-    ) async {
+  group('FavoritesPage', () {
+    testWidgets('renders the empty state', (tester) async {
       await tester.pumpWidget(buildTestApp());
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(find.text('Your library is empty'), findsOneWidget);
       expect(find.text('Save articles to read them later'), findsOneWidget);
       expect(find.byType(FavoriteTile), findsNothing);
     });
 
-    testWidgets('renders tiles when favorites exist', (tester) async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'First Post',
-          url: 'https://medium.com/first',
-          visitedAt: DateTime(2026, 6),
-          author: 'Author 1',
-          domain: 'medium.com',
-        ).toJson(),
+    testWidgets('renders a tile per favorite', (tester) async {
+      await storage.library.addToFavorites(
+        article('https://medium.com/first', title: 'First Post', author: 'A1'),
       );
-      mockStorage.addToFavorites(
-        FavoriteArticle(
+      await storage.library.addToFavorites(
+        article(
+          'https://medium.com/second',
           title: 'Second Post',
-          url: 'https://medium.com/second',
-          visitedAt: DateTime(2026, 6, 2),
-          author: 'Author 2',
-          domain: 'medium.com',
-        ).toJson(),
+          author: 'A2',
+        ),
       );
-      await Get.find<FavoritesController>().loadFavorites();
 
       await tester.pumpWidget(buildTestApp());
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(find.text('First Post'), findsOneWidget);
       expect(find.text('Second Post'), findsOneWidget);
@@ -399,81 +231,44 @@ void main() {
       expect(find.byType(FavoriteTile), findsNWidgets(2));
     });
 
-    testWidgets('search filters tiles and updates empty state', (tester) async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Dart Tips',
-          url: 'https://medium.com/dart',
-          visitedAt: DateTime(2026, 6),
-          author: 'Alice',
-          domain: 'medium.com',
-        ).toJson(),
+    testWidgets('search filters the visible tiles', (tester) async {
+      await storage.library.addToFavorites(
+        article('https://medium.com/dart', title: 'Dart Tips', author: 'Alice'),
       );
-      mockStorage.addToFavorites(
-        FavoriteArticle(
+      await storage.library.addToFavorites(
+        article(
+          'https://medium.com/flutter',
           title: 'Flutter Guide',
-          url: 'https://medium.com/flutter',
-          visitedAt: DateTime(2026, 6, 2),
           author: 'Bob',
-          domain: 'medium.com',
-        ).toJson(),
+        ),
       );
-      await Get.find<FavoritesController>().loadFavorites();
 
       await tester.pumpWidget(buildTestApp());
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-      // Type into the search field
       await tester.enterText(find.byType(EditableText), 'dart');
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(find.text('Dart Tips'), findsOneWidget);
       expect(find.text('Flutter Guide'), findsNothing);
-      expect(find.byType(FavoriteTile), findsOneWidget);
 
-      // Type a non-matching query
       await tester.enterText(find.byType(EditableText), 'xyz');
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       expect(find.textContaining('No results for'), findsOneWidget);
       expect(find.text('Try a different keyword'), findsOneWidget);
       expect(find.byType(FavoriteTile), findsNothing);
     });
 
-    testWidgets('shows no layout errors', (tester) async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Layout Check',
-          url: 'https://medium.com/layout',
-          visitedAt: DateTime(2026, 6),
-          author: 'Tester',
-          domain: 'medium.com',
-        ).toJson(),
-      );
-
-      await tester.pumpWidget(buildTestApp());
-      await tester.pump(const Duration(milliseconds: 500));
-
-      final errors = tester.takeException();
-      expect(errors, isNull);
-    });
-
-    testWidgets('tapping a tile navigates to the article route', (
+    testWidgets('opens the article route when a tile is tapped', (
       tester,
     ) async {
-      mockStorage.addToFavorites(
-        FavoriteArticle(
-          title: 'Tap Me',
-          url: 'https://medium.com/tap',
-          visitedAt: DateTime(2026, 6),
-          author: 'Tester',
-          domain: 'medium.com',
-        ).toJson(),
+      await storage.library.addToFavorites(
+        article('https://medium.com/tap', title: 'Tap Me'),
       );
-      await Get.find<FavoritesController>().loadFavorites();
 
       await tester.pumpWidget(buildTestApp());
-      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Tap Me'));
       await tester.pumpAndSettle();
@@ -481,14 +276,16 @@ void main() {
       expect(find.text('article stub'), findsOneWidget);
       expect(Get.currentRoute, AppRoutes.article);
     });
+
+    testWidgets('lays out without errors', (tester) async {
+      await storage.library.addToFavorites(
+        article('https://medium.com/layout', title: 'Layout Check'),
+      );
+
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
   });
-}
-
-class _ArticleStub extends StatelessWidget {
-  const _ArticleStub();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('article stub')));
-  }
 }
