@@ -8,7 +8,6 @@ void main() {
       const s = ReaderSettings();
       expect(s.fontSize, ReaderSettings.kDefaultFontSize);
       expect(s.fontFamily, ReaderSettings.kDefaultFontFamily);
-      expect(s.paragraphSpacing, 1.0);
 
       expect(s.themeMode, ReaderThemeMode.system);
     });
@@ -17,7 +16,6 @@ void main() {
       const s = ReaderSettings(
         fontSize: 20,
         fontFamily: 'Georgia',
-        paragraphSpacing: 1.5,
 
         themeMode: ReaderThemeMode.sepia,
       );
@@ -25,7 +23,6 @@ void main() {
       final restored = ReaderSettings.fromJson(s.toJson());
       expect(restored.fontSize, s.fontSize);
       expect(restored.fontFamily, s.fontFamily);
-      expect(restored.paragraphSpacing, s.paragraphSpacing);
       expect(restored.themeMode, s.themeMode);
     });
 

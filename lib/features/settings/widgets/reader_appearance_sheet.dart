@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_choice_chips.dart';
-import '../../../core/widgets/app_slider_row.dart';
 import '../controllers/settings_controller.dart';
 import '../models/reader_settings.dart';
 import '../models/reader_theme_mode.dart';
@@ -41,19 +40,6 @@ void showReaderAppearanceSheet(BuildContext context) {
               ),
             ),
 
-            AppSliderRow(
-              title: 'Paragraph spacing',
-              value: current.paragraphSpacing,
-              min: 0.0,
-              max: 2.0,
-              divisions: 10,
-              label: '${current.paragraphSpacing.toStringAsFixed(1)} em',
-              onChanged: (v) => controller.updateReaderSettings(
-                current.copyWith(
-                  paragraphSpacing: double.parse(v.toStringAsFixed(1)),
-                ),
-              ),
-            ),
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,

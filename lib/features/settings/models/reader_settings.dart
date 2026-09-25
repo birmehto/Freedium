@@ -6,7 +6,6 @@ class ReaderSettings {
     this.themeMode = ReaderThemeMode.system,
     this.fontFamily = kDefaultFontFamily,
     this.fontSize = 17.0,
-    this.paragraphSpacing = 1.0,
   });
 
   factory ReaderSettings.fromJson(Map<String, dynamic>? json) {
@@ -15,7 +14,6 @@ class ReaderSettings {
       themeMode: ReaderThemeMode.fromName(json['themeMode'] as String?),
       fontFamily: json['fontFamily'] as String? ?? kDefaultFontFamily,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 17.0,
-      paragraphSpacing: (json['paragraphSpacing'] as num?)?.toDouble() ?? 1.0,
     );
   }
 
@@ -28,7 +26,6 @@ class ReaderSettings {
   final ReaderThemeMode themeMode;
   final String fontFamily;
   final double fontSize;
-  final double paragraphSpacing;
 
   bool get isSystemFont => fontFamily == kDefaultFontFamily;
 
@@ -36,7 +33,6 @@ class ReaderSettings {
     'themeMode': themeMode.name,
     'fontFamily': fontFamily,
     'fontSize': fontSize,
-    'paragraphSpacing': paragraphSpacing,
   };
 
   ReaderSettings copyWith({
@@ -44,14 +40,12 @@ class ReaderSettings {
     String? fontFamily,
     double? fontSize,
     double? lineHeight,
-    double? paragraphSpacing,
     String? textAlign,
   }) {
     return ReaderSettings(
       themeMode: themeMode ?? this.themeMode,
       fontFamily: fontFamily ?? this.fontFamily,
       fontSize: fontSize ?? this.fontSize,
-      paragraphSpacing: paragraphSpacing ?? this.paragraphSpacing,
     );
   }
 }

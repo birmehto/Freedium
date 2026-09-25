@@ -56,20 +56,6 @@ void showReaderSettingsSheet(BuildContext context) {
               ),
             ),
 
-            AppSliderRow(
-              title: 'Paragraph spacing',
-              value: current.paragraphSpacing,
-              min: 0.0,
-              max: 2.0,
-              divisions: 10,
-              label: '${current.paragraphSpacing.toStringAsFixed(1)} em',
-              onChanged: (v) => controller.updateReaderSettings(
-                current.copyWith(
-                  paragraphSpacing: double.parse(v.toStringAsFixed(1)),
-                ),
-              ),
-            ),
-
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,

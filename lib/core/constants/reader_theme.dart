@@ -447,7 +447,6 @@ class ReaderTheme {
       }
 
       p {
-        margin: 0 0 ${settings.paragraphSpacing}em !important;
         margin-top: 0 !important;
       }
 
