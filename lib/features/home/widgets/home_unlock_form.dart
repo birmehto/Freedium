@@ -3,13 +3,15 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
 import '../../../core/extensions/context_ext.dart';
+import '../../../core/utils/url_validator.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_textform.dart';
 import '../controllers/home_controller.dart';
 
-/// The "Paste a URL" field plus the unlock button.
 class HomeUnlockForm extends StatelessWidget {
   const HomeUnlockForm({super.key});
+
+  static final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -18,44 +20,48 @@ class HomeUnlockForm extends StatelessWidget {
     return Obx(() {
       final hasText = controller.urlText.isNotEmpty;
 
-      return Column(
-        children: [
-          AppTextForm(
-            variant: M3ETextFieldVariant.outlined,
-            controller: controller.urlController,
-            focusNode: controller.urlFocusNode,
-            label: 'Paste Medium URL here...',
-            onChanged: controller.onUrlChanged,
-            onSubmitted: (_) => controller.openArticle(),
-            errorText: controller.errorMessage.value.isEmpty
-                ? null
-                : controller.errorMessage.value,
-            trailing: Material(
-              child: InkWell(
-                onTap: hasText
+      return Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            AppTextForm(
+              controller: controller.urlController,
+              focusNode: controller.urlFocusNode,
+              label: 'Paste Medium URL here...',
+              onChanged: controller.onUrlChanged,
+              onSubmitted: (_) => _submit(context, controller),
+              validator: UrlValidator.validateUrl,
+              errorText: controller.errorMessage.value.isEmpty
+                  ? null
+                  : controller.errorMessage.value,
+              trailing: IconButton(
+                onPressed: hasText
                     ? controller.clearUrl
                     : controller.pasteFromClipboard,
-                child: Icon(
-                  hasText
-                      ? M3EIcons.clear_rounded
-                      : M3EIcons.content_paste_rounded,
+                icon: Icon(
+                  hasText ? Icons.clear_rounded : Icons.content_paste_rounded,
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          AppButton(
-            label: const Text('Unlock Article'),
-            icon: const Icon(M3EIcons.bolt_rounded, size: 20),
-            size: M3EButtonSize.md,
-            isLoading: controller.isLoading.value,
-            onPressed: () {
-              context.unfocus();
-              controller.openArticle();
-            },
-          ),
-        ],
+            const SizedBox(height: 24),
+            AppButton(
+              label: const Text('Unlock Article'),
+              size: M3EButtonSize.md,
+              icon: const Icon(Icons.bolt_rounded),
+              isLoading: controller.isLoading.value,
+              onPressed: () => _submit(context, controller),
+            ),
+          ],
+        ),
       );
     });
+  }
+
+  static void _submit(BuildContext context, HomeController controller) {
+    context.unfocus();
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    controller.openArticle();
   }
 }

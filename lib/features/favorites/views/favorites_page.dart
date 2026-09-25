@@ -25,7 +25,6 @@ class FavoritesPage extends GetView<FavoritesController> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: AppTextForm(
-              variant: M3ETextFieldVariant.outlined,
               label: 'Search your library...',
               onChanged: controller.onSearchChanged,
               leading: const Icon(M3EIcons.search_rounded),

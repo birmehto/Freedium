@@ -65,13 +65,6 @@ void main() {
       expect(identical(wrapped, original), isTrue);
     });
 
-    test('wrap returns the fallback for non-AppException errors', () {
-      final fallback = AppException.parsing();
-      final exception = AppException.wrap('raw', fallback);
-
-      expect(identical(exception, fallback), isTrue);
-    });
-
     test('toString includes type and message', () {
       final exception = AppException.invalidUrl('bad host');
 

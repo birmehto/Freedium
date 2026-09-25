@@ -105,10 +105,6 @@ class AppException implements Exception {
   /// The original exception/error that triggered this, when available.
   final Object? cause;
 
-  /// Maps any thrown value into an [AppException] without losing the cause.
-  static AppException wrap(Object error, AppException fallback) =>
-      error is AppException ? error : fallback;
-
   /// The default user-facing copy for a given category.
   static String defaultUserMessage(AppErrorType type) {
     switch (type) {

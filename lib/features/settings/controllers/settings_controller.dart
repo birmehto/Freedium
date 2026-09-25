@@ -42,11 +42,6 @@ class SettingsController extends GetxController {
     readerSettings.value = _storage.preferences.readerSettings;
     preferredMirror.value = _storage.preferences.preferredMirror;
     autoFallback.value = _storage.preferences.autoFallback;
-    refreshLibrary();
-  }
-
-  void refreshLibrary() {
-    recentSearchCount.value = _storage.preferences.recentSearches.length;
   }
 
   // ─────────────────────────────── appearance ─────────────────────────
@@ -82,13 +77,6 @@ class SettingsController extends GetxController {
   void setAutoFallback(bool value) {
     autoFallback.value = value;
     _storage.preferences.autoFallback = value;
-  }
-
-  // ───────────────────────────── storage mgmt ─────────────────────────
-
-  void clearRecentSearches() {
-    _storage.preferences.clearRecentSearches();
-    refreshLibrary();
   }
 
   // ─────────────────────────────── about ──────────────────────────────

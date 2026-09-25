@@ -6,10 +6,7 @@ class ReaderSettings {
     this.themeMode = ReaderThemeMode.system,
     this.fontFamily = kDefaultFontFamily,
     this.fontSize = 17.0,
-    this.lineHeight = 1.8,
     this.paragraphSpacing = 1.0,
-    this.contentWidthEm = 42.0,
-    this.textAlign = 'justify',
   });
 
   factory ReaderSettings.fromJson(Map<String, dynamic>? json) {
@@ -18,10 +15,7 @@ class ReaderSettings {
       themeMode: ReaderThemeMode.fromName(json['themeMode'] as String?),
       fontFamily: json['fontFamily'] as String? ?? kDefaultFontFamily,
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 17.0,
-      lineHeight: (json['lineHeight'] as num?)?.toDouble() ?? 1.8,
       paragraphSpacing: (json['paragraphSpacing'] as num?)?.toDouble() ?? 1.0,
-      contentWidthEm: (json['contentWidthEm'] as num?)?.toDouble() ?? 42.0,
-      textAlign: json['textAlign'] as String? ?? 'justify',
     );
   }
 
@@ -34,10 +28,7 @@ class ReaderSettings {
   final ReaderThemeMode themeMode;
   final String fontFamily;
   final double fontSize;
-  final double lineHeight;
   final double paragraphSpacing;
-  final double contentWidthEm;
-  final String textAlign;
 
   bool get isSystemFont => fontFamily == kDefaultFontFamily;
 
@@ -45,10 +36,7 @@ class ReaderSettings {
     'themeMode': themeMode.name,
     'fontFamily': fontFamily,
     'fontSize': fontSize,
-    'lineHeight': lineHeight,
     'paragraphSpacing': paragraphSpacing,
-    'contentWidthEm': contentWidthEm,
-    'textAlign': textAlign,
   };
 
   ReaderSettings copyWith({
@@ -57,17 +45,13 @@ class ReaderSettings {
     double? fontSize,
     double? lineHeight,
     double? paragraphSpacing,
-    double? contentWidthEm,
     String? textAlign,
   }) {
     return ReaderSettings(
       themeMode: themeMode ?? this.themeMode,
       fontFamily: fontFamily ?? this.fontFamily,
       fontSize: fontSize ?? this.fontSize,
-      lineHeight: lineHeight ?? this.lineHeight,
       paragraphSpacing: paragraphSpacing ?? this.paragraphSpacing,
-      contentWidthEm: contentWidthEm ?? this.contentWidthEm,
-      textAlign: textAlign ?? this.textAlign,
     );
   }
 }

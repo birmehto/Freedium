@@ -346,16 +346,6 @@ class ReaderTheme {
 })();
 ''';
 
-  /// Restores an absolute scroll position once the page has settled.
-  static String restoreScrollJs(double y) =>
-      '''
-(function() {
-  try {
-    window.scrollTo(0, $y);
-  } catch(e) {}
-})();
-''';
-
   static String getCss({
     required ReaderSettings settings,
     required bool systemDark,
@@ -390,7 +380,6 @@ class ReaderTheme {
         color: ${colors.text} !important;
 
         font-size: ${settings.fontSize}px !important;
-        line-height: ${settings.lineHeight} !important;
         -webkit-font-smoothing: antialiased !important;
         $fontFamily
       }
@@ -422,7 +411,6 @@ class ReaderTheme {
 
       article {
         width: 100% !important;
-        max-width: ${settings.contentWidthEm}em !important;
         min-height: 0 !important;
         margin-left: auto !important;
         margin-right: auto !important;
@@ -433,7 +421,6 @@ class ReaderTheme {
         border-radius: 0 !important;
         box-shadow: none !important;
         color: ${colors.text} !important;
-        text-align: ${settings.textAlign} !important;
       }
 
       article > header {

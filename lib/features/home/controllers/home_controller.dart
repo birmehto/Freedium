@@ -28,10 +28,6 @@ class HomeController extends GetxController {
     super.onClose();
   }
 
-  void focusUrlField() {
-    urlFocusNode.requestFocus();
-  }
-
   @override
   void onInit() {
     super.onInit();

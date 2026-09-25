@@ -7,7 +7,22 @@ class UrlValidator {
   static bool isValidUrl(String url) {
     final trimmed = url.trim();
     final uri = Uri.tryParse(trimmed);
+
     return _urlRegex.hasMatch(trimmed) && uri != null && uri.host.contains('.');
+  }
+
+  static String? validateUrl(String? value) {
+    final url = value?.trim() ?? '';
+
+    if (url.isEmpty) {
+      return 'Please enter a URL';
+    }
+
+    if (!isValidUrl(url)) {
+      return 'Please enter a valid URL';
+    }
+
+    return null;
   }
 
   static String? cleanUrl(String input) {
@@ -31,9 +46,11 @@ class UrlValidator {
   static String? convertToFreediumUrl(String articleUrl) {
     final url = cleanUrl(articleUrl);
     if (url == null) return null;
+
     final target = url.startsWith(AppConstants.freediumUrl)
         ? url.substring(AppConstants.freediumUrl.length)
         : url;
+
     return '${AppConstants.freediumUrl}$target';
   }
 

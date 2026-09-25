@@ -29,7 +29,6 @@
 - **🔎 Find in article** — search inside a story and jump between matches.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
 - **📊 Local reading statistics** — articles opened, completed, and minutes read, stored on-device only.
-- **⌨️ Keyboard shortcuts** — quick actions for URL entry, save, favorite, font size, and find.
 - **🔐 Truly private** — no account, no ads, no tracking. Everything stays on your device.
 
 ---

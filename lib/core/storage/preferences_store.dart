@@ -12,7 +12,6 @@ class PreferencesStore {
 
   static const kThemeMode = 'theme_mode';
   static const kReaderSettings = 'reader_settings';
-  static const kRecentSearches = 'recent_searches';
   static const kPreferredMirror = 'preferred_mirror';
   static const kAutoFallback = 'auto_fallback';
 
@@ -68,29 +67,6 @@ class PreferencesStore {
   set fontSize(double value) {
     readerSettings = readerSettings.copyWith(fontSize: value);
   }
-
-  // ─────────────────────────── search history ──────────────────────────
-
-  List<String> get recentSearches {
-    final raw = _box.read(kRecentSearches);
-    if (raw is List) {
-      return raw.whereType<String>().toList();
-    }
-    return [];
-  }
-
-  void addRecentSearch(String query) {
-    final trimmed = query.trim();
-    if (trimmed.isEmpty) return;
-    final current = recentSearches.where((q) => q != trimmed).toList();
-    current.insert(0, trimmed);
-    _box.write(
-      kRecentSearches,
-      current.length > 10 ? current.sublist(0, 10) : current,
-    );
-  }
-
-  void clearRecentSearches() => _box.write(kRecentSearches, <String>[]);
 
   // ───────────────────────────── mirror options ────────────────────────
 

@@ -55,19 +55,7 @@ void showReaderSettingsSheet(BuildContext context) {
                 current.copyWith(fontSize: v),
               ),
             ),
-            AppSliderRow(
-              title: 'Line height',
-              value: current.lineHeight,
-              min: 1.2,
-              max: 2.6,
-              divisions: 14,
-              label: current.lineHeight.toStringAsFixed(1),
-              onChanged: (v) => controller.updateReaderSettings(
-                current.copyWith(
-                  lineHeight: double.parse(v.toStringAsFixed(1)),
-                ),
-              ),
-            ),
+
             AppSliderRow(
               title: 'Paragraph spacing',
               value: current.paragraphSpacing,
@@ -81,29 +69,7 @@ void showReaderSettingsSheet(BuildContext context) {
                 ),
               ),
             ),
-            AppSliderRow(
-              title: 'Content width',
-              value: current.contentWidthEm,
-              min: 30,
-              max: 54,
-              divisions: 24,
-              label: '${current.contentWidthEm.toStringAsFixed(0)} em',
-              onChanged: (v) => controller.updateReaderSettings(
-                current.copyWith(contentWidthEm: v),
-              ),
-            ),
-            AppChoiceChips(
-              title: 'Text alignment',
-              labels: const ['Left', 'Justify', 'Center'],
-              selected: current.textAlign,
-              onSelected: (label) => controller.updateReaderSettings(
-                current.copyWith(
-                  textAlign: label == 'Justify'
-                      ? 'justify'
-                      : label.toLowerCase(),
-                ),
-              ),
-            ),
+
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,

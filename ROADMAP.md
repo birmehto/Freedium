@@ -655,25 +655,6 @@ Large Desktop
 
 ---
 
-## 18. Desktop Keyboard Shortcuts
-
-Add:
-
-```text
-Ctrl/Cmd + K    Search
-Ctrl/Cmd + F    Find in article
-Ctrl/Cmd + D    Favorite
-Ctrl/Cmd + S    Save
-Ctrl/Cmd + +    Increase font
-Ctrl/Cmd + -    Decrease font
-Esc             Close dialog
-Space           Scroll
-```
-
-Show shortcuts through tooltips/help.
-
----
-
 ## 19. Settings
 
 Organize settings into sections.
@@ -1087,7 +1068,6 @@ Document:
 
 * [x] Responsive layout
 * [x] Desktop navigation
-* [x] Keyboard shortcuts
 * [ ] Window size handling
 * [x] Desktop-specific reader
 * [ ] Linux/macOS/Windows testing

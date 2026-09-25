@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/features/article/models/article_meta.dart';
-import 'package:freedium/features/article/models/saved_article.dart';
 
 void main() {
   group('ArticleMeta', () {
@@ -40,24 +39,6 @@ void main() {
       expect(restored.title, 'T');
       expect(restored.author, 'A');
       expect(restored.wordCount, 100);
-    });
-  });
-
-  group('SavedArticle', () {
-    test('round-trip and byte estimation', () {
-      const article = SavedArticle(
-        title: 'Story',
-        url: 'u/1',
-        html: 'hello',
-        author: 'A',
-        imageCount: 2,
-      );
-      final restored = SavedArticle.fromJson(article.toJson());
-      expect(restored.title, 'Story');
-      expect(restored.url, 'u/1');
-      expect(restored.author, 'A');
-      expect(restored.imageCount, 2);
-      expect(restored.approximateBytes, greaterThan(200 * 1024));
     });
   });
 }

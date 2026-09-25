@@ -10,7 +10,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Library screen** with four sections: Continue Reading, Favorites, Saved, and History.
   - Continue Reading shows per-article scroll progress bars and resumes where you stopped.
   - History is grouped by recency (Today / Yesterday / This week / Earlier).
-  - Unified search over title, author, and publication; recent-search shortcuts stored locally.
   - Swipe-to-remove and clear actions per list.
 - **Offline reading**
   - "Save offline" captures the cleaned article HTML for later reading without a connection.
@@ -25,8 +24,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - "Continue reading?" resume prompt with Continue / Start over actions.
   - Find-in-page with match count navigation (Ctrl/Cmd+F).
   - Reader actions: save offline, favorite, share, copy link, copy article text, open in browser, find.
-- **Keyboard support**
-  - Keyboard shortcuts: Ctrl/Cmd+K focus the URL field, Ctrl/Cmd+F find, Ctrl/Cmd+S save, Ctrl/Cmd+D favorite, Ctrl/Cmd+= / Ctrl/Cmd+− font size, Esc closes find.
 - **Storage split** into two focused stores behind a `KeyValueStore` abstraction (`preferences` for device settings, `library` for content), keeping the old facade API for compatibility.
 - **Theme modes** — System / Light / Dark full-app theme selection.
 - **Settings page reorganized** into Appearance, Reader, Source, Library & Storage, and About sections, including a local reading-statistics overview (articles opened, completed, minutes read).

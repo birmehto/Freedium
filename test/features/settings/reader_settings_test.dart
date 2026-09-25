@@ -8,10 +8,8 @@ void main() {
       const s = ReaderSettings();
       expect(s.fontSize, ReaderSettings.kDefaultFontSize);
       expect(s.fontFamily, ReaderSettings.kDefaultFontFamily);
-      expect(s.lineHeight, 1.8);
       expect(s.paragraphSpacing, 1.0);
-      expect(s.contentWidthEm, 42.0);
-      expect(s.textAlign, 'justify');
+
       expect(s.themeMode, ReaderThemeMode.system);
     });
 
@@ -19,20 +17,15 @@ void main() {
       const s = ReaderSettings(
         fontSize: 20,
         fontFamily: 'Georgia',
-        lineHeight: 2.2,
         paragraphSpacing: 1.5,
-        contentWidthEm: 36,
-        textAlign: 'center',
+
         themeMode: ReaderThemeMode.sepia,
       );
 
       final restored = ReaderSettings.fromJson(s.toJson());
       expect(restored.fontSize, s.fontSize);
       expect(restored.fontFamily, s.fontFamily);
-      expect(restored.lineHeight, s.lineHeight);
       expect(restored.paragraphSpacing, s.paragraphSpacing);
-      expect(restored.contentWidthEm, s.contentWidthEm);
-      expect(restored.textAlign, s.textAlign);
       expect(restored.themeMode, s.themeMode);
     });
 

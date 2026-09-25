@@ -15,11 +15,7 @@ class AppPages {
     GetPage(
       name: AppRoutes.home,
       page: () => const AppShell(),
-      bindings: [
-        HomeBinding(),
-        FavoritesBinding(),
-        SettingsBinding(),
-      ],
+      bindings: [HomeBinding(), FavoritesBinding(), SettingsBinding()],
     ),
     GetPage(
       name: AppRoutes.article,
