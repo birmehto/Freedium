@@ -26,14 +26,17 @@ lib/
 │   ├── network/                    ArticleUrl (canonicalization), ArticleResolver
 │   ├── routes/                     AppRoutes, AppPages (routes + bindings)
 │   ├── services/                   StorageService facade, ThemeService,
-│   │                               ShareIntentService, ClipboardService
-│   ├── storage/                    KeyValueStore, PreferencesStore, LibraryStore
+│   │                               ShareIntentService, ClipboardService,
+│   │                               AuthService, CookieStore
+│   ├── storage/                    KeyValueStore, PreferencesStore,
+│   │                               LibraryStore, AccountStore
 │   ├── utils/                      AppLog
 │   └── widgets/                    Shared App* widgets (AppButton, AppEmpty, …)
 └── features/
+    ├── account/                    Optional Medium sign-in + profile card
     ├── article/                    Reader: controller, webview, metadata models
     ├── favorites/                  Favorites list + model
-    ├── home/                       URL entry screen
+    ├── home/                       URL entry screen + signed-in profile card
     └── settings/                   Settings: theme, reader, sources
 ```
 
@@ -75,18 +78,65 @@ Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.get
 
 ## Storage
 
-Two focused stores behind a thin `KeyValueStore` interface:
+Three focused stores behind a thin `KeyValueStore` interface:
 
 ```text
 StorageService (owner, GetxService)
- ├── preferences  → PreferencesStore   light device settings
- │                    theme mode, reader settings,
- │                    preferred mirror, auto fallback
- └── library      → LibraryStore       content data
-                      favorites, cached article metadata
+  ├── preferences  → PreferencesStore   light device settings
+  │                    theme mode, reader settings,
+  │                    preferred mirror, auto fallback
+  ├── library      → LibraryStore       content data
+  │                    favorites, cached article metadata
+  └── account      → AccountStore       optional identity
+                       Medium session cookies, cached profile
 ```
 
-`DriftKeyValueStore` is the production backend (a single JSON `kv` table in a SQLite database via Drift, kept in sync with an in-memory cache for synchronous reads); `MemoryKeyValueStore` is used in tests. Writes are serialized through an internal queue so overlapping updates cannot interleave, and `StorageService.withStore` injects an in-memory store for tests. `LibraryStore.favorites` is the single reactive list of record — no duplicate copy is kept in a controller. Storage keys are stable (`favorites_list`, `cached_meta`) so existing installs keep their data.
+`DriftKeyValueStore` is the production backend (a single JSON `kv` table in a SQLite database via Drift, kept in sync with an in-memory cache for synchronous reads); `MemoryKeyValueStore` is used in tests. Writes are serialized through an internal queue so overlapping updates cannot interleave, and `StorageService.withStore` injects an in-memory store for tests. `LibraryStore.favorites` is the single reactive list of record — no duplicate copy is kept in a controller. Storage keys are stable (`favorites_list`, `cached_meta`, `medium_session`, `medium_profile`) so existing installs keep their data.
+
+## The optional Medium account
+
+Medium publishes no API for signing a reader in or reading their profile, so the
+account is built the only way it can be: the reader signs in on **Medium's own
+page** in an in-app WebView.
+
+```text
+Home app bar → AuthService.signIn()
+    ↓ Get.toNamed(/login)                 LoginPage + LoginController
+        ↓ InAppWebView loads medium.com/m/signin?redirect=…/me
+        ↓ the reader types their password into Medium's own page
+        ↓ on every page load: inject MediumProfileParser.extractScript
+        ↓ no handle in the page, but the jar now holds a session
+        ↓ → load /me, which is the one page guaranteed to describe the reader
+        ↓ profile found → Get.back(profile)
+    ↓ AuthService.captureSession()        reads the WebView cookie jar
+    ↓ AccountStore.saveSession + saveProfile
+    ↓ AuthService.user (Rx) → Home profile card
+```
+
+- **`AuthService`** (`GetxService`, registered at startup) is the single owner of
+  identity: the `user` observable, `isBusy`, `init()` session restore, sign-in,
+  refresh and sign-out. It is the only thing that touches credentials.
+- **`CookieStore`** is an interface over the WebView cookie jar
+  (`WebViewCookieStore` in production, `MemoryCookieStore` in tests), so the
+  session rules are testable without a platform channel.
+- **`MediumSession`** keeps only the cookies that constitute a session
+  (`sid`/`uid`/`token` and their CSRF companions) and drops analytics cookies. A
+  jar without one of those is not a session.
+- **`MediumProfileParser`** is deliberately split: the injected script reports
+  raw strings, and all interpretation (compact counts like `1.2K`, the
+  `Name on Medium` suffix, `@handle` normalization) happens in Dart, so it is
+  unit-tested without a WebView.
+- **`LoginController`** re-reads a page a few times before giving up, because
+  Medium renders its profile header after hydration. The attempt budget resets
+  on every main-frame navigation, so a multi-hop identity-provider redirect
+  never exhausts it. It also watches the cookie jar: a successful sign-in lands
+  the reader on a page with no handle in it, so the flow requests `/me`
+  explicitly as soon as a session appears.
+
+The account is optional everywhere. Nothing else depends on it, `AccountStore`
+is cleared independently on sign-out, and a refresh that cannot read a profile
+signs the reader out rather than leaving a dead card on Home. See
+[PRIVACY.md](PRIVACY.md) for exactly what is stored and what leaves the device.
 
 ## Theming
 
@@ -96,7 +146,8 @@ StorageService (owner, GetxService)
 ## Testing
 
 - Unit tests for models, URL parsing, resolver, and stores (`test/features/...`, `test/core/...`).
-- Controller/widget tests use mock services (`MockStorageService` overrides the facade getters).
+- Platform-dependent seams are injected rather than mocked at the call site: `CookieStore` (the WebView cookie jar) and `KeyValueStore` (persistence) each have an in-memory implementation in `test/helpers/test_env.dart`.
+- GetX navigation is deliberately untyped, so tests drive it by pumping frames rather than awaiting a future that only resolves on the next one.
 - Run checks locally:
 
 ```bash

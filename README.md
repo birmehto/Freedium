@@ -12,7 +12,7 @@
 
 <img src="screenshots/banner.png" width="640" alt="Freedium banner"/>
 
-**Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no account.
+**Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no ads, no tracking.
 
 [![Download](https://img.shields.io/badge/⬇️_Download-APK-2E8B57?style=for-the-badge)](https://github.com/birmehto/Freedium/releases/latest)
 
@@ -24,10 +24,11 @@
 
 - **🛡️ Unlock any Medium story** — paste a link or share one from any app and read the whole article.
 - **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
-- **🔒 On-device library** — favorites, settings, and article metadata are stored locally; nothing is uploaded.
+- **👤 Optional Medium sign-in** — see your name, bio, avatar and stats on Home. You type your password on Medium's own page; Freedium never sees it.
+- **🔒 On-device library** — favorites, settings, article metadata and any saved session are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
-- **🔐 Truly private** — no account, no ads, no analytics. Everything stays on your device.
+- **🔐 Truly private** — no ads, no analytics, no server. Everything stays on your device. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
 ---
 

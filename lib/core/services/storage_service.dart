@@ -1,14 +1,15 @@
 import 'package:get/get.dart';
 
+import '../storage/account_store.dart';
 import '../storage/app_database.dart';
 import '../storage/key_value_store.dart';
 import '../storage/library_store.dart';
 import '../storage/preferences_store.dart';
 
-/// Owns the on-device SQLite database and exposes the two focused stores.
+/// Owns the on-device SQLite database and exposes the three focused stores.
 ///
 /// Registered as a permanent service during startup, so every feature binding
-/// resolves the same [preferences] and [library] instances.
+/// resolves the same [preferences], [library] and [account] instances.
 class StorageService extends GetxService {
   /// Production constructor: opens the SQLite database.
   StorageService();
@@ -21,6 +22,7 @@ class StorageService extends GetxService {
 
   late final PreferencesStore preferences;
   late final LibraryStore library;
+  late final AccountStore account;
 
   KeyValueStore? _keyValueStore;
 
@@ -47,5 +49,6 @@ class StorageService extends GetxService {
     final store = _keyValueStore!;
     preferences = PreferencesStore(store);
     library = LibraryStore(store);
+    account = AccountStore(store);
   }
 }

@@ -4,7 +4,8 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../controllers/home_controller.dart';
-import '../widgets/home_hero.dart';
+import '../widgets/home_account_button.dart';
+import '../widgets/home_account_section.dart';
 import '../widgets/home_unlock_form.dart';
 
 class HomePage extends GetView<HomeController> {
@@ -13,10 +14,20 @@ class HomePage extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppAppBar(title: Text('Freedium')),
+      appBar: const AppAppBar(
+        title: Text('Freedium'),
+        actions: [
+          HomeAccountButton(),
+          SizedBox(width: AppSpacing.xxs),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        children: const [HomeHero(), HomeUnlockForm(), SizedBox(height: 60)],
+        children: const [
+          HomeAccountSection(),
+          HomeUnlockForm(),
+          SizedBox(height: AppSpacing.scrollEnd),
+        ],
       ),
     );
   }

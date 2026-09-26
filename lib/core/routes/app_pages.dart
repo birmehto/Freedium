@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 
 import '../../app_shell.dart';
+import '../../features/account/bindings/account_binding.dart';
+import '../../features/account/views/login_page.dart';
 import '../../features/article/bindings/article_binding.dart';
 import '../../features/article/views/article_page.dart';
 import '../../features/favorites/bindings/favorites_binding.dart';
@@ -21,6 +23,11 @@ abstract final class AppPages {
       name: AppRoutes.article,
       page: () => const ArticlePage(),
       binding: ArticleBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.login,
+      page: () => const LoginPage(),
+      binding: AccountBinding(),
     ),
   ];
 }
