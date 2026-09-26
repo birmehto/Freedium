@@ -16,6 +16,8 @@ class HomeController extends GetxController {
   final ClipboardService _clipboardService;
   final ShareIntentService _shareIntentService;
 
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
   final TextEditingController urlController = TextEditingController();
   final FocusNode urlFocusNode = FocusNode();
 
@@ -33,14 +35,13 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
 
-    urlController.addListener(() {
-      urlText.value = urlController.text;
-    });
+    urlController.addListener(_onUrlTextChanged);
 
     _shareWorker = ever(_shareIntentService.incomingUrl, _openSharedUrl);
 
     // A share received before Home existed is still waiting in the service.
     final pending = _shareIntentService.incomingUrl.value;
+
     if (pending != null) {
       _openSharedUrl(pending);
     }
@@ -49,8 +50,10 @@ class HomeController extends GetxController {
   @override
   void onClose() {
     _shareWorker.dispose();
+    urlController.removeListener(_onUrlTextChanged);
     urlController.dispose();
     urlFocusNode.dispose();
+
     super.onClose();
   }
 
@@ -60,22 +63,39 @@ class HomeController extends GetxController {
         !isLoading.value;
   }
 
+  void _onUrlTextChanged() {
+    urlText.value = urlController.text;
+  }
+
   void onUrlChanged(String value) {
-    // Bad input is reported by the field validator; a stale failure message
-    // should not survive the next edit.
     errorMessage.value = '';
+  }
+
+  void submit() {
+    urlFocusNode.unfocus();
+
+    final isValid = formKey.currentState?.validate() ?? false;
+
+    if (!isValid) return;
+
+    openArticle();
   }
 
   Future<void> pasteFromClipboard() async {
     try {
       final clipboardText = await _clipboardService.getFromClipboard();
-      if (clipboardText == null || clipboardText.isEmpty) return;
+
+      if (clipboardText == null || clipboardText.isEmpty) {
+        return;
+      }
 
       urlController.text = clipboardText.trim();
       onUrlChanged(clipboardText);
     } catch (error) {
       final exception = AppException.from(error, context: 'pasteFromClipboard');
+
       appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
+
       _showMessage('Failed to paste from clipboard: ${exception.userMessage}');
     }
   }
@@ -89,17 +109,21 @@ class HomeController extends GetxController {
     if (!canOpenArticle) return;
 
     final request = ArticleRequest.parse(urlController.text);
+
     if (!request.isValid) {
       errorMessage.value = AppException.invalidUrl().userMessage;
       return;
     }
 
     isLoading.value = true;
+
     try {
       await Get.toNamed(AppRoutes.article, arguments: request);
     } catch (error, stackTrace) {
       final exception = AppException.from(error, context: 'openArticle');
+
       appLog('$exception\n$stackTrace', name: 'Home', level: LogLevel.error);
+
       errorMessage.value = exception.userMessage;
     } finally {
       isLoading.value = false;
@@ -112,7 +136,7 @@ class HomeController extends GetxController {
     urlController.text = url;
     _shareIntentService.consume();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => openArticle());
+    WidgetsBinding.instance.addPostFrameCallback((_) => submit());
   }
 
   /// Shows a transient message, if a context is available at that moment.

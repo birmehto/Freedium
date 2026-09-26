@@ -8,6 +8,7 @@ import '../../features/settings/models/reader_theme_mode.dart';
 /// Everything here is deliberately defensive: the reader loads third-party
 /// markup it does not control, so the stylesheet is reset-heavy and never
 /// assumes a particular site structure.
+
 abstract final class ReaderTheme {
   /// Id of the stylesheet used once a page has finished loading.
   static const String customCssId = 'custom-reader-style';
@@ -161,6 +162,373 @@ abstract final class ReaderTheme {
   }
 
   // ---------------------------------------------------------------------------
+  // Host mode and code colors
+  // ---------------------------------------------------------------------------
+
+  /// Tells the host page which mode the reader is in, then repairs any code
+  /// color the page cannot fix on its own.
+  ///
+  /// Two separate problems surface once the reader replaces the page's own
+  /// surface, and both need script rather than CSS:
+  ///
+  /// * A site that ships a light and a dark code palette gates the dark one
+  ///   behind a switch on the root element -- a `dark` class, or a
+  ///   `data-theme`-style attribute. The reader only ever set `color-scheme`,
+  ///   which such sites ignore, so the page kept rendering its light palette.
+  ///   The reader then painted its dark code surface behind near-black tokens,
+  ///   which is unreadable.
+  /// * A site that ships a single palette has no dark variant to switch to, so
+  ///   its tokens stay tuned for the original surface no matter what the host is
+  ///   told. This is the common case for Shiki, Pygments and Prism output.
+  ///
+  /// So the reader claims the switches sites use to advertise a dark UI, and
+  /// then applies a contrast floor to code token spans. A token that already
+  /// reads against the code surface keeps its color, so real syntax
+  /// highlighting survives; only a genuinely illegible one is rewritten. An
+  /// earlier version of this rule left every token alone, which meant a
+  /// mismatched palette was the reader's problem to solve with a blanket
+  /// `color` override -- and that in turn throws the highlighting away.
+  ///
+  /// The script carries no palette of its own. It reads the reader's
+  /// `color-scheme` and each code surface's computed background, so one source
+  /// serves every theme and a theme change is picked up by the next run.
+  static const String hostModeSyncJs = '''
+(function () {
+  'use strict';
+
+  /*
+   * The legibility floor for a code token, as a contrast ratio. Kept in step
+   * with the palette: a token below this against the code surface is not worth
+   * preserving as syntax highlighting, and one above it is left alone.
+   */
+  var MIN_CONTRAST = 3;
+
+  /* Coalesces the burst of mutations a single page load produces. */
+  var DEBOUNCE = 200;
+
+  /* Marks spans this script repainted, and the color they carried before. */
+  var MARK = 'data-freedium-code-color';
+  var SAVED = 'data-freedium-code-saved';
+
+  /* The switches sites use to advertise a dark UI. */
+  var DARK_CLASSES = ['dark', 'dark-mode'];
+  var DARK_ATTRIBUTES = ['data-theme', 'data-color-mode'];
+
+  /*
+   * The stylesheet is re-injected on every settings change, and this script
+   * installs observers. The flag keeps one set of them alive per document
+   * while still letting every run re-apply the current theme.
+   */
+  var INSTALLED = '__freediumReaderSync';
+
+  var timer = 0;
+  var running = false;
+
+  function parseColor(value) {
+    /*
+     * Only rgb() and rgba() are accepted. A color this cannot read is skipped
+     * rather than guessed at, because a wrong guess would rewrite good
+     * highlighting.
+     */
+    if (!value || value.indexOf('rgb') !== 0) return null;
+
+    var parts = value.match(/[0-9.]+/g);
+    if (!parts || parts.length < 3) return null;
+
+    return {
+      r: parseFloat(parts[0]),
+      g: parseFloat(parts[1]),
+      b: parseFloat(parts[2]),
+      a: parts.length > 3 ? parseFloat(parts[3]) : 1
+    };
+  }
+
+  /* Resolves a translucent surface against what shows through it. */
+  function flatten(color, behind) {
+    if (color.a >= 1) return color;
+
+    return {
+      r: color.r * color.a + behind.r * (1 - color.a),
+      g: color.g * color.a + behind.g * (1 - color.a),
+      b: color.b * color.a + behind.b * (1 - color.a),
+      a: 1
+    };
+  }
+
+  function channel(value) {
+    var v = value / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+
+  function luminance(color) {
+    return (
+      0.2126 * channel(color.r) +
+      0.7152 * channel(color.g) +
+      0.0722 * channel(color.b)
+    );
+  }
+
+  function contrast(a, b) {
+    var la = luminance(a);
+    var lb = luminance(b);
+
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+
+  function isHidden(node) {
+    while (node && node.nodeType === 1) {
+      var style = getComputedStyle(node);
+      if (style.display === 'none' || style.visibility === 'hidden') {
+        return true;
+      }
+
+      node = node.parentElement;
+    }
+
+    return false;
+  }
+
+  function insidePre(node) {
+    var parent = node.parentNode;
+
+    while (parent && parent.nodeType === 1) {
+      if (parent.nodeName === 'PRE') return true;
+      parent = parent.parentNode;
+    }
+
+    return false;
+  }
+
+  /*
+   * Puts back the colors saved by a previous run, so a theme change is
+   * measured against the host's real palette rather than against a color this
+   * script chose the last time round.
+   */
+  function restore() {
+    var marked = document.querySelectorAll('[' + MARK + ']');
+
+    for (var i = 0; i < marked.length; i++) {
+      var el = marked[i];
+      var saved = el.getAttribute(SAVED) || '';
+
+      if (saved) {
+        el.style.setProperty('color', saved, 'important');
+      } else {
+        el.style.removeProperty('color');
+      }
+
+      el.removeAttribute(SAVED);
+      el.removeAttribute(MARK);
+    }
+  }
+
+  function repairCodeColors() {
+    restore();
+
+    var blocks = document.querySelectorAll('pre, code');
+    if (!blocks.length) return;
+
+    /*
+     * Inline code sits on a translucent surface, so it can only be judged once
+     * that surface is resolved over the page behind it.
+     */
+    var page =
+      parseColor(getComputedStyle(document.documentElement).backgroundColor) ||
+      { r: 255, g: 255, b: 255, a: 1 };
+
+    var pending = [];
+    var i, j, node, style, spans, span, token, surface, fallback, keep, replace;
+    var fallbackValue;
+
+    /*
+     * Read first and write second. Reading a computed style flushes layout and
+     * setting a style invalidates it, so measuring and repainting in the same
+     * pass would re-layout once per token in the block.
+     */
+    for (i = 0; i < blocks.length; i++) {
+      node = blocks[i];
+
+      /* Code inside a block is styled by that block, not by itself. */
+      if (node.nodeName === 'CODE' && insidePre(node)) continue;
+      if (isHidden(node)) continue;
+
+      style = getComputedStyle(node);
+      surface = parseColor(style.backgroundColor);
+
+      /*
+       * The code element's own color is the reader's code foreground, since the
+       * reader forces it. It is both the yardstick a token is measured against
+       * and the value an unreadable token is rewritten to, which keeps the
+       * repair consistent with the active theme without carrying a palette.
+       */
+      fallbackValue = style.color;
+      fallback = parseColor(fallbackValue);
+
+      if (!surface || !fallback) continue;
+
+      surface = flatten(surface, page);
+      replace = contrast(fallback, surface);
+
+      spans = node.querySelectorAll('span');
+      for (j = 0; j < spans.length; j++) {
+        span = spans[j];
+
+        style = getComputedStyle(span);
+        if (style.display === 'none' || style.visibility === 'hidden') continue;
+
+        token = parseColor(style.color);
+        if (!token) continue;
+
+        keep = contrast(token, surface);
+
+        /*
+         * A palette that already reads is left alone. This is a legibility
+         * floor, not a licence to restyle every highlighter on the web.
+         */
+        if (keep >= MIN_CONTRAST || replace <= keep) continue;
+
+        pending.push({
+          element: span,
+          saved: span.style.getPropertyValue('color'),
+          value: fallbackValue
+        });
+      }
+    }
+
+    for (i = 0; i < pending.length; i++) {
+      pending[i].element.setAttribute(SAVED, pending[i].saved);
+      pending[i].element.setAttribute(MARK, '');
+      pending[i].element.style.setProperty(
+        'color',
+        pending[i].value,
+        'important'
+      );
+    }
+  }
+
+  function readerIsDark() {
+    var scheme = getComputedStyle(document.documentElement).colorScheme || '';
+
+    if (scheme === 'dark') return true;
+    if (scheme === 'light') return false;
+
+    /* Only reached if the stylesheet has not been applied yet. */
+    return !!(
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+    );
+  }
+
+  function syncHostMode() {
+    var dark = readerIsDark();
+    var scheme = dark ? 'dark' : 'light';
+    var root = document.documentElement;
+    var i, name, present;
+
+    for (i = 0; i < DARK_CLASSES.length; i++) {
+      name = DARK_CLASSES[i];
+      present = root.classList.contains(name);
+
+      if (dark && !present) root.classList.add(name);
+      else if (!dark && present) root.classList.remove(name);
+    }
+
+    for (i = 0; i < DARK_ATTRIBUTES.length; i++) {
+      name = DARK_ATTRIBUTES[i];
+
+      if (root.getAttribute(name) !== scheme) {
+        root.setAttribute(name, scheme);
+      }
+    }
+
+    /*
+     * Theme watchers write this inline, where it outranks any stylesheet rule,
+     * so the reader has to claim it too or the page decides the mode again.
+     */
+    if (root.style.colorScheme !== scheme) {
+      root.style.colorScheme = scheme;
+    }
+  }
+
+  function hostModeDrifted() {
+    var dark = readerIsDark();
+    var scheme = dark ? 'dark' : 'light';
+    var root = document.documentElement;
+    var i;
+
+    for (i = 0; i < DARK_CLASSES.length; i++) {
+      if (root.classList.contains(DARK_CLASSES[i]) !== dark) return true;
+    }
+
+    for (i = 0; i < DARK_ATTRIBUTES.length; i++) {
+      if (root.getAttribute(DARK_ATTRIBUTES[i]) !== scheme) return true;
+    }
+
+    return root.style.colorScheme !== scheme;
+  }
+
+  function apply() {
+    timer = 0;
+    if (running) return;
+
+    running = true;
+
+    try {
+      syncHostMode();
+      repairCodeColors();
+    } catch (err) {
+      /* A reader must never take the page down with it. */
+    }
+
+    running = false;
+  }
+
+  function schedule() {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(apply, DEBOUNCE);
+  }
+
+  /*
+   * Runs after the stylesheet has been appended, so `color-scheme` is already
+   * readable and an explicit theme is never second-guessed by the platform.
+   */
+  apply();
+
+  if (window[INSTALLED]) return;
+  window[INSTALLED] = true;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', schedule);
+  }
+
+  window.addEventListener('load', schedule);
+
+  if (window.MutationObserver) {
+    /*
+     * Code can still arrive after load -- rendered lazily, or restored from the
+     * back/forward cache -- and a theme watcher can hand the page back its own
+     * mode at any point. Both are noticed here and settled once the page stops
+     * changing. Only the root element's own attributes are watched, so this
+     * does not observe the color writes repairCodeColors makes.
+     */
+    new MutationObserver(function () {
+      if (document.querySelector('pre, code')) schedule();
+    }).observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+
+    new MutationObserver(function () {
+      if (hostModeDrifted()) schedule();
+    }).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style'].concat(DARK_ATTRIBUTES)
+    });
+  }
+})();
+''';
+
+  // ---------------------------------------------------------------------------
   // Early CSS
   // ---------------------------------------------------------------------------
 
@@ -184,6 +552,7 @@ abstract final class ReaderTheme {
     (document.head || document.documentElement).appendChild(style);
   } catch(e) {}
 })();
+$hostModeSyncJs
 ''';
   }
 
@@ -395,6 +764,9 @@ abstract final class ReaderTheme {
   /// and re-injecting on every settings change would keep adding work for the
   /// style engine.
   ///
+  /// Runs [hostModeSyncJs] afterwards, so a theme change re-claims the host's
+  /// dark-mode switch and re-measures code colors against the new palette.
+  ///
   /// [css] is JSON-encoded rather than interpolated into a template literal, so
   /// a backtick, `${…}` or a line separator in the generated stylesheet can
   /// never break out into executable JavaScript.
@@ -415,6 +787,7 @@ abstract final class ReaderTheme {
     (document.head || document.documentElement).appendChild(style);
   } catch (e) {}
 })();
+$hostModeSyncJs
 ''';
   }
 
@@ -457,7 +830,12 @@ abstract final class ReaderTheme {
          ============================================================ */
 
       :root {
-        color-scheme: ${isDark ? 'dark' : 'light'};
+        /*
+         * `!important` because hostModeSyncJs reads this value to decide which
+         * dark palette to ask the page for. A page that also sets
+         * `color-scheme` would otherwise win the tie and take the mode back.
+         */
+        color-scheme: ${isDark ? 'dark' : 'light'} !important;
       }
 
       html {
@@ -883,7 +1261,10 @@ abstract final class ReaderTheme {
 
       /*
        * Clear the background some highlighters paint on wrappers, but leave
-       * their colors alone: those colors are the syntax highlighting.
+       * their colors alone: those colors are the syntax highlighting, and a
+       * blanket override here would throw it away. A palette that does not
+       * read against this surface is repaired by hostModeSyncJs instead, which
+       * can tell a mismatched token from a deliberately dim one.
        */
       pre span,
       pre div {

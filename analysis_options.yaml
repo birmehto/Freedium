@@ -37,6 +37,7 @@ analyzer:
     - "integration_test/**"
     - android/**
     - linux/**
+    - ios/**
 
 linter:
   rules:

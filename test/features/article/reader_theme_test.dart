@@ -162,6 +162,81 @@ void main() {
     });
   });
 
+  group('host mode sync', () {
+    late String early;
+    late String injected;
+
+    setUp(() {
+      early = ReaderTheme.earlyStyleInjector(
+        settings: const ReaderSettings(),
+        systemDark: false,
+      );
+      injected = ReaderTheme.injectCssScript(_css());
+    });
+
+    test('both injectors carry the sync script', () {
+      expect(early, contains(ReaderTheme.hostModeSyncJs));
+      expect(injected, contains(ReaderTheme.hostModeSyncJs));
+    });
+
+    test('runs only after the stylesheet is in the document', () {
+      // The script reads `color-scheme` to learn the reader's mode. Running
+      // first would leave it falling back to the platform brightness and
+      // override an explicitly chosen light or sepia theme.
+      for (final script in [early, injected]) {
+        expect(
+          script.indexOf(ReaderTheme.hostModeSyncJs),
+          greaterThan(script.lastIndexOf('appendChild(style)')),
+        );
+      }
+    });
+
+    test('takes the mode from the stylesheet instead of a baked-in value', () {
+      // One script serves every theme, so it must not carry a palette of its
+      // own or the next theme to ship would need a new one.
+      for (final color in ['#1b1915', '#000000', '#f4ecd8', '#fbfaf7']) {
+        expect(ReaderTheme.hostModeSyncJs, isNot(contains(color)));
+      }
+
+      expect(
+        ReaderTheme.hostModeSyncJs,
+        contains('getComputedStyle(document.documentElement).colorScheme'),
+      );
+    });
+
+    test('claims the switches sites gate a dark palette behind', () {
+      expect(ReaderTheme.hostModeSyncJs, contains("['dark', 'dark-mode']"));
+      expect(
+        ReaderTheme.hostModeSyncJs,
+        contains("['data-theme', 'data-color-mode']"),
+      );
+    });
+
+    test('repairs code colors rather than flattening the highlighting', () {
+      const script = ReaderTheme.hostModeSyncJs;
+
+      // A blanket override would also nuke palettes that already read.
+      expect(script, contains('if (keep >= MIN_CONTRAST || replace <= keep)'));
+      expect(script, isNot(contains('pre span')));
+    });
+
+    test('installs its observers once per document', () {
+      // The stylesheet is re-injected on every settings change.
+      expect(ReaderTheme.hostModeSyncJs, contains('window[INSTALLED]'));
+    });
+
+    test('restores its own overrides before re-measuring', () {
+      // Otherwise a theme change would compare the previous repair against the
+      // new palette and keep a color the host no longer asks for.
+      const script = ReaderTheme.hostModeSyncJs;
+      expect(script, contains('function restore()'));
+      expect(
+        script.indexOf('restore();'),
+        lessThan(script.indexOf('var pending')),
+      );
+    });
+  });
+
   group('readerIsDark', () {
     test('explicit themes ignore the platform brightness', () {
       for (final systemDark in [false, true]) {

@@ -62,6 +62,12 @@ abstract final class MirrorCatalog {
       urlTemplate: 'https://freedium-mirror.cfd/{original}',
     ),
     MirrorSource(
+      id: 'mirror',
+      name: 'Mirror',
+      url: 'https://freedium-mirror-web.vercel.app/',
+      urlTemplate: 'https://freedium-mirror-web.vercel.app/{original}',
+    ),
+    MirrorSource(
       id: 'textise',
       name: 'Textise',
       url: 'https://www.textise.net/',

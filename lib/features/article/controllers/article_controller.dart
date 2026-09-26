@@ -175,8 +175,8 @@ class ArticleController extends GetxController {
     errorMessage.value = '';
     isLoading.value = true;
     _startLoadingTimer();
-
     if (url != null) currentUrl.value = url;
+    appLog('ArticleController.onPageStart: isLoading=true, url=$url');
   }
 
   /// The new document is painted and visible to the reader.
@@ -185,6 +185,9 @@ class ArticleController extends GetxController {
   /// entirely on some platforms, so the blocking loader is dismissed here
   /// rather than waiting for it.
   void onPageCommitVisible() {
+    appLog(
+      'ArticleController.onPageCommitVisible: isLoading=${isLoading.value}, isInitialLoad=${isInitialLoad.value}',
+    );
     if (isLoading.value || isInitialLoad.value) _stopLoading();
   }
 
@@ -193,9 +196,9 @@ class ArticleController extends GetxController {
   }
 
   void onPageLoaded() {
+    appLog('ArticleController.onPageLoaded: calling _stopLoading');
     _stopLoading();
     _resolver.reportSuccess();
-
     unawaited(_extractMetadata());
   }
 
@@ -230,8 +233,10 @@ class ArticleController extends GetxController {
   void updateProgress(double progress) {
     final value = (progress / 100).clamp(0.0, 1.0).toDouble();
     loadingProgress.value = value;
-
-    if (value >= 1.0 && isLoading.value) _stopLoading();
+    appLog(
+      'ArticleController.updateProgress: value=$value, isLoading=${isLoading.value}',
+    );
+    if (value >= 1.0) _stopLoading();
   }
 
   Future<void> requestRefresh() async {
@@ -252,9 +257,22 @@ class ArticleController extends GetxController {
     });
   }
 
+  Future<void> switchToMirror(String mirrorId) async {
+    _resolver.setPreferred(mirrorId);
+    final original = ArticleUrl.canonicalize(originalUrl.value);
+    if (original.isEmpty) return;
+
+    final newUrl = _resolver.resolve(original);
+    if (newUrl == null || newUrl == currentUrl.value) return;
+
+    await _loadUrl(newUrl);
+    isLoading.value = true;
+    loadingProgress.value = 0;
+    _startLoadingTimer();
+  }
+
   Future<void> _loadUrl(String url) async {
     if (webViewController == null) {
-      // The WebView is not mounted yet; the initial load uses `initialUrlRequest`.
       currentUrl.value = url;
       return;
     }
@@ -312,22 +330,17 @@ class ArticleController extends GetxController {
       final result = await controller.evaluateJavascript(
         source: ReaderTheme.extractMetaJs,
       );
-
       if (result is! String || result.isEmpty) return;
-
       final meta = ArticleMeta.fromJson(
         jsonDecode(result) as Map<String, dynamic>?,
       );
-
       if (meta.title.isEmpty) return;
-
       articleTitle.value = meta.title;
       articleAuthor.value = meta.author ?? '';
       articlePublication.value = meta.publication ?? '';
       wordCount.value = meta.wordCount;
       readingTime.value = meta.readingTimeMinutes;
       publishedAt.value = meta.publishedAt;
-
       await _storage.library.cacheMeta(originalUrl.value, meta);
     } catch (error) {
       appLog(
@@ -355,7 +368,6 @@ class ArticleController extends GetxController {
   Future<void> shareArticle() async {
     final url = originalUrl.value;
     if (url.isEmpty) return;
-
     await SharePlus.instance.share(
       ShareParams(
         title: 'Share from Freedium',
@@ -414,5 +426,6 @@ class ArticleController extends GetxController {
     isLoading.value = false;
     isInitialLoad.value = false;
     loadingProgress.value = 1;
+    appLog('ArticleController._stopLoading: isLoading=${isLoading.value}');
   }
 }

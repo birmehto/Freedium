@@ -54,11 +54,13 @@ class _ReadingTime extends GetView<ArticleController> {
 
   @override
   Widget build(BuildContext context) {
-    final minutes = controller.readingTime.value;
+    return Obx(() {
+      final minutes = controller.readingTime.value;
 
-    return minutes > 0
-        ? AppPill(label: '$minutes min')
-        : const SizedBox.shrink();
+      return minutes > 0
+          ? AppPill(label: '$minutes min')
+          : const SizedBox.shrink();
+    });
   }
 }
 
@@ -67,17 +69,21 @@ class _FavoriteButton extends GetView<ArticleController> {
 
   @override
   Widget build(BuildContext context) {
-    final favorite = controller.isFavorite;
+    return Obx(() {
+      final favorite = controller.isFavorite;
 
-    return M3EIconButton(
-      size: M3EIconButtonSize.xs,
-      icon: Icon(
-        favorite ? M3EIcons.favorite_rounded : M3EIcons.favorite_border_rounded,
-        color: favorite ? context.colors.onPrimary : null,
-      ),
-      tooltip: favorite ? 'Remove from favorites' : 'Save to favorites',
-      onPressed: controller.toggleFavorite,
-    );
+      return M3EIconButton(
+        size: M3EIconButtonSize.xs,
+        icon: Icon(
+          favorite
+              ? M3EIcons.favorite_rounded
+              : M3EIcons.favorite_border_rounded,
+          color: favorite ? context.colors.onPrimary : null,
+        ),
+        tooltip: favorite ? 'Remove from favorites' : 'Save to favorites',
+        onPressed: controller.toggleFavorite,
+      );
+    });
   }
 }
 
@@ -86,24 +92,25 @@ class _LoadingIndicator extends GetView<ArticleController> {
 
   @override
   Widget build(BuildContext context) {
-    final loading = controller.isLoading.value;
-    final progress = controller.loadingProgress.value;
+    return Obx(() {
+      final loading = controller.isLoading.value;
+      final progress = controller.loadingProgress.value;
 
-    return AnimatedOpacity(
-      opacity: loading ? 1 : 0,
-      duration: const Duration(milliseconds: 200),
-      child: IgnorePointer(
+      return Visibility(
+        visible: loading,
+        maintainAnimation: true,
+        maintainState: true,
         child: Align(
           alignment: Alignment.topCenter,
-          child:           M3EProgressIndicator.linear(
+          child: M3EProgressIndicator.linear(
             // A determinate bar that is already full, rather than flipping to
             // an indeterminate spinner at exactly 100%.
             value: progress >= 1 ? 1 : (progress > 0 ? progress : null),
             color: context.colors.primary,
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -112,9 +119,11 @@ class _InitialLoader extends GetView<ArticleController> {
 
   @override
   Widget build(BuildContext context) {
-    return controller.isInitialLoad.value && controller.errorMessage.isEmpty
-        ? const Positioned.fill(child: AppLoading())
-        : const SizedBox.shrink();
+    return Obx(() {
+      return controller.isInitialLoad.value && controller.errorMessage.isEmpty
+          ? const Positioned.fill(child: AppLoading())
+          : const SizedBox.shrink();
+    });
   }
 }
 

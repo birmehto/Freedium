@@ -124,29 +124,36 @@ class _ArticleWebViewState extends State<ArticleWebView> {
             handledByClient: true,
           ),
       onLoadStart: (controller, url) {
+        appLog('WebView.onLoadStart: url=$url');
         _controller.onPageStart(url?.toString());
       },
       onPageCommitVisible: (controller, url) {
+        appLog('WebView.onPageCommitVisible: url=$url');
         _controller.onPageCommitVisible();
       },
       onLoadStop: (controller, url) async {
+        appLog('WebView.onLoadStop: url=$url');
         await _endRefreshing();
 
         _controller.onPageLoaded();
         await _controller.injectCustomCSS();
       },
       onProgressChanged: (controller, progress) {
+        appLog('WebView.onProgressChanged: progress=$progress');
         _controller.updateProgress(progress.toDouble());
       },
       onReceivedError: (controller, request, error) {
         if (request.isForMainFrame ?? false) {
+          appLog('WebView.onReceivedError: ${error.description}');
           unawaited(_endRefreshing());
           _controller.onPageError(_describe(error.description));
         }
       },
       onReceivedHttpError: (controller, request, errorResponse) {
         if (!(request.isForMainFrame ?? false)) return;
-
+        appLog(
+          'WebView.onReceivedHttpError: url=${request.url}, code=${errorResponse.statusCode}',
+        );
         final statusCode = errorResponse.statusCode ?? 0;
         if (statusCode >= 500) {
           _controller.handleServerError(statusCode);
