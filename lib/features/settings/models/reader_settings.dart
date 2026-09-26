@@ -8,12 +8,27 @@ class ReaderSettings {
     this.fontSize = 17.0,
   });
 
+  /// Stored settings are read back with the same care they are written: a
+  /// value of the wrong type falls back to the default and a font size outside
+  /// the supported range is clamped, so bad data cannot reach the slider or the
+  /// reader's stylesheet.
   factory ReaderSettings.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const ReaderSettings();
+
+    final themeMode = json['themeMode'];
+    final fontFamily = json['fontFamily'];
+    final fontSize = json['fontSize'];
+
     return ReaderSettings(
-      themeMode: ReaderThemeMode.fromName(json['themeMode'] as String?),
-      fontFamily: json['fontFamily'] as String? ?? kDefaultFontFamily,
-      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 17.0,
+      themeMode: ReaderThemeMode.fromName(
+        themeMode is String ? themeMode : null,
+      ),
+      fontFamily: fontFamily is String && fontFamily.isNotEmpty
+          ? fontFamily
+          : kDefaultFontFamily,
+      fontSize: fontSize is num
+          ? fontSize.toDouble().clamp(kMinFontSize, kMaxFontSize)
+          : kDefaultFontSize,
     );
   }
 

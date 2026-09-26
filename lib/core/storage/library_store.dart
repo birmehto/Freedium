@@ -16,6 +16,14 @@ class LibraryStore {
   static const String favoritesKey = 'favorites_list';
   static const String metaKey = 'cached_meta';
 
+  /// How many articles the metadata blob keeps.
+  ///
+  /// The blob is one row, so every article opened rewrites all of it. Capping
+  /// the number of entries (least recently written first) keeps that rewrite
+  /// bounded on a device that reads a lot, and an article whose metadata is
+  /// dropped simply falls back to its favorite entry until it is read again.
+  static const int maxMetaEntries = 500;
+
   final KeyValueStore _store;
 
   final RxList<FavoriteArticle> _favorites = <FavoriteArticle>[].obs;
@@ -39,9 +47,11 @@ class LibraryStore {
   /// Adds [article] to favorites, replacing any earlier entry for the same URL
   /// so a URL can never appear twice.
   Future<void> addToFavorites(FavoriteArticle article) {
+    final target = article.url.trim();
+
     return _saveFavorites([
       article,
-      ...favorites.where((item) => item.url != article.url),
+      ...favorites.where((item) => item.url.trim() != target),
     ]);
   }
 
@@ -65,7 +75,7 @@ class LibraryStore {
 
   /// Metadata cached for [url], or `null` when nothing is cached.
   ArticleMeta? metaFor(String url) {
-    final raw = _rawMeta()[url];
+    final raw = _rawMeta()[url.trim()];
     if (raw is! Map) return null;
     return ArticleMeta.fromJson(Map<String, dynamic>.from(raw));
   }
@@ -73,8 +83,33 @@ class LibraryStore {
   /// Caches [meta] for [url]. Only that one entry is re-encoded, so a long
   /// reading history does not cost a full read/parse/rewrite per article.
   Future<void> cacheMeta(String url, ArticleMeta meta) async {
+    final key = url.trim();
+    if (key.isEmpty) return;
+
     final current = Map<String, dynamic>.from(_rawMeta());
-    current[url] = meta.toJson();
+
+    // Re-inserted rather than overwritten so the map's insertion order really
+    // is oldest-written first, which is what the cap below evicts from.
+    current
+      ..remove(key)
+      ..[key] = meta.toJson();
+
+    while (current.length > maxMetaEntries) {
+      current.remove(current.keys.first);
+    }
+
+    await _store.write(metaKey, current);
+  }
+
+  /// Forgets the metadata cached for [url], e.g. when the user removes it from
+  /// the library.
+  Future<void> removeMeta(String url) async {
+    final key = url.trim();
+    if (key.isEmpty) return;
+
+    final current = Map<String, dynamic>.from(_rawMeta());
+    if (current.remove(key) == null) return;
+
     await _store.write(metaKey, current);
   }
 

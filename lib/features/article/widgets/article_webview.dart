@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/reader_theme.dart';
 import '../../../core/utils/app_log.dart';
@@ -42,7 +43,16 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     // Pull-to-refresh is only implemented for Android in this plugin.
     if (defaultTargetPlatform == TargetPlatform.android) {
       _pullToRefreshController = PullToRefreshController(
-        onRefresh: _controller.requestRefresh,
+        // Ends the indicator unconditionally: `requestRefresh` can return
+        // without loading anything (no WebView yet, no mirror available), and
+        // the spinner would otherwise stay on screen forever.
+        onRefresh: () async {
+          try {
+            await _controller.requestRefresh();
+          } finally {
+            await _endRefreshing();
+          }
+        },
       );
     }
   }
@@ -94,21 +104,26 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         final requestUrl = navigationAction.request.url;
         if (requestUrl == null) return NavigationActionPolicy.CANCEL;
 
-        final scheme = requestUrl.scheme.toLowerCase();
-        if (scheme != 'http' && scheme != 'https') {
-          return NavigationActionPolicy.CANCEL;
-        }
-
+        // Only the reader's own top-level navigation is redirected out;
+        // everything inside the document is left to the page.
         final isMainFrame = navigationAction.targetFrame?.isMainFrame ?? true;
         if (!isMainFrame) return NavigationActionPolicy.ALLOW;
 
-        final allowed = _controller.allowedNavigationHosts.contains(
-          requestUrl.host.toLowerCase(),
-        );
+        final scheme = requestUrl.scheme.toLowerCase();
+        final allowed =
+            (scheme == 'http' || scheme == 'https') &&
+            _controller.allowedNavigationHosts.contains(
+              requestUrl.host.toLowerCase(),
+            );
 
-        return allowed
-            ? NavigationActionPolicy.ALLOW
-            : NavigationActionPolicy.CANCEL;
+        if (allowed) return NavigationActionPolicy.ALLOW;
+
+        // A link the reader cannot follow is handed to the browser rather than
+        // dropped, which is what "cancelled" would otherwise mean silently:
+        // off-site articles, and the mailto:/tel: links a writer embeds.
+        unawaited(_openExternally(requestUrl.toString()));
+
+        return NavigationActionPolicy.CANCEL;
       },
       onPermissionRequest: (controller, permissionRequest) async =>
           PermissionResponse(),
@@ -138,6 +153,12 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         _controller.onPageLoaded();
         await _controller.injectCustomCSS();
       },
+      onScrollChanged: (controller, x, y) {
+        // Deliberately not logged: scrolling fires hundreds of times per
+        // article. The offset alone cannot express "how far through" anyway, so
+        // the controller measures the document once the scrolling settles.
+        _controller.reportScroll();
+      },
       onProgressChanged: (controller, progress) {
         appLog('WebView.onProgressChanged: progress=$progress');
         _controller.updateProgress(progress.toDouble());
@@ -146,7 +167,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         if (request.isForMainFrame ?? false) {
           appLog('WebView.onReceivedError: ${error.description}');
           unawaited(_endRefreshing());
-          _controller.onPageError(_describe(error.description));
+          unawaited(_controller.onPageError(_describe(error.description)));
         }
       },
       onReceivedHttpError: (controller, request, errorResponse) {
@@ -156,12 +177,14 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         );
         final statusCode = errorResponse.statusCode ?? 0;
         if (statusCode >= 500) {
-          _controller.handleServerError(statusCode);
+          unawaited(_controller.handleServerError(statusCode));
         } else if (statusCode >= 400) {
-          _controller.onPageError(
-            statusCode == 404
-                ? 'Article not found (404).'
-                : 'Server error ($statusCode)',
+          unawaited(
+            _controller.onPageError(
+              statusCode == 404
+                  ? 'Article not found (404).'
+                  : 'Server error ($statusCode)',
+            ),
           );
         }
       },
@@ -175,6 +198,21 @@ class _ArticleWebViewState extends State<ArticleWebView> {
 
   Future<void> _endRefreshing() async {
     await _pullToRefreshController?.endRefreshing();
+  }
+
+  /// Opens [url] outside the reader, e.g. an off-site link the user tapped.
+  Future<void> _openExternally(String url) async {
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (error) {
+      // Nothing on the device can handle it (or the platform refused); there is
+      // no reader-side fallback for that, so it is only logged.
+      appLog(
+        'Could not open $url: $error',
+        name: 'Reader',
+        level: LogLevel.warning,
+      );
+    }
   }
 
   /// Turns a WebView error into a message that tells the user what to try.

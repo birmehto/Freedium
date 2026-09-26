@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/storage/app_database.dart';
@@ -45,6 +47,42 @@ void main() {
     await store.write('k', {'nested': true});
     expect(store.read('k'), {'nested': true});
     expect(store.getKeys(), ['k']);
+  });
+
+  test('closing drains the writes still queued', () async {
+    // Writes are chained onto a queue, so closing the database underneath one
+    // that has not run yet dropped it — the value survived in memory and was
+    // simply never written, which is exactly the kind of change a user would
+    // notice only after restarting the app. A file-backed database is used
+    // because the point is what reached the disk.
+    final file = File(
+      '${Directory.systemTemp.path}/freedium_kv_${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    addTearDown(() async {
+      if (file.existsSync()) file.deleteSync();
+    });
+
+    final first = DriftKeyValueStore(
+      AppDatabase.forTesting(NativeDatabase(file)),
+    );
+    await first.init();
+
+    await Future.wait([
+      first.write('a', 1),
+      first.write('b', 2),
+      first.write('c', 3),
+    ]);
+    await first.close();
+
+    final second = DriftKeyValueStore(
+      AppDatabase.forTesting(NativeDatabase(file)),
+    );
+    await second.init();
+
+    expect(second.read('a'), 1);
+    expect(second.read('c'), 3);
+
+    await second.close();
   });
 
   test('a fresh store reloads persisted values from disk', () async {

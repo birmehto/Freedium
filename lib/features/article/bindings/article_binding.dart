@@ -9,7 +9,12 @@ import '../controllers/article_controller.dart';
 class ArticleBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<ArticleController>(
+    // `create` rather than `lazyPut`: a second article route (a share intent
+    // arriving while a reader is open) would otherwise find the first route's
+    // controller — already initialized with the *other* article — and share it,
+    // so the second reader showed the first article and the first route lost
+    // its controller when the second one was popped.
+    Get.create<ArticleController>(
       () => ArticleController(
         Get.find<ClipboardService>(),
         Get.find<StorageService>(),

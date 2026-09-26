@@ -124,6 +124,56 @@ void main() {
       expect(resolver.nextFallback(), isNull);
     });
 
+    test('walks past a mirror that already failed for this article', () {
+      resolver = ArticleResolver(
+        sources: [mirror('mirror-a'), mirror('mirror-b')],
+      );
+      resolver.resolve('https://medium.com/@u/7');
+
+      // Both mirrors failed in turn; asking again without remembering that must
+      // not hand back the one that just failed, or the reader ping-pongs
+      // between two mirrors and never reaches the saved copy.
+      expect(resolver.nextFallback(), contains('mirror-b.example'));
+    });
+
+    test('skips every mirror the article has already tried', () {
+      resolver = ArticleResolver(
+        sources: [mirror('mirror-a'), mirror('mirror-b')],
+      );
+      resolver.resolve('https://medium.com/@u/7');
+
+      expect(
+        resolver.nextFallback(attempted: {'mirror-a', 'mirror-b'}),
+        isNull,
+      );
+    });
+
+    test('prefers a mirror this article has not tried', () {
+      resolver = ArticleResolver(
+        sources: [mirror('mirror-a'), mirror('mirror-b')],
+      );
+      resolver.resolve('https://medium.com/@u/7');
+
+      expect(
+        resolver.nextFallback(attempted: {'mirror-a'}),
+        contains('mirror-b.example'),
+      );
+      expect(resolver.lastSourceId, 'mirror-b');
+    });
+
+    test('reaches the third mirror instead of alternating', () {
+      resolver = ArticleResolver(
+        sources: [mirror('mirror-a'), mirror('mirror-b'), mirror('mirror-c')],
+      );
+      resolver.resolve('https://medium.com/@u/7');
+
+      final second = resolver.nextFallback(attempted: {'mirror-a'});
+      final third = resolver.nextFallback(attempted: {'mirror-a', 'mirror-b'});
+
+      expect(second, contains('mirror-b.example'));
+      expect(third, contains('mirror-c.example'));
+    });
+
     test('returns null when there is nothing to switch to', () {
       resolver = ArticleResolver(sources: [mirror('only')]);
       resolver.resolve('https://medium.com/@u/8');

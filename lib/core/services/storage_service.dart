@@ -1,36 +1,56 @@
 import 'package:get/get.dart';
 
 import '../storage/app_database.dart';
+import '../storage/article_cache_store.dart';
 import '../storage/key_value_store.dart';
 import '../storage/library_store.dart';
 import '../storage/preferences_store.dart';
+import '../storage/reading_progress_store.dart';
 
-/// Owns the on-device SQLite database and exposes the two focused stores.
+/// Owns the on-device SQLite database and exposes the focused stores.
 ///
 /// Registered as a permanent service during startup, so every feature binding
-/// resolves the same [preferences] and [library] instances.
+/// resolves the same [preferences], [library], [cache] and [progress]
+/// instances.
 class StorageService extends GetxService {
   /// Production constructor: opens the SQLite database.
   StorageService();
 
-  /// Test constructor: uses an already-prepared [KeyValueStore].
-  StorageService.withStore(KeyValueStore store) {
+  /// Test constructor: uses an already-prepared [KeyValueStore] and [database].
+  StorageService.withStore(
+    KeyValueStore store, {
+    required AppDatabase database,
+  }) {
     _keyValueStore = store;
+    _database = database;
     _attachStores();
   }
 
   late final PreferencesStore preferences;
   late final LibraryStore library;
 
+  /// Saved article bodies, for reading without a network.
+  late final ArticleCacheStore cache;
+
+  /// How far the reader has got through each article.
+  late final ReadingProgressStore progress;
+
   KeyValueStore? _keyValueStore;
+  AppDatabase? _database;
 
   /// Opens the database and warms the synchronous read cache.
   Future<StorageService> init() async {
-    final store = DriftKeyValueStore(AppDatabase.open());
+    final database = AppDatabase.open();
+    final store = DriftKeyValueStore(database);
     await store.init();
 
     _keyValueStore = store;
+    _database = database;
     _attachStores();
+
+    // Counted up front so the settings screen has real numbers to show rather
+    // than zeroes until something is read.
+    await cache.refreshTotals();
     return this;
   }
 
@@ -45,7 +65,10 @@ class StorageService extends GetxService {
 
   void _attachStores() {
     final store = _keyValueStore!;
+    final database = _database!;
     preferences = PreferencesStore(store);
     library = LibraryStore(store);
+    cache = ArticleCacheStore(database);
+    progress = ReadingProgressStore(database);
   }
 }

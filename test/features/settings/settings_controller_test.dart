@@ -96,4 +96,69 @@ void main() {
       expect(storage.preferences.autoFallback, isFalse);
     });
   });
+
+  group('offline articles', () {
+    test('reports an empty cache', () {
+      expect(controller.hasOfflineArticles, isFalse);
+      expect(controller.offlineSummary, '0 articles • Empty');
+    });
+
+    test('counts what is cached', () async {
+      await storage.cache.save(url: 'https://medium.com/a', html: '<p>a</p>');
+      await storage.cache.save(url: 'https://medium.com/b', html: '<p>b</p>');
+
+      expect(controller.hasOfflineArticles, isTrue);
+      expect(controller.offlineSummary, startsWith('2 articles • '));
+      expect(controller.cachedArticles.value, 2);
+    });
+
+    test('uses the singular for one article', () async {
+      await storage.cache.save(url: 'https://medium.com/a', html: '<p>a</p>');
+
+      expect(controller.offlineSummary, startsWith('1 article • '));
+    });
+
+    test('clearOfflineArticles empties the cache', () async {
+      await storage.cache.save(url: 'https://medium.com/a', html: '<p>a</p>');
+
+      await controller.clearOfflineArticles();
+
+      expect(controller.hasOfflineArticles, isFalse);
+      expect(await storage.cache.contains('https://medium.com/a'), isFalse);
+    });
+
+    test('a second clear while one is running is ignored', () async {
+      await storage.cache.save(url: 'https://medium.com/a', html: '<p>a</p>');
+
+      await Future.wait([
+        controller.clearOfflineArticles(),
+        controller.clearOfflineArticles(),
+      ]);
+
+      expect(controller.hasOfflineArticles, isFalse);
+      expect(controller.isClearingCache.value, isFalse);
+    });
+
+    test('the busy state is visible while clearing', () async {
+      await storage.cache.save(url: 'https://medium.com/a', html: '<p>a</p>');
+
+      final clearing = controller.clearOfflineArticles();
+      expect(controller.isClearingCache.value, isTrue);
+
+      await clearing;
+      expect(controller.isClearingCache.value, isFalse);
+    });
+
+    test('clearing the cache leaves reading progress alone', () async {
+      await storage.cache.save(url: 'https://medium.com/a', html: '<p>a</p>');
+      await storage.progress.save('https://medium.com/a', ratio: 0.4);
+
+      await controller.clearOfflineArticles();
+
+      expect(
+        await storage.progress.progressFor('https://medium.com/a'),
+        isNotNull,
+      );
+    });
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -32,6 +34,22 @@ class SettingsController extends GetxController {
   /// Font size is part of the reader settings, not a separate value.
   double get fontSize => readerSettings.value.fontSize;
 
+  /// Whether anything is saved for offline reading.
+  bool get hasOfflineArticles => _storage.cache.cachedCount.value > 0;
+
+  /// How many articles are saved for offline reading.
+  ///
+  /// Read straight off the cache store rather than copied into this controller,
+  /// so the number cannot fall out of step with what is actually stored.
+  RxInt get cachedArticles => _storage.cache.cachedCount;
+
+  String get offlineSummary {
+    final count = _storage.cache.cachedCount.value;
+    final articles = count == 1 ? '1 article' : '$count articles';
+
+    return '$articles • ${_storage.cache.formattedSize}';
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -40,6 +58,43 @@ class SettingsController extends GetxController {
     readerSettings.value = _storage.preferences.readerSettings;
     preferredMirror.value = _storage.preferences.preferredMirror;
     autoFallback.value = _storage.preferences.autoFallback;
+
+    // Counted again on open, so a cache cleared here or evicted since launch
+    // is reflected immediately.
+    unawaited(_storage.cache.refreshTotals());
+  }
+
+  // ────────────────────────────── offline ────────────────────────────
+
+  /// Empties the offline article cache.
+  ///
+  /// Favorites and reading positions are untouched: what was saved and where
+  /// the reader got to are the user's own data, not a cache.
+  /// True while a "Clear saved articles" request is in flight.
+  ///
+  /// The dialog closes itself once the clear finishes, so a second tap landing
+  /// before the first one is done would pop a second route — on Android, the
+  /// shell underneath, which leaves the app.
+  final isClearingCache = false.obs;
+
+  Future<void> clearOfflineArticles() async {
+    if (isClearingCache.value) return;
+    isClearingCache.value = true;
+
+    try {
+      await _storage.cache.clear();
+    } finally {
+      isClearingCache.value = false;
+    }
+  }
+
+  /// Re-reads the reader defaults from storage.
+  ///
+  /// The reader writes the same settings the settings screen shows, so a font
+  /// size changed while reading is picked up when the tab is opened again
+  /// instead of showing the value this controller happened to start with.
+  void syncReaderSettings() {
+    readerSettings.value = _storage.preferences.readerSettings;
   }
 
   // ─────────────────────────────── appearance ─────────────────────────
@@ -95,15 +150,17 @@ class SettingsController extends GetxController {
       queryParameters: const {'subject': 'Freedium Feedback'},
     );
 
-    if (!await _openExternal(uri)) {
-      _showMessage('No email app found. Email us at $address');
+    // `reportFailure: false`: the caller owns the message, so the user is not
+    // told "could not open link" and "no email app" for one failed attempt.
+    if (!await _openExternal(uri, reportFailure: false)) {
+      showMessage('No email app found. Email us at $address');
     }
   }
 
   Future<void> openGitHub() =>
       _openExternal(Uri.parse('https://github.com/birmehto/Freedium'));
 
-  Future<bool> _openExternal(Uri uri) async {
+  Future<bool> _openExternal(Uri uri, {bool reportFailure = true}) async {
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -114,7 +171,7 @@ class SettingsController extends GetxController {
       appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
     }
 
-    _showMessage('Could not open link');
+    if (reportFailure) showMessage('Could not open link');
     return false;
   }
 
@@ -127,7 +184,7 @@ class SettingsController extends GetxController {
     }
   }
 
-  void _showMessage(String message) {
+  void showMessage(String message) {
     if (Get.context case final context?) {
       M3ESnackbar.show(context, message: message);
     }

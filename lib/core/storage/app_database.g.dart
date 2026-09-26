@@ -216,15 +216,912 @@ class KvRowsCompanion extends UpdateCompanion<KvRow> {
   }
 }
 
+class $CachedArticlesTable extends CachedArticles
+    with TableInfo<$CachedArticlesTable, CachedArticle> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CachedArticlesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 2048,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _htmlMeta = const VerificationMeta('html');
+  @override
+  late final GeneratedColumn<String> html = GeneratedColumn<String>(
+    'html',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+    'author',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _publicationMeta = const VerificationMeta(
+    'publication',
+  );
+  @override
+  late final GeneratedColumn<String> publication = GeneratedColumn<String>(
+    'publication',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _domainMeta = const VerificationMeta('domain');
+  @override
+  late final GeneratedColumn<String> domain = GeneratedColumn<String>(
+    'domain',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _wordCountMeta = const VerificationMeta(
+    'wordCount',
+  );
+  @override
+  late final GeneratedColumn<int> wordCount = GeneratedColumn<int>(
+    'word_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _savedAtMeta = const VerificationMeta(
+    'savedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> savedAt = GeneratedColumn<DateTime>(
+    'saved_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    url,
+    html,
+    title,
+    author,
+    publication,
+    domain,
+    wordCount,
+    savedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cached_articles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CachedArticle> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('html')) {
+      context.handle(
+        _htmlMeta,
+        html.isAcceptableOrUnknown(data['html']!, _htmlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_htmlMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('author')) {
+      context.handle(
+        _authorMeta,
+        author.isAcceptableOrUnknown(data['author']!, _authorMeta),
+      );
+    }
+    if (data.containsKey('publication')) {
+      context.handle(
+        _publicationMeta,
+        publication.isAcceptableOrUnknown(
+          data['publication']!,
+          _publicationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('domain')) {
+      context.handle(
+        _domainMeta,
+        domain.isAcceptableOrUnknown(data['domain']!, _domainMeta),
+      );
+    }
+    if (data.containsKey('word_count')) {
+      context.handle(
+        _wordCountMeta,
+        wordCount.isAcceptableOrUnknown(data['word_count']!, _wordCountMeta),
+      );
+    }
+    if (data.containsKey('saved_at')) {
+      context.handle(
+        _savedAtMeta,
+        savedAt.isAcceptableOrUnknown(data['saved_at']!, _savedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_savedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {url};
+  @override
+  CachedArticle map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CachedArticle(
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      html: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}html'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      author: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author'],
+      ),
+      publication: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}publication'],
+      ),
+      domain: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}domain'],
+      ),
+      wordCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}word_count'],
+      )!,
+      savedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}saved_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CachedArticlesTable createAlias(String alias) {
+    return $CachedArticlesTable(attachedDatabase, alias);
+  }
+}
+
+class CachedArticle extends DataClass implements Insertable<CachedArticle> {
+  /// Canonical URL of the article, from `ArticleUrl.canonicalize`.
+  final String url;
+
+  /// The article's own markup, cleaned of scripts and styles.
+  final String html;
+
+  /// Title, author and publication are denormalized onto the cache so a saved
+  /// article can be listed without joining the metadata cache in memory.
+  final String title;
+  final String? author;
+  final String? publication;
+  final String? domain;
+  final int wordCount;
+
+  /// When this copy was written, which is also the eviction order.
+  final DateTime savedAt;
+  const CachedArticle({
+    required this.url,
+    required this.html,
+    required this.title,
+    this.author,
+    this.publication,
+    this.domain,
+    required this.wordCount,
+    required this.savedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['url'] = Variable<String>(url);
+    map['html'] = Variable<String>(html);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || author != null) {
+      map['author'] = Variable<String>(author);
+    }
+    if (!nullToAbsent || publication != null) {
+      map['publication'] = Variable<String>(publication);
+    }
+    if (!nullToAbsent || domain != null) {
+      map['domain'] = Variable<String>(domain);
+    }
+    map['word_count'] = Variable<int>(wordCount);
+    map['saved_at'] = Variable<DateTime>(savedAt);
+    return map;
+  }
+
+  CachedArticlesCompanion toCompanion(bool nullToAbsent) {
+    return CachedArticlesCompanion(
+      url: Value(url),
+      html: Value(html),
+      title: Value(title),
+      author: author == null && nullToAbsent
+          ? const Value.absent()
+          : Value(author),
+      publication: publication == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publication),
+      domain: domain == null && nullToAbsent
+          ? const Value.absent()
+          : Value(domain),
+      wordCount: Value(wordCount),
+      savedAt: Value(savedAt),
+    );
+  }
+
+  factory CachedArticle.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CachedArticle(
+      url: serializer.fromJson<String>(json['url']),
+      html: serializer.fromJson<String>(json['html']),
+      title: serializer.fromJson<String>(json['title']),
+      author: serializer.fromJson<String?>(json['author']),
+      publication: serializer.fromJson<String?>(json['publication']),
+      domain: serializer.fromJson<String?>(json['domain']),
+      wordCount: serializer.fromJson<int>(json['wordCount']),
+      savedAt: serializer.fromJson<DateTime>(json['savedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'url': serializer.toJson<String>(url),
+      'html': serializer.toJson<String>(html),
+      'title': serializer.toJson<String>(title),
+      'author': serializer.toJson<String?>(author),
+      'publication': serializer.toJson<String?>(publication),
+      'domain': serializer.toJson<String?>(domain),
+      'wordCount': serializer.toJson<int>(wordCount),
+      'savedAt': serializer.toJson<DateTime>(savedAt),
+    };
+  }
+
+  CachedArticle copyWith({
+    String? url,
+    String? html,
+    String? title,
+    Value<String?> author = const Value.absent(),
+    Value<String?> publication = const Value.absent(),
+    Value<String?> domain = const Value.absent(),
+    int? wordCount,
+    DateTime? savedAt,
+  }) => CachedArticle(
+    url: url ?? this.url,
+    html: html ?? this.html,
+    title: title ?? this.title,
+    author: author.present ? author.value : this.author,
+    publication: publication.present ? publication.value : this.publication,
+    domain: domain.present ? domain.value : this.domain,
+    wordCount: wordCount ?? this.wordCount,
+    savedAt: savedAt ?? this.savedAt,
+  );
+  CachedArticle copyWithCompanion(CachedArticlesCompanion data) {
+    return CachedArticle(
+      url: data.url.present ? data.url.value : this.url,
+      html: data.html.present ? data.html.value : this.html,
+      title: data.title.present ? data.title.value : this.title,
+      author: data.author.present ? data.author.value : this.author,
+      publication: data.publication.present
+          ? data.publication.value
+          : this.publication,
+      domain: data.domain.present ? data.domain.value : this.domain,
+      wordCount: data.wordCount.present ? data.wordCount.value : this.wordCount,
+      savedAt: data.savedAt.present ? data.savedAt.value : this.savedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedArticle(')
+          ..write('url: $url, ')
+          ..write('html: $html, ')
+          ..write('title: $title, ')
+          ..write('author: $author, ')
+          ..write('publication: $publication, ')
+          ..write('domain: $domain, ')
+          ..write('wordCount: $wordCount, ')
+          ..write('savedAt: $savedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    url,
+    html,
+    title,
+    author,
+    publication,
+    domain,
+    wordCount,
+    savedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CachedArticle &&
+          other.url == this.url &&
+          other.html == this.html &&
+          other.title == this.title &&
+          other.author == this.author &&
+          other.publication == this.publication &&
+          other.domain == this.domain &&
+          other.wordCount == this.wordCount &&
+          other.savedAt == this.savedAt);
+}
+
+class CachedArticlesCompanion extends UpdateCompanion<CachedArticle> {
+  final Value<String> url;
+  final Value<String> html;
+  final Value<String> title;
+  final Value<String?> author;
+  final Value<String?> publication;
+  final Value<String?> domain;
+  final Value<int> wordCount;
+  final Value<DateTime> savedAt;
+  final Value<int> rowid;
+  const CachedArticlesCompanion({
+    this.url = const Value.absent(),
+    this.html = const Value.absent(),
+    this.title = const Value.absent(),
+    this.author = const Value.absent(),
+    this.publication = const Value.absent(),
+    this.domain = const Value.absent(),
+    this.wordCount = const Value.absent(),
+    this.savedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CachedArticlesCompanion.insert({
+    required String url,
+    required String html,
+    this.title = const Value.absent(),
+    this.author = const Value.absent(),
+    this.publication = const Value.absent(),
+    this.domain = const Value.absent(),
+    this.wordCount = const Value.absent(),
+    required DateTime savedAt,
+    this.rowid = const Value.absent(),
+  }) : url = Value(url),
+       html = Value(html),
+       savedAt = Value(savedAt);
+  static Insertable<CachedArticle> custom({
+    Expression<String>? url,
+    Expression<String>? html,
+    Expression<String>? title,
+    Expression<String>? author,
+    Expression<String>? publication,
+    Expression<String>? domain,
+    Expression<int>? wordCount,
+    Expression<DateTime>? savedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (url != null) 'url': url,
+      if (html != null) 'html': html,
+      if (title != null) 'title': title,
+      if (author != null) 'author': author,
+      if (publication != null) 'publication': publication,
+      if (domain != null) 'domain': domain,
+      if (wordCount != null) 'word_count': wordCount,
+      if (savedAt != null) 'saved_at': savedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CachedArticlesCompanion copyWith({
+    Value<String>? url,
+    Value<String>? html,
+    Value<String>? title,
+    Value<String?>? author,
+    Value<String?>? publication,
+    Value<String?>? domain,
+    Value<int>? wordCount,
+    Value<DateTime>? savedAt,
+    Value<int>? rowid,
+  }) {
+    return CachedArticlesCompanion(
+      url: url ?? this.url,
+      html: html ?? this.html,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      publication: publication ?? this.publication,
+      domain: domain ?? this.domain,
+      wordCount: wordCount ?? this.wordCount,
+      savedAt: savedAt ?? this.savedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (html.present) {
+      map['html'] = Variable<String>(html.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
+    }
+    if (publication.present) {
+      map['publication'] = Variable<String>(publication.value);
+    }
+    if (domain.present) {
+      map['domain'] = Variable<String>(domain.value);
+    }
+    if (wordCount.present) {
+      map['word_count'] = Variable<int>(wordCount.value);
+    }
+    if (savedAt.present) {
+      map['saved_at'] = Variable<DateTime>(savedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CachedArticlesCompanion(')
+          ..write('url: $url, ')
+          ..write('html: $html, ')
+          ..write('title: $title, ')
+          ..write('author: $author, ')
+          ..write('publication: $publication, ')
+          ..write('domain: $domain, ')
+          ..write('wordCount: $wordCount, ')
+          ..write('savedAt: $savedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReadingProgressRowsTable extends ReadingProgressRows
+    with TableInfo<$ReadingProgressRowsTable, ReadingProgressRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReadingProgressRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 2048,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ratioMeta = const VerificationMeta('ratio');
+  @override
+  late final GeneratedColumn<double> ratio = GeneratedColumn<double>(
+    'ratio',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _offsetMeta = const VerificationMeta('offset');
+  @override
+  late final GeneratedColumn<double> offset = GeneratedColumn<double>(
+    'offset',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    url,
+    ratio,
+    offset,
+    startedAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reading_progress_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReadingProgressRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_urlMeta);
+    }
+    if (data.containsKey('ratio')) {
+      context.handle(
+        _ratioMeta,
+        ratio.isAcceptableOrUnknown(data['ratio']!, _ratioMeta),
+      );
+    }
+    if (data.containsKey('offset')) {
+      context.handle(
+        _offsetMeta,
+        offset.isAcceptableOrUnknown(data['offset']!, _offsetMeta),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {url};
+  @override
+  ReadingProgressRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReadingProgressRow(
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      ratio: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}ratio'],
+      )!,
+      offset: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}offset'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReadingProgressRowsTable createAlias(String alias) {
+    return $ReadingProgressRowsTable(attachedDatabase, alias);
+  }
+}
+
+class ReadingProgressRow extends DataClass
+    implements Insertable<ReadingProgressRow> {
+  final String url;
+
+  /// Fraction of the scrollable distance covered, in `0..1`.
+  final double ratio;
+
+  /// Absolute scroll offset in CSS pixels, used to restore the exact position
+  /// when the article's height has not changed since it was last read.
+  final double offset;
+  final DateTime startedAt;
+  final DateTime updatedAt;
+  const ReadingProgressRow({
+    required this.url,
+    required this.ratio,
+    required this.offset,
+    required this.startedAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['url'] = Variable<String>(url);
+    map['ratio'] = Variable<double>(ratio);
+    map['offset'] = Variable<double>(offset);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ReadingProgressRowsCompanion toCompanion(bool nullToAbsent) {
+    return ReadingProgressRowsCompanion(
+      url: Value(url),
+      ratio: Value(ratio),
+      offset: Value(offset),
+      startedAt: Value(startedAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ReadingProgressRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReadingProgressRow(
+      url: serializer.fromJson<String>(json['url']),
+      ratio: serializer.fromJson<double>(json['ratio']),
+      offset: serializer.fromJson<double>(json['offset']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'url': serializer.toJson<String>(url),
+      'ratio': serializer.toJson<double>(ratio),
+      'offset': serializer.toJson<double>(offset),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ReadingProgressRow copyWith({
+    String? url,
+    double? ratio,
+    double? offset,
+    DateTime? startedAt,
+    DateTime? updatedAt,
+  }) => ReadingProgressRow(
+    url: url ?? this.url,
+    ratio: ratio ?? this.ratio,
+    offset: offset ?? this.offset,
+    startedAt: startedAt ?? this.startedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ReadingProgressRow copyWithCompanion(ReadingProgressRowsCompanion data) {
+    return ReadingProgressRow(
+      url: data.url.present ? data.url.value : this.url,
+      ratio: data.ratio.present ? data.ratio.value : this.ratio,
+      offset: data.offset.present ? data.offset.value : this.offset,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingProgressRow(')
+          ..write('url: $url, ')
+          ..write('ratio: $ratio, ')
+          ..write('offset: $offset, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(url, ratio, offset, startedAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReadingProgressRow &&
+          other.url == this.url &&
+          other.ratio == this.ratio &&
+          other.offset == this.offset &&
+          other.startedAt == this.startedAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ReadingProgressRowsCompanion extends UpdateCompanion<ReadingProgressRow> {
+  final Value<String> url;
+  final Value<double> ratio;
+  final Value<double> offset;
+  final Value<DateTime> startedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ReadingProgressRowsCompanion({
+    this.url = const Value.absent(),
+    this.ratio = const Value.absent(),
+    this.offset = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ReadingProgressRowsCompanion.insert({
+    required String url,
+    this.ratio = const Value.absent(),
+    this.offset = const Value.absent(),
+    required DateTime startedAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : url = Value(url),
+       startedAt = Value(startedAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<ReadingProgressRow> custom({
+    Expression<String>? url,
+    Expression<double>? ratio,
+    Expression<double>? offset,
+    Expression<DateTime>? startedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (url != null) 'url': url,
+      if (ratio != null) 'ratio': ratio,
+      if (offset != null) 'offset': offset,
+      if (startedAt != null) 'started_at': startedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ReadingProgressRowsCompanion copyWith({
+    Value<String>? url,
+    Value<double>? ratio,
+    Value<double>? offset,
+    Value<DateTime>? startedAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return ReadingProgressRowsCompanion(
+      url: url ?? this.url,
+      ratio: ratio ?? this.ratio,
+      offset: offset ?? this.offset,
+      startedAt: startedAt ?? this.startedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (ratio.present) {
+      map['ratio'] = Variable<double>(ratio.value);
+    }
+    if (offset.present) {
+      map['offset'] = Variable<double>(offset.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReadingProgressRowsCompanion(')
+          ..write('url: $url, ')
+          ..write('ratio: $ratio, ')
+          ..write('offset: $offset, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $KvRowsTable kvRows = $KvRowsTable(this);
+  late final $CachedArticlesTable cachedArticles = $CachedArticlesTable(this);
+  late final $ReadingProgressRowsTable readingProgressRows =
+      $ReadingProgressRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [kvRows];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    kvRows,
+    cachedArticles,
+    readingProgressRows,
+  ];
 }
 
 typedef $$KvRowsTableCreateCompanionBuilder = KvRowsCompanion Function({
@@ -366,10 +1263,511 @@ typedef $$KvRowsTableProcessedTableManager =
       KvRow,
       PrefetchHooks Function()
     >;
+typedef $$CachedArticlesTableCreateCompanionBuilder =
+    CachedArticlesCompanion Function({
+      required String url,
+      required String html,
+      Value<String> title,
+      Value<String?> author,
+      Value<String?> publication,
+      Value<String?> domain,
+      Value<int> wordCount,
+      required DateTime savedAt,
+      Value<int> rowid,
+    });
+typedef $$CachedArticlesTableUpdateCompanionBuilder =
+    CachedArticlesCompanion Function({
+      Value<String> url,
+      Value<String> html,
+      Value<String> title,
+      Value<String?> author,
+      Value<String?> publication,
+      Value<String?> domain,
+      Value<int> wordCount,
+      Value<DateTime> savedAt,
+      Value<int> rowid,
+    });
+
+class $$CachedArticlesTableFilterComposer
+    extends Composer<_$AppDatabase, $CachedArticlesTable> {
+  $$CachedArticlesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get html => $composableBuilder(
+    column: $table.html,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get publication => $composableBuilder(
+    column: $table.publication,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get domain => $composableBuilder(
+    column: $table.domain,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get wordCount => $composableBuilder(
+    column: $table.wordCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get savedAt => $composableBuilder(
+    column: $table.savedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CachedArticlesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CachedArticlesTable> {
+  $$CachedArticlesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get html => $composableBuilder(
+    column: $table.html,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get publication => $composableBuilder(
+    column: $table.publication,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get domain => $composableBuilder(
+    column: $table.domain,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get wordCount => $composableBuilder(
+    column: $table.wordCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get savedAt => $composableBuilder(
+    column: $table.savedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CachedArticlesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CachedArticlesTable> {
+  $$CachedArticlesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get html =>
+      $composableBuilder(column: $table.html, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
+
+  GeneratedColumn<String> get publication => $composableBuilder(
+    column: $table.publication,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get domain =>
+      $composableBuilder(column: $table.domain, builder: (column) => column);
+
+  GeneratedColumn<int> get wordCount =>
+      $composableBuilder(column: $table.wordCount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get savedAt =>
+      $composableBuilder(column: $table.savedAt, builder: (column) => column);
+}
+
+class $$CachedArticlesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CachedArticlesTable,
+          CachedArticle,
+          $$CachedArticlesTableFilterComposer,
+          $$CachedArticlesTableOrderingComposer,
+          $$CachedArticlesTableAnnotationComposer,
+          $$CachedArticlesTableCreateCompanionBuilder,
+          $$CachedArticlesTableUpdateCompanionBuilder,
+          (
+            CachedArticle,
+            BaseReferences<_$AppDatabase, $CachedArticlesTable, CachedArticle>,
+          ),
+          CachedArticle,
+          PrefetchHooks Function()
+        > {
+  $$CachedArticlesTableTableManager(
+    _$AppDatabase db,
+    $CachedArticlesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CachedArticlesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CachedArticlesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CachedArticlesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> url = const Value.absent(),
+                Value<String> html = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> author = const Value.absent(),
+                Value<String?> publication = const Value.absent(),
+                Value<String?> domain = const Value.absent(),
+                Value<int> wordCount = const Value.absent(),
+                Value<DateTime> savedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CachedArticlesCompanion(
+                url: url,
+                html: html,
+                title: title,
+                author: author,
+                publication: publication,
+                domain: domain,
+                wordCount: wordCount,
+                savedAt: savedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String url,
+                required String html,
+                Value<String> title = const Value.absent(),
+                Value<String?> author = const Value.absent(),
+                Value<String?> publication = const Value.absent(),
+                Value<String?> domain = const Value.absent(),
+                Value<int> wordCount = const Value.absent(),
+                required DateTime savedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => CachedArticlesCompanion.insert(
+                url: url,
+                html: html,
+                title: title,
+                author: author,
+                publication: publication,
+                domain: domain,
+                wordCount: wordCount,
+                savedAt: savedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CachedArticlesTable, CachedArticle>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $CachedArticlesTable,
+                    CachedArticle
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CachedArticlesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CachedArticlesTable,
+      CachedArticle,
+      $$CachedArticlesTableFilterComposer,
+      $$CachedArticlesTableOrderingComposer,
+      $$CachedArticlesTableAnnotationComposer,
+      $$CachedArticlesTableCreateCompanionBuilder,
+      $$CachedArticlesTableUpdateCompanionBuilder,
+      (
+        CachedArticle,
+        BaseReferences<_$AppDatabase, $CachedArticlesTable, CachedArticle>,
+      ),
+      CachedArticle,
+      PrefetchHooks Function()
+    >;
+typedef $$ReadingProgressRowsTableCreateCompanionBuilder =
+    ReadingProgressRowsCompanion Function({
+      required String url,
+      Value<double> ratio,
+      Value<double> offset,
+      required DateTime startedAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$ReadingProgressRowsTableUpdateCompanionBuilder =
+    ReadingProgressRowsCompanion Function({
+      Value<String> url,
+      Value<double> ratio,
+      Value<double> offset,
+      Value<DateTime> startedAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$ReadingProgressRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReadingProgressRowsTable> {
+  $$ReadingProgressRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get ratio => $composableBuilder(
+    column: $table.ratio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReadingProgressRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReadingProgressRowsTable> {
+  $$ReadingProgressRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get ratio => $composableBuilder(
+    column: $table.ratio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get offset => $composableBuilder(
+    column: $table.offset,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReadingProgressRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReadingProgressRowsTable> {
+  $$ReadingProgressRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<double> get ratio =>
+      $composableBuilder(column: $table.ratio, builder: (column) => column);
+
+  GeneratedColumn<double> get offset =>
+      $composableBuilder(column: $table.offset, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ReadingProgressRowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReadingProgressRowsTable,
+          ReadingProgressRow,
+          $$ReadingProgressRowsTableFilterComposer,
+          $$ReadingProgressRowsTableOrderingComposer,
+          $$ReadingProgressRowsTableAnnotationComposer,
+          $$ReadingProgressRowsTableCreateCompanionBuilder,
+          $$ReadingProgressRowsTableUpdateCompanionBuilder,
+          (
+            ReadingProgressRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ReadingProgressRowsTable,
+              ReadingProgressRow
+            >,
+          ),
+          ReadingProgressRow,
+          PrefetchHooks Function()
+        > {
+  $$ReadingProgressRowsTableTableManager(
+    _$AppDatabase db,
+    $ReadingProgressRowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReadingProgressRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReadingProgressRowsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ReadingProgressRowsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> url = const Value.absent(),
+                Value<double> ratio = const Value.absent(),
+                Value<double> offset = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ReadingProgressRowsCompanion(
+                url: url,
+                ratio: ratio,
+                offset: offset,
+                startedAt: startedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String url,
+                Value<double> ratio = const Value.absent(),
+                Value<double> offset = const Value.absent(),
+                required DateTime startedAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ReadingProgressRowsCompanion.insert(
+                url: url,
+                ratio: ratio,
+                offset: offset,
+                startedAt: startedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReadingProgressRowsTable, ReadingProgressRow>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ReadingProgressRowsTable,
+                    ReadingProgressRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReadingProgressRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReadingProgressRowsTable,
+      ReadingProgressRow,
+      $$ReadingProgressRowsTableFilterComposer,
+      $$ReadingProgressRowsTableOrderingComposer,
+      $$ReadingProgressRowsTableAnnotationComposer,
+      $$ReadingProgressRowsTableCreateCompanionBuilder,
+      $$ReadingProgressRowsTableUpdateCompanionBuilder,
+      (
+        ReadingProgressRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ReadingProgressRowsTable,
+          ReadingProgressRow
+        >,
+      ),
+      ReadingProgressRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$KvRowsTableTableManager get kvRows =>
       $$KvRowsTableTableManager(_db, _db.kvRows);
+  $$CachedArticlesTableTableManager get cachedArticles =>
+      $$CachedArticlesTableTableManager(_db, _db.cachedArticles);
+  $$ReadingProgressRowsTableTableManager get readingProgressRows =>
+      $$ReadingProgressRowsTableTableManager(_db, _db.readingProgressRows);
 }

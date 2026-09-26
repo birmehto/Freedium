@@ -66,23 +66,36 @@ class ArticleResolver {
   }
 
   /// The next mirror to try after [_lastSourceId] failed, or `null` when
-  /// fallback is disabled or there is nothing left to try.
-  String? nextFallback() {
+  /// fallback is disabled, there is nothing left to try, or every other mirror
+  /// has already failed for this article.
+  ///
+  /// [attempted] holds the ids already tried for the article being loaded.
+  /// Without it a two-mirror catalog ping-pongs between the same pair on
+  /// every failure, so the reader never reaches the offline copy at all.
+  String? nextFallback({Set<String> attempted = const {}}) {
     if (!autoFallback) return null;
 
     final original = ArticleUrl.canonicalize(_lastOriginalUrl ?? '');
     if (original.isEmpty) return null;
 
-    var healthy = candidates.where((source) => source.available).toList();
+    var healthy = candidates
+        .where((source) => source.available && !attempted.contains(source.id))
+        .toList();
 
-    // Everything is unhealthy: give the catalog a second chance rather than
-    // leaving the reader with no source at all.
+    // Everything left is unhealthy: give the catalog a second chance rather
+    // than leaving the reader with no source at all. Mirrors already tried are
+    // still skipped, so a full outage walks the catalog once rather than
+    // looping over the first two entries.
     if (healthy.isEmpty) {
       for (final source in _sources) {
         source.resetHealth();
       }
-      healthy = candidates;
+      healthy = candidates
+          .where((source) => !attempted.contains(source.id))
+          .toList();
     }
+
+    if (healthy.isEmpty) return null;
 
     final currentId = _lastSourceId;
     final next = healthy.firstWhere(

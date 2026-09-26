@@ -27,7 +27,9 @@ lib/
 │   ├── routes/                     AppRoutes, AppPages (routes + bindings)
 │   ├── services/                   StorageService facade, ThemeService,
 │   │                               ShareIntentService, ClipboardService
-│   ├── storage/                    KeyValueStore, PreferencesStore, LibraryStore
+│   ├── storage/                    KeyValueStore, PreferencesStore, LibraryStore,
+│   │                               ArticleCacheStore, ReadingProgressStore,
+│   │                               AppDatabase (Drift)
 │   ├── utils/                      AppLog
 │   └── widgets/                    Shared App* widgets (AppButton, AppEmpty, …)
 └── features/
@@ -59,12 +61,17 @@ Bare link / shared URL
    ↓ ReaderTheme.earlyStyleInjector injects reader CSS pre-paint
    ↓ onPageFinished
        ├─ ReaderTheme.extractMetaJs → ArticleMeta (title/author/publication/…)
-       ├─ restore scroll position   LibraryStore.getReadingProgress
+       ├─ body cached               ArticleCacheStore.saveWithMeta (offline copy)
+       ├─ restore scroll position   ReadingProgressStore.progressFor
        ├─ layout metrics            content height for % progress
        └─ metadata cached          LibraryStore.cacheMeta
+   ↓ onScrollChanged (debounced 400 ms)
+       └─ position stored           ReadingProgressStore.save
+   ↓ every page failure, mirrors exhausted
+       └─ saved copy shown          ArticleCacheStore.read → loadData
 ```
 
-Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.getCss`, which is JSON-encoded before injection so reader CSS can never break out of the script string. Article HTML is never stored or held in reactive state; the WebView always loads over the network and only lightweight metadata is cached in `LibraryStore`.
+Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.getCss`, which is JSON-encoded before injection so reader CSS can never break out of the script string. Rendered article bodies are never held in reactive state: they are written straight to `ArticleCacheStore` and read back one row at a time, so an idle app keeps nothing in memory. A fetched page and a saved copy are both handed to the WebView through `loadData`.
 
 ## Mirror system
 
@@ -75,16 +82,26 @@ Reader preferences from `PreferencesStore.readerSettings` drive `ReaderTheme.get
 
 ## Storage
 
-Two focused stores behind a thin `KeyValueStore` interface:
+Two focused stores behind a thin `KeyValueStore` interface, plus two tables
+served straight from Drift:
 
 ```text
 StorageService (owner, GetxService)
  ├── preferences  → PreferencesStore   light device settings
  │                    theme mode, reader settings,
  │                    preferred mirror, auto fallback
- └── library      → LibraryStore       content data
-                      favorites, cached article metadata
+ ├── library      → LibraryStore       content data
+ │                    favorites, cached article metadata
+ ├── cache        → ArticleCacheStore  offline article bodies (Drift table)
+ │                    capped at 24 MB / 2 MB per article, oldest evicted
+ └── progress     → ReadingProgressStore reading positions (Drift table)
+                      scroll ratio + offset per article URL
 ```
+
+The two Drift-backed stores are separate tables on purpose: `DriftKeyValueStore`
+loads every value into memory at startup, which is fine for settings and
+favorites and wrong for article bodies and a growing reading history. Schema
+version 2 adds both tables with an additive `m.createAll()` migration.
 
 `DriftKeyValueStore` is the production backend (a single JSON `kv` table in a SQLite database via Drift, kept in sync with an in-memory cache for synchronous reads); `MemoryKeyValueStore` is used in tests. Writes are serialized through an internal queue so overlapping updates cannot interleave, and `StorageService.withStore` injects an in-memory store for tests. `LibraryStore.favorites` is the single reactive list of record — no duplicate copy is kept in a controller. Storage keys are stable (`favorites_list`, `cached_meta`) so existing installs keep their data.
 
@@ -96,7 +113,7 @@ StorageService (owner, GetxService)
 ## Testing
 
 - Unit tests for models, URL parsing, resolver, and stores (`test/features/...`, `test/core/...`).
-- Controller/widget tests use mock services (`MockStorageService` overrides the facade getters).
+- Stores are tested against a real in-memory Drift database (`AppDatabase.forTesting`) rather than mocks, so queries, migrations, and eviction behave as they do on a device. Page tests seed stored data before mounting, because a widget test body runs on a fake clock while the database is served on the real event loop.
 - Run checks locally:
 
 ```bash

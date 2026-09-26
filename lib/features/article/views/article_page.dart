@@ -34,8 +34,15 @@ class ArticlePage extends GetView<ArticleController> {
           // Deliberately not reactive: the WebView is created once for the
           // initial URL, and later navigations are driven by the controller.
           // Rebuilding it here would reload the article on every page load.
-          ArticleWebView(url: controller.currentUrl.value),
+          //
+          // Skipped entirely when there is no URL to load: an invalid article
+          // URL is reported as an error message, and handing the empty string
+          // to the WebView would replace that message with its own error (or a
+          // loading timeout) a moment later.
+          if (controller.currentUrl.value.isNotEmpty)
+            ArticleWebView(url: controller.currentUrl.value),
           const _LoadingIndicator(),
+          const _OfflineBanner(),
           const ArticleErrorView(),
           const _InitialLoader(),
         ],
@@ -124,6 +131,70 @@ class _InitialLoader extends GetView<ArticleController> {
       return controller.isInitialLoad.value && controller.errorMessage.isEmpty
           ? const Positioned.fill(child: AppLoading())
           : const SizedBox.shrink();
+    });
+  }
+}
+
+/// Shown while the article on screen is the saved copy rather than a live
+/// mirror response.
+///
+/// A reader who cannot get a connection still expects to know whether they are
+/// looking at yesterday's copy, so this is stated rather than left to be
+/// guessed from the content.
+class _OfflineBanner extends GetView<ArticleController> {
+  const _OfflineBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final offline = controller.isOffline.value;
+      if (!offline) return const SizedBox.shrink();
+
+      return Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Material(
+            color: context.colors.secondaryContainer,
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.xs,
+                AppSpacing.xs,
+                AppSpacing.xs,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    M3EIcons.cloud_off_rounded,
+                    size: 18,
+                    color: context.colors.onSecondaryContainer,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      'Offline copy',
+                      style: context.text.labelLarge?.copyWith(
+                        color: context.colors.onSecondaryContainer,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  M3EIconButton(
+                    size: M3EIconButtonSize.xs,
+                    icon: const Icon(M3EIcons.refresh_rounded),
+                    tooltip: 'Try loading it again',
+                    onPressed: controller.requestRefresh,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
     });
   }
 }

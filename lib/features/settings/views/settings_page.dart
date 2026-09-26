@@ -110,6 +110,21 @@ class SettingsPage extends GetView<SettingsController> {
             ),
           ),
 
+          const AppSectionHeader(title: 'Storage'),
+          M3ECard(
+            variant: M3ECardVariant.filled,
+            child: Obx(
+              () => AppSettingsTile(
+                title: 'Offline Articles',
+                supportingText: controller.offlineSummary,
+                icon: M3EIcons.offline_pin_rounded,
+
+                onTap: () => showOfflineCacheDialog(context),
+                trailing: const Icon(M3EIcons.chevron_right_rounded),
+              ),
+            ),
+          ),
+
           const AppSectionHeader(title: 'About'),
           M3ECard(
             variant: M3ECardVariant.filled,

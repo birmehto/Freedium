@@ -25,13 +25,15 @@ Everything below is saved **only on your device** in the app's local SQLite data
 |------|-----------------|
 | Favorite articles (title, URL, author, domain) | So your favorites list is available without refetching |
 | Cached article metadata (title, author, publication, word count, reading time) | So a favorited article renders instantly when you reopen it |
+| Article text of the articles you read | So you can read them again without a connection (see below) |
+| How far you got through each article, and when | So the app can offer to continue where you stopped |
 | Theme, reader theme, font family, and font size preferences | To remember your reading setup |
 | Preferred mirror source and auto-fallback flag | So article loading behaves the way you configured it |
 | App version | Displayed in the Settings screen |
 
-Article text and HTML are **not** stored — the reader loads each article over the network and discards it when you leave.
+Saved article text never leaves your device. The offline copies are capped at 24 MB in total and 2 MB per article, and the oldest ones are dropped automatically as you read more — your favorites are never dropped. You can clear all saved articles at any time in **Settings → Offline Articles**, which leaves your favorites and reading positions untouched.
 
-You can clear all of this anytime by removing favorites in the app, uninstalling it, or clearing the app data. Android cloud backup and device transfer are disabled, so this data does not leave the device.
+You can clear all of this anytime by removing favorites in the app, clearing offline articles in Settings, uninstalling, or clearing the app data. Android cloud backup and device transfer are disabled, so this data does not leave the device.
 
 ## Data sent to third parties
 

@@ -62,6 +62,13 @@ void main() {
       expect(store.isFavorite('https://medium.com/a'), isFalse);
     });
 
+    test('a URL is never saved twice because of whitespace', () async {
+      await store.addToFavorites(article('https://medium.com/a'));
+      await store.addToFavorites(article('  https://medium.com/a  '));
+
+      expect(store.favorites, hasLength(1));
+    });
+
     test('removing an unknown URL is a no-op', () async {
       await store.addToFavorites(article('https://medium.com/a'));
       await store.removeFromFavorites('https://medium.com/other');
@@ -139,6 +146,54 @@ void main() {
         LibraryStore(backing).metaFor('https://medium.com/a')?.title,
         'Title',
       );
+    });
+
+    test('removeMeta forgets one entry and keeps the rest', () async {
+      await store.cacheMeta('https://medium.com/a', meta('First'));
+      await store.cacheMeta('https://medium.com/b', meta('Second'));
+
+      await store.removeMeta('https://medium.com/a');
+
+      expect(store.metaFor('https://medium.com/a'), isNull);
+      expect(store.metaFor('https://medium.com/b')?.title, 'Second');
+    });
+
+    test('removing metadata that was never cached changes nothing', () async {
+      await store.cacheMeta('https://medium.com/a', meta('First'));
+
+      await store.removeMeta('https://medium.com/other');
+
+      expect(store.metaFor('https://medium.com/a')?.title, 'First');
+    });
+
+    test('the metadata map cannot grow without bound', () async {
+      // One row holds the whole map, so every article opened rewrites it. Past
+      // the cap the least recently written entries are dropped instead.
+      for (var i = 0; i <= LibraryStore.maxMetaEntries + 10; i++) {
+        await store.cacheMeta('https://medium.com/$i', meta('Title $i'));
+      }
+
+      final stored = backing.read(LibraryStore.metaKey) as Map;
+      expect(stored, hasLength(LibraryStore.maxMetaEntries));
+      expect(store.metaFor('https://medium.com/0'), isNull);
+      expect(
+        store
+            .metaFor('https://medium.com/${LibraryStore.maxMetaEntries + 10}')
+            ?.title,
+        'Title ${LibraryStore.maxMetaEntries + 10}',
+      );
+    });
+
+    test('a re-read article is not the next one evicted', () async {
+      for (var i = 0; i < LibraryStore.maxMetaEntries; i++) {
+        await store.cacheMeta('https://medium.com/$i', meta('Old $i'));
+      }
+
+      await store.cacheMeta('https://medium.com/0', meta('Fresh again'));
+      await store.cacheMeta('https://medium.com/extra', meta('Extra'));
+
+      expect(store.metaFor('https://medium.com/0')?.title, 'Fresh again');
+      expect(store.metaFor('https://medium.com/1'), isNull);
     });
   });
 }

@@ -754,6 +754,118 @@ $hostModeSyncJs
 ''';
 
   // ---------------------------------------------------------------------------
+  // Offline capture
+  // ---------------------------------------------------------------------------
+
+  /// Clones the article's markup for the offline cache.
+  ///
+  /// Scripts, styles and the reader's own injected stylesheet are removed: none
+  /// of them are content, the reader re-applies its own styling when the cached
+  /// copy is rendered, and a page's own stylesheet is what makes its raw
+  /// markup unreadable in the first place. Images are kept so an article that
+  /// is re-read with a connection still shows its figures; without one they
+  /// simply fail to load.
+  ///
+  /// Returns a JSON string (not an object) so the result survives
+  /// `evaluateJavascript`, which stringifies its return value.
+  static const String extractArticleHtmlJs = '''
+(function() {
+  var root =
+    document.querySelector('article') ||
+    document.querySelector('main') ||
+    document.body;
+
+  if (!root) return JSON.stringify({ html: '', found: false });
+
+  var clone = root.cloneNode(true);
+
+  var unwanted = clone.querySelectorAll(
+    'script, style, noscript, link, iframe[src*="javascript"], ' +
+      '#custom-reader-style, #freedium-early-flash-prevention'
+  );
+
+  for (var i = 0; i < unwanted.length; i++) {
+    if (unwanted[i].parentNode) unwanted[i].parentNode.removeChild(unwanted[i]);
+  }
+
+  return JSON.stringify({ html: clone.outerHTML, found: true });
+})();
+''';
+
+  // ---------------------------------------------------------------------------
+  // Scroll position
+  // ---------------------------------------------------------------------------
+
+  /// Reports how far the document is scrolled.
+  ///
+  /// The scroll offset alone cannot say how far *through* an article that is —
+  /// a 400-word post and a 4000-word post report the same pixels — so the
+  /// scrollable distance is measured here too and returned alongside it.
+  ///
+  /// An article shorter than the viewport is reported as fully read, which is
+  /// what it is: there is nothing left to scroll to.
+  static const String scrollMetricsJs = '''
+(function() {
+  var doc = document.documentElement;
+  var body = document.body;
+
+  var height = Math.max(
+    doc ? doc.scrollHeight : 0,
+    body ? body.scrollHeight : 0
+  );
+
+  var view = window.innerHeight || doc.clientHeight || 0;
+  var scrollable = Math.max(0, height - view);
+  var y = window.pageYOffset || (doc ? doc.scrollTop : 0) || 0;
+
+  return JSON.stringify({
+    y: y,
+    scrollable: scrollable,
+    ratio: scrollable > 0 ? Math.min(1, Math.max(0, y / scrollable)) : 1
+  });
+})();
+''';
+
+  /// Scrolls back to a stored position.
+  ///
+  /// The pixel [offset] is preferred because it is exact, but only used when
+  /// the document is still tall enough to contain it; otherwise a font-size or
+  /// theme change would land the reader past the end of a now-shorter article.
+  /// [ratio] is the fallback for exactly that case.
+  ///
+  /// Both values are JSON-encoded rather than interpolated, so a number that
+  /// somehow arrived as something else cannot break out of the script.
+  static String restoreScrollScript({
+    required double offset,
+    required double ratio,
+  }) {
+    final encodedOffset = jsonEncode(offset.clamp(0.0, double.maxFinite));
+    final encodedRatio = jsonEncode(ratio.clamp(0.0, 1.0));
+
+    return '''
+(function() {
+  try {
+    var doc = document.documentElement;
+    var body = document.body;
+
+    var height = Math.max(
+      doc ? doc.scrollHeight : 0,
+      body ? body.scrollHeight : 0
+    );
+
+    var scrollable = Math.max(0, height - (window.innerHeight || 0));
+    var offset = $encodedOffset;
+    var target = offset > 0 && offset <= scrollable
+      ? offset
+      : scrollable * $encodedRatio;
+
+    window.scrollTo(0, Math.max(0, Math.min(target, scrollable)));
+  } catch (e) {}
+})();
+''';
+  }
+
+  // ---------------------------------------------------------------------------
   // CSS
   // ---------------------------------------------------------------------------
 

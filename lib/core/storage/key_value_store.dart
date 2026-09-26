@@ -66,8 +66,15 @@ class DriftKeyValueStore implements KeyValueStore {
   /// Waits for every queued write to reach SQLite.
   Future<void> flush() => _writeQueue;
 
-  /// Closes the underlying database.
-  Future<void> close() => _database.close();
+  /// Flushes pending writes, then closes the underlying database.
+  ///
+  /// Draining the queue first is what keeps a write that was still in flight —
+  /// a font size the reader had just changed, say — from being dropped by the
+  /// close underneath it.
+  Future<void> close() async {
+    await flush();
+    await _database.close();
+  }
 
   @override
   dynamic read(String key) => _cache[key];

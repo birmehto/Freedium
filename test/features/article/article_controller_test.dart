@@ -1,6 +1,7 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/constants/app_constants.dart';
+import 'package:freedium/core/network/article_resolver.dart';
 import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/features/article/controllers/article_controller.dart';
 import 'package:get/get.dart';
@@ -15,6 +16,7 @@ import '../../helpers/test_env.dart';
 void main() {
   late ClipboardService clipboard;
   late ArticleController controller;
+  late ArticleResolver resolver;
 
   const url = 'https://medium.com/@someone/a-story-abc123';
   const mirrorUrl = 'https://freedium-mirror.cfd/proxied-story';
@@ -22,6 +24,7 @@ void main() {
   setUp(() {
     Get.testMode = true;
     final services = registerServices();
+    resolver = services.resolver;
     clipboard = ClipboardService()..onInit();
 
     // Deliberately not calling onInit(): it resolves the article from the Get
@@ -39,6 +42,13 @@ void main() {
     controller.onClose();
     Get.reset();
   });
+
+  /// The fallback title the reader shows while no page has loaded yet.
+  String titleFromUrl(ArticleController target, String source) {
+    target.articleTitle.value = '';
+    target.debugTitleFromUrl(source);
+    return target.articleTitle.value;
+  }
 
   group('initial state', () {
     test('starts loading, with no progress and no error', () {
@@ -112,12 +122,22 @@ void main() {
       expect(controller.currentUrl.value, mirrorUrl);
     });
 
-    test('clears a previous error', () {
-      controller.onPageError('boom');
+    test('clears a previous error', () async {
+      await controller.onPageError('boom');
       expect(controller.errorMessage.value, isNotEmpty);
 
       controller.onPageStart(mirrorUrl);
       expect(controller.errorMessage.value, isEmpty);
+    });
+
+    test('resets a full progress bar from the previous load', () {
+      controller
+        ..onPageLoaded()
+        ..onPageStart(mirrorUrl);
+
+      // A determinate bar left at 100% reads as "finished" for the whole of the
+      // next load.
+      expect(controller.loadingProgress.value, 0);
     });
 
     test('accepts a null URL without clobbering the current one', () {
@@ -219,11 +239,86 @@ void main() {
   });
 
   group('onPageError', () {
-    test('clears both loader flags', () {
-      controller.onPageError('Something went wrong.');
+    test('clears both loader flags', () async {
+      await controller.onPageError('Something went wrong.');
 
       expect(controller.isLoading.value, isFalse);
       expect(controller.isInitialLoad.value, isFalse);
+    });
+
+    test(
+      'one failure is handled once, however many times it is reported',
+      () async {
+        // A main-frame request can report both an HTTP error and a transport
+        // error. Handling the second one as well retired a second mirror — one
+        // that had never served the article — and issued a second load that
+        // cancelled the first.
+        await controller.onPageError('Connection failed.');
+        final failing = controller.attemptedMirrors.toList();
+
+        await controller.onPageError('Connection failed.');
+        await controller.onPageError('Connection failed.');
+
+        expect(controller.attemptedMirrors.toList(), failing);
+      },
+    );
+
+    test('a later navigation may fail again', () async {
+      await controller.onPageError('Connection failed.');
+      final failing = controller.attemptedMirrors.length;
+
+      controller
+        ..onPageStart(mirrorUrl)
+        ..originalUrl.value = url;
+      await controller.onPageError('Connection failed.');
+
+      expect(controller.attemptedMirrors.length, greaterThanOrEqualTo(failing));
+    });
+
+    test(
+      'a mirror that failed is not asked again for the same article',
+      () async {
+        await controller.onPageError('Connection failed.');
+
+        // The reader walks past mirrors it has already tried, but without a
+        // fallback left it stops and surfaces the error.
+        expect(controller.errorMessage.value, isNotEmpty);
+      },
+    );
+  });
+
+  group('mirror health', () {
+    test('a saved copy is not a sign that the mirror worked', () {
+      final healthy = resolver.sources.first;
+      healthy.recordSuccess();
+
+      controller.isOffline.value = true;
+      controller.onPageLoaded();
+
+      // Crediting the mirror for a document that came from disk resets the
+      // failure count of the mirror that just failed, so the next article picks
+      // it again and pays another timeout.
+      expect(healthy.consecutiveFailures, 0);
+    });
+
+    test('a document served by a mirror credits that mirror', () {
+      final source = resolver.sources.first;
+      source.recordFailure();
+
+      controller.onPageStart(mirrorUrl);
+      resolver.resolve(url);
+      controller.onPageLoaded();
+
+      expect(source.consecutiveFailures, 0);
+    });
+  });
+
+  group('article title', () {
+    test('a URL with a trailing slash still yields a title', () {
+      controller.articleTitle.value = '';
+
+      expect(titleFromUrl(controller, '$url/'), isNotEmpty);
+      expect(titleFromUrl(controller, 'https://medium.com/'), 'Article');
     });
   });
 

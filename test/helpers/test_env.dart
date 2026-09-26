@@ -1,8 +1,11 @@
+import 'package:drift/drift.dart' show driftRuntimeOptions;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:freedium/core/network/article_resolver.dart';
 import 'package:freedium/core/services/share_intent_service.dart';
 import 'package:freedium/core/services/storage_service.dart';
 import 'package:freedium/core/services/theme_service.dart';
+import 'package:freedium/core/storage/app_database.dart';
 import 'package:freedium/core/storage/key_value_store.dart';
 import 'package:freedium/features/settings/models/reader_settings.dart';
 import 'package:get/get.dart';
@@ -12,14 +15,23 @@ import 'package:material_ui/material_ui.dart' as ui;
 /// Builds a [StorageService] backed by an in-memory key-value store.
 ///
 /// Real store logic is exercised instead of mocked out, so persistence bugs
-/// cannot hide behind a fake.
+/// cannot hide behind a fake. The article cache and reading progress live in
+/// Drift tables rather than the key-value store, so they get a real (in-memory)
+/// database instead.
 StorageService createTestStorage({Map<String, dynamic> seed = const {}}) {
+  // Every test builds its own database, so drift's "this database class was
+  // opened more than once" warning is expected here and would only be noise.
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
   final store = MemoryKeyValueStore();
   for (final entry in seed.entries) {
     store.write(entry.key, entry.value);
   }
 
-  return StorageService.withStore(store);
+  return StorageService.withStore(
+    store,
+    database: AppDatabase.forTesting(NativeDatabase.memory()),
+  );
 }
 
 /// Registers the app-wide services a feature binding expects.

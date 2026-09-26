@@ -33,6 +33,9 @@ class ArticleMeta {
     'wordCount': wordCount,
   };
 
-  /// Estimated reading time in whole minutes (≈200 wpm).
-  int get readingTimeMinutes => (wordCount / 200).ceil();
+  /// Words an average reader gets through in a minute, used for the estimate.
+  static const int kWordsPerMinute = 200;
+
+  /// Estimated reading time in whole minutes.
+  int get readingTimeMinutes => (wordCount / kWordsPerMinute).ceil();
 }

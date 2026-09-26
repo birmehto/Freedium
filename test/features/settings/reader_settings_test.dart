@@ -32,6 +32,31 @@ void main() {
       expect(s.fontFamily, ReaderSettings.kDefaultFontFamily);
     });
 
+    test('a stored font size outside the supported range is clamped', () {
+      // Out-of-range data used to reach the slider and the reader's stylesheet
+      // as-is, pinning the thumb at one end.
+      expect(
+        ReaderSettings.fromJson(const {'fontSize': 900.0}).fontSize,
+        ReaderSettings.kMaxFontSize,
+      );
+      expect(
+        ReaderSettings.fromJson(const {'fontSize': 1.0}).fontSize,
+        ReaderSettings.kMinFontSize,
+      );
+    });
+
+    test('values of the wrong type fall back to the defaults', () {
+      final s = ReaderSettings.fromJson(const {
+        'fontSize': 'huge',
+        'fontFamily': 42,
+        'themeMode': 7,
+      });
+
+      expect(s.fontSize, ReaderSettings.kDefaultFontSize);
+      expect(s.fontFamily, ReaderSettings.kDefaultFontFamily);
+      expect(s.themeMode, ReaderThemeMode.system);
+    });
+
     test('isSystemFont identifies the default family', () {
       const s = ReaderSettings();
       expect(s.isSystemFont, isTrue);

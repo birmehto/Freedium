@@ -24,7 +24,9 @@
 
 - **🛡️ Unlock any Medium story** — paste a link or share one from any app and read the whole article.
 - **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
-- **🔒 On-device library** — favorites, settings, and article metadata are stored locally; nothing is uploaded.
+- **📖 Continue reading** — every article remembers how far you got, so the library offers the ones you left unfinished.
+- **📥 Offline reading** — articles are saved on the device as you read them and open again without a connection.
+- **🔒 On-device library** — favorites, reading positions, offline copies, settings, and article metadata are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
 - **🔐 Truly private** — no account, no ads, no analytics. Everything stays on your device.
@@ -77,7 +79,7 @@ flutter run
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 111 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
+| Quality | `flutter_lints`, 231 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
 
 ---
 
@@ -86,7 +88,7 @@ flutter run
 Planned items are clearly marked below — nothing here is claimed to ship yet.
 
 ### ✅ Current
-Freedium today ships: unlock & read Medium articles, favorites, reader customization, automatic mirror fallback, and app themes.
+Freedium today ships: unlock & read Medium articles, favorites, offline reading, reading progress, reader customization, automatic mirror fallback, and app themes.
 
 ### 🚧 Next
 - **Bookmarks** — additionally bookmark articles in the Library *(planned, not yet implemented)*.

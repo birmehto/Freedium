@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/routes/app_routes.dart';
 import 'package:freedium/core/services/storage_service.dart';
+import 'package:freedium/features/article/models/article_meta.dart';
 import 'package:freedium/features/favorites/controllers/favorites_controller.dart';
 import 'package:freedium/features/favorites/models/favorite_article.dart';
 import 'package:freedium/features/favorites/views/favorites_page.dart';
@@ -153,6 +154,48 @@ void main() {
     });
 
     test(
+      'removeFavorite also drops what was stored about the article',
+      () async {
+        const url = 'https://medium.com/hello';
+        await storage.library.addToFavorites(article(url));
+        await storage.library.cacheMeta(
+          url,
+          const ArticleMeta(title: 'Hello', wordCount: 400),
+        );
+        await storage.cache.save(url: url, html: '<article>hello</article>');
+        await storage.progress.save(url, ratio: 0.5);
+        await controller.refreshContinueReading();
+        expect(controller.continueReading, hasLength(1));
+
+        await controller.removeFavorite(url);
+
+        expect(controller.favorites, isEmpty);
+        expect(storage.library.metaFor(url), isNull);
+        expect(await storage.cache.contains(url), isFalse);
+        expect(await storage.progress.progressFor(url), isNull);
+        expect(controller.continueReading, isEmpty);
+      },
+    );
+
+    test('two removals of the same article do not race', () async {
+      const url = 'https://medium.com/hello';
+      await storage.library.addToFavorites(article(url));
+
+      await Future.wait([
+        controller.removeFavorite(url),
+        controller.removeFavorite(url),
+      ]);
+
+      expect(controller.favorites, isEmpty);
+    });
+
+    test('a whitespace-only query is not a search', () {
+      controller.onSearchChanged('   ');
+
+      expect(controller.trimmedQuery, isEmpty);
+    });
+
+    test(
       'removeFavorite leaves the list unchanged for an unknown URL',
       () async {
         await storage.library.addToFavorites(
@@ -189,6 +232,67 @@ void main() {
       controller.onSearchChanged('dev.to');
       expect(controller.filteredFavorites.single.domain, 'dev.to');
     });
+
+    test('continue reading is empty when nothing has been read', () async {
+      expect(controller.continueReading, isEmpty);
+    });
+
+    test('continue reading pairs positions with article titles', () async {
+      const url = 'https://medium.com/unfinished';
+      await storage.library.cacheMeta(
+        url,
+        const ArticleMeta(
+          title: 'Halfway Through',
+          author: 'Ada',
+          wordCount: 900,
+        ),
+      );
+      await storage.progress.save(url, ratio: 0.5);
+
+      await controller.refreshContinueReading();
+
+      final item = controller.continueReading.single;
+      expect(item.url, url);
+      expect(item.title, 'Halfway Through');
+      expect(item.author, 'Ada');
+      expect(item.domain, 'medium.com');
+      expect(item.percent, 50);
+    });
+
+    test('continue reading falls back to a stand-in title', () async {
+      await storage.progress.save('https://medium.com/untitled', ratio: 0.3);
+
+      await controller.refreshContinueReading();
+
+      final item = controller.continueReading.single;
+      expect(item.title, isEmpty);
+      expect(item.displayTitle, 'Untitled article');
+    });
+
+    test('continue reading leaves out finished articles', () async {
+      await storage.progress.save('https://medium.com/done', ratio: 1.0);
+      await storage.progress.save('https://medium.com/open', ratio: 0.4);
+
+      await controller.refreshContinueReading();
+
+      expect(controller.continueReading.map((item) => item.url), [
+        'https://medium.com/open',
+      ]);
+    });
+
+    test(
+      'refreshContinueReading drops articles that have been finished',
+      () async {
+        await storage.progress.save('https://medium.com/done', ratio: 0.4);
+        await controller.refreshContinueReading();
+        expect(controller.continueReading, hasLength(1));
+
+        await storage.progress.save('https://medium.com/done', ratio: 1.0);
+        await controller.refreshContinueReading();
+
+        expect(controller.continueReading, isEmpty);
+      },
+    );
 
     test('an empty query returns everything', () async {
       await storage.library.addToFavorites(article('https://medium.com/a'));
@@ -275,6 +379,123 @@ void main() {
 
       expect(find.text('article stub'), findsOneWidget);
       expect(Get.currentRoute, AppRoutes.article);
+    });
+
+    /// Shows the library page and guarantees it is unmounted afterwards.
+    ///
+    /// Unmounting matters between these tests: a swipe leaves a spring
+    /// animation running, and an app left mounted rebuilds on the next test's
+    /// frame, after `Get.reset` has already taken its controller away.
+    Future<void> mountPage(WidgetTester tester) async {
+      Get.put<FavoritesController>(FavoritesController(storage));
+      await tester.pumpWidget(buildTestApp());
+      await tester.pumpAndSettle();
+
+      addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+    }
+
+    /// Swipes a tile far enough to reveal its delete button, then taps it.
+    ///
+    /// The swipe is left to settle frame by frame: a spring animation pumped to
+    /// completion by `pumpAndSettle` can keep scheduling frames indefinitely
+    /// here, and the button is only laid out once the card has snapped open.
+    Future<void> tapDeleteAction(WidgetTester tester, String title) async {
+      await tester.drag(find.text(title), const Offset(-600, 0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byIcon(M3EIcons.delete_rounded));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('asks before removing an article', (tester) async {
+      const url = 'https://medium.com/confirm';
+      await storage.library.addToFavorites(article(url, title: 'Confirm Me'));
+
+      await mountPage(tester);
+      await tapDeleteAction(tester, 'Confirm Me');
+
+      expect(find.text('Remove from library?'), findsOneWidget);
+      expect(
+        find.text('"Confirm Me" will be removed from your library.'),
+        findsOneWidget,
+      );
+      expect(storage.library.isFavorite(url), isTrue);
+    });
+
+    testWidgets('keeping the article leaves it in the library', (tester) async {
+      const url = 'https://medium.com/keep-it';
+      await storage.library.addToFavorites(article(url, title: 'Keep It'));
+
+      await mountPage(tester);
+      await tapDeleteAction(tester, 'Keep It');
+      await tester.tap(find.text('Keep'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove from library?'), findsNothing);
+      expect(storage.library.isFavorite(url), isTrue);
+      expect(find.text('Keep It'), findsOneWidget);
+    });
+
+    testWidgets('confirming removes the article from the library', (
+      tester,
+    ) async {
+      const url = 'https://medium.com/remove-it';
+      await storage.library.addToFavorites(article(url, title: 'Remove It'));
+
+      await mountPage(tester);
+      await tapDeleteAction(tester, 'Remove It');
+      await tester.tap(find.text('Remove'));
+      // Bounded pumping rather than `pumpAndSettle`: the dialog is gone but the
+      // swipe animation underneath has already been told the row is leaving.
+      await tester.pump();
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(find.text('Remove from library?'), findsNothing);
+      expect(find.text('Remove It'), findsNothing);
+      expect(controller.favorites, isEmpty);
+    });
+
+    testWidgets('dismissing the dialog by tapping outside keeps the article', (
+      tester,
+    ) async {
+      const url = 'https://medium.com/barrier';
+      await storage.library.addToFavorites(article(url, title: 'Behind Glass'));
+
+      await mountPage(tester);
+      await tapDeleteAction(tester, 'Behind Glass');
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      expect(storage.library.isFavorite(url), isTrue);
+      expect(find.text('Behind Glass'), findsOneWidget);
+    });
+
+    testWidgets('the list scrolls instead of overflowing', (tester) async {
+      for (var i = 0; i < 12; i++) {
+        await storage.library.addToFavorites(
+          article('https://medium.com/post-$i', title: 'Post $i'),
+        );
+      }
+
+      await mountPage(tester);
+
+      // Twelve tiles do not fit, so the newest is on screen and the oldest is
+      // only reachable by scrolling — a fixed column would have overflowed
+      // instead and made the rest of the library unreachable.
+      expect(tester.takeException(), isNull);
+      expect(find.text('Post 11'), findsOneWidget);
+      expect(find.text('Post 0'), findsNothing);
+
+      await tester.drag(
+        find.text('Post 11'),
+        const Offset(0, -800),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Post 0'), findsOneWidget);
     });
 
     testWidgets('lays out without errors', (tester) async {

@@ -6,12 +6,14 @@ This document is the developer-facing privacy model. The end-user version is in 
 
 ## What data is stored locally
 
-All user data lives on-device in a local SQLite database (managed by Drift) and is split across two stores:
+All user data lives on-device in a local SQLite database (managed by Drift) and is split across four stores:
 
 | Store | Data |
 |-------|------|
 | `PreferencesStore` | Theme mode (system/light/dark), reader settings (reader theme, font family, font size), preferred mirror, auto-fallback flag |
 | `LibraryStore` | Favorites (title, URL, author, domain) and cached article metadata (title, author, publication, word count, reading time, published date) |
+| `ArticleCacheStore` | The text of articles you read, for offline reading, with the URL it belongs to and its metadata |
+| `ReadingProgressStore` | How far you got through each article (scroll position and fraction read) and when |
 
 Clearing the app data (or uninstalling) wipes everything.
 
@@ -33,12 +35,15 @@ Clearing the app data (or uninstalling) wipes everything.
 
 ## How article content is handled
 
-- Article HTML is **never stored**. The reader loads each article over the network into the WebView and discards it on exit.
-- Only lightweight metadata is cached, so the favorites list can render without refetching. Clearing the library or the app data removes it.
+- Article text is stored **on the device only**, as you read it, so an article can be reopened without a connection. Nothing is sent anywhere to save it.
+- The offline cache is capped (24 MB in total, 2 MB per article). Past the cap the oldest articles are dropped automatically, except favorites, which are never evicted.
+- Metadata is cached separately, so the library and "Continue reading" can render without refetching.
+- The cache can be emptied at any time from **Settings → Offline Articles**. Clearing it does not remove favorites or reading positions.
 
 ## How users can clear local data
 
 - Favorites support per-item removal, and entries can be deleted individually.
+- Offline copies are cleared in one action from Settings, or as each one is evicted past the cache cap.
 - Uninstalling or clearing app data removes everything. Android backups are disabled (`android:allowBackup="false"` plus explicit data-extraction rules), so data does not leave the device through cloud backup or device transfer.
 
 ## Logging
