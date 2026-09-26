@@ -20,10 +20,11 @@ class ArticlePage extends GetView<ArticleController> {
     return Scaffold(
       appBar: AppAppBar(
         centerTitle: false,
-        title: Obx(() => Text(_displayTitle)),
+        // Deliberately not the app bar's default titleLarge: a truncated article
+        // title competes with the reading-time and favorite actions at 22sp.
+        title: Obx(() => Text(_displayTitle, style: context.text.titleMedium)),
         actions: const [
           _ReadingTime(),
-          SizedBox(width: AppSpacing.xxs),
           _FavoriteButton(),
           SizedBox(width: AppSpacing.xxs),
         ],
