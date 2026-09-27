@@ -29,7 +29,8 @@ class StorageService extends GetxService {
   late final PreferencesStore preferences;
   late final LibraryStore library;
 
-  /// Saved article bodies, for reading without a network.
+  /// The articles behind the reader's favorites, kept on the device so they can
+  /// be read without a network.
   late final ArticleCacheStore cache;
 
   /// How far the reader has got through each article.
@@ -48,8 +49,8 @@ class StorageService extends GetxService {
     _database = database;
     _attachStores();
 
-    // Counted up front so the settings screen has real numbers to show rather
-    // than zeroes until something is read.
+    // Counted up front so eviction knows what the store already holds, rather
+    // than treating a reopened database as empty and letting it grow unchecked.
     await cache.refreshTotals();
     return this;
   }

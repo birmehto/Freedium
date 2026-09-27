@@ -209,9 +209,9 @@ void main() {
   });
 
   group('MirrorCatalog', () {
-    test('defaults include freedium and textise', () {
+    test('defaults include freedium and mirror', () {
       final ids = MirrorCatalog.createDefaults().map((s) => s.id).toList();
-      expect(ids, containsAll(['freedium', 'textise']));
+      expect(ids, containsAll(['freedium', 'mirror']));
     });
 
     test('returns a fresh list on every call', () {

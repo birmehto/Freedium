@@ -70,6 +70,10 @@ class ArticleController extends GetxController {
   /// Whether a saved copy of this article exists.
   final hasOfflineCopy = false.obs;
 
+  /// True while the article's local copy is being written or dropped, so a
+  /// second press cannot race the first.
+  final isStoringArticle = false.obs;
+
   /// How far through the article the reader is, in `0..1`.
   final readingProgress = 0.0.obs;
 
@@ -90,6 +94,10 @@ class ArticleController extends GetxController {
   /// Where the reader left off last time, and the load that fetches it.
   ReadingProgress? _savedProgress;
   Future<void>? _progressLoad;
+
+  /// Metadata read out of the loaded document, kept so a save pressed later
+  /// does not have to extract it again.
+  ArticleMeta? _meta;
 
   /// True once the stored position has been applied to the loaded document.
   bool _scrollRestored = false;
@@ -256,9 +264,9 @@ class ArticleController extends GetxController {
 
   /// The new document is painted and visible to the reader.
   ///
-  /// `onLoadStop` can lag behind this by a noticeable amount, or be skipped
-  /// entirely on some platforms, so the blocking loader is dismissed here
-  /// rather than waiting for it.
+  /// The loader is dismissed here rather than waiting for `onLoadStop`, which
+  /// some backends never send at all: the article is on screen, so there is
+  /// nothing left to wait for.
   void onPageCommitVisible() {
     appLog(
       'ArticleController.onPageCommitVisible: isLoading=${isLoading.value}, isInitialLoad=${isInitialLoad.value}',
@@ -281,6 +289,7 @@ class ArticleController extends GetxController {
       final sourceId = _resolver.lastSourceId;
       _resolver.reportSuccess(sourceId);
     }
+
     unawaited(_onContentReady());
   }
 
@@ -331,9 +340,9 @@ class ArticleController extends GetxController {
 
   /// Reports WebView load progress as a 0..1 fraction.
   ///
-  /// A completed load is treated as "done" here as well as in
-  /// [onPageLoaded]. Waiting for `onLoadStop` alone is what left the reader
-  /// spinning on an article that had already finished loading.
+  /// The load is finished at 100%, so the loading indicators are dismissed there
+  /// and then: waiting for `onLoadStop` alone is what left the reader spinning
+  /// on an article that had already finished loading.
   void updateProgress(double progress) {
     final value = (progress / 100).clamp(0.0, 1.0).toDouble();
     loadingProgress.value = value;
@@ -453,15 +462,18 @@ class ArticleController extends GetxController {
 
   // ─────────────────────────────── article ───────────────────────────────
 
-  /// Everything that happens once a document is fully loaded: its metadata, a
-  /// cached copy for offline reading, and the reader's place in it.
+  /// Everything that happens once a document is fully loaded: its metadata and
+  /// the reader's place in it.
+  ///
+  /// Nothing is written to the offline store here. An article is kept because
+  /// the reader favorited it, not because it happened to be read, so simply
+  /// opening a story costs no storage.
   Future<void> _onContentReady() async {
     // The saved copy is a bare article fragment: it has no metadata of its own,
-    // so extracting it would find nothing and overwrite what the cache recorded
-    // with empty values. There is nothing to re-cache either — it is the cache.
+    // so extracting it would find nothing and overwrite what the store recorded
+    // with empty values.
     if (!isOffline.value) {
-      final meta = await _extractMetadata();
-      if (meta != null) await _cacheArticle(meta);
+      _meta = await _extractMetadata();
     }
 
     await _restoreScrollPosition();
@@ -503,46 +515,74 @@ class ArticleController extends GetxController {
 
   // ─────────────────────────────── offline ───────────────────────────────
 
-  /// Saves the loaded article so it can be read without a network.
-  Future<void> _cacheArticle(ArticleMeta meta) async {
-    final controller = webViewController;
-    if (isClosed || controller == null) return;
-
+  /// Writes the loaded article to the offline store, reporting whether it stuck.
+  ///
+  /// The store keeps the article on its own, not the page around it, so the body
+  /// has to be read back out of the document the reader is looking at.
+  Future<bool> _saveArticleOffline() async {
     final url = originalUrl.value;
-    if (url.isEmpty) return;
+    if (url.isEmpty) return false;
+
+    final html = await readArticleHtml();
+    if (html == null) return false;
+
+    return _storage.cache.saveWithMeta(
+      url: url,
+      html: html,
+      // A save can happen before the metadata has been read, so what the reader
+      // already has on screen stands in rather than losing the title.
+      meta: _meta ?? _metaFromReaderState(),
+      domain: articleDomain.isEmpty ? null : articleDomain,
+      // A favorite is the reader's own decision to keep something for good, so
+      // it survives eviction even when the store is full.
+      keep: [for (final item in _storage.library.favorites) item.url],
+    );
+  }
+
+  /// The loaded article's own markup, or `null` when there is no document to
+  /// read it from.
+  ///
+  /// The WebView is the only place the body exists, so this is the seam a test
+  /// replaces: an article that is not on screen cannot be stored.
+  @visibleForTesting
+  Future<String?> readArticleHtml() async {
+    final controller = webViewController;
+    if (isClosed || controller == null) return null;
 
     try {
       final result = await controller.evaluateJavascript(
         source: ReaderTheme.extractArticleHtmlJs,
       );
-      if (result is! String || result.isEmpty) return;
+      if (result is! String || result.isEmpty) return null;
 
       final payload = jsonDecode(result);
-      if (payload is! Map<String, dynamic>) return;
-      if (payload['found'] != true) return;
+      if (payload is! Map<String, dynamic>) return null;
+      if (payload['found'] != true) return null;
 
       final html = payload['html'];
-      if (html is! String || html.trim().isEmpty) return;
+      if (html is! String || html.trim().isEmpty) return null;
 
-      final saved = await _storage.cache.saveWithMeta(
-        url: url,
-        html: html,
-        meta: meta,
-        domain: articleDomain.isEmpty ? null : articleDomain,
-        // A favorite is the reader's own decision to keep something, so it
-        // survives eviction even when the cache is full.
-        keep: [for (final item in _storage.library.favorites) item.url],
-      );
-
-      if (saved) hasOfflineCopy.value = true;
+      return html;
     } catch (error) {
       appLog(
-        'Could not cache article: $error',
+        'Could not read the article to save it: $error',
         name: 'Reader',
         level: LogLevel.warning,
       );
+      return null;
     }
   }
+
+  /// Metadata assembled from what is already on screen.
+  ArticleMeta _metaFromReaderState() => ArticleMeta(
+    title: articleTitle.value,
+    author: articleAuthor.value.isEmpty ? null : articleAuthor.value,
+    publication: articlePublication.value.isEmpty
+        ? null
+        : articlePublication.value,
+    publishedAt: publishedAt.value,
+    wordCount: wordCount.value,
+  );
 
   /// The saved copy of the current article, or `null`.
   Future<CachedArticle?> _offlineCopy() async {
@@ -805,9 +845,18 @@ ${copy.html}
     }
   }
 
+  /// Favourites an article, or removes it.
+  ///
+  /// A favorite is also kept on the device so it can be read without a network,
+  /// and taking the favorite away takes the copy with it — one decision, one
+  /// stored article, nothing left behind in Settings to clean up.
+  ///
+  /// The favorite itself is recorded first, so the heart responds straight away
+  /// and a body that cannot be read does not cost the reader their save.
   Future<void> toggleFavorite() async {
     final url = originalUrl.value;
     if (url.isEmpty) return;
+    if (isStoringArticle.value) return;
 
     final article = FavoriteArticle(
       title: articleTitle.value,
@@ -817,7 +866,24 @@ ${copy.html}
       domain: articleDomain.isEmpty ? null : articleDomain,
     );
 
-    await _storage.library.toggleFavorite(article);
+    // Claimed before the first await, and the direction read before the write:
+    // two quick taps would otherwise both see the article as un-favorited, and
+    // the second would undo the first.
+    final favorited = !isFavorite;
+    isStoringArticle.value = true;
+
+    try {
+      await _storage.library.toggleFavorite(article);
+
+      if (favorited) {
+        hasOfflineCopy.value = await _saveArticleOffline();
+      } else {
+        await _storage.cache.remove(url);
+        hasOfflineCopy.value = false;
+      }
+    } finally {
+      isStoringArticle.value = false;
+    }
   }
 
   /// Test-only hook: exposes [_titleFromUrl].

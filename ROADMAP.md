@@ -678,17 +678,16 @@ Network
 ├── Auto fallback
 └── Cache
 
-Storage
-├── Cached articles
-├── Cache size
-└── Clear cache
-
 About
 ├── Version
 ├── GitHub
 ├── Licenses
 └── Privacy
 ```
+
+Saved articles are deliberately not a settings section: a favorite already owns
+the stored copy, so adding one keeps the article and removing one drops it.
+There is no cache screen to fall out of step with that.
 
 ---
 
@@ -999,7 +998,6 @@ Add:
 ```text
 README.md
 CONTRIBUTING.md
-ARCHITECTURE.md
 PRIVACY.md
 CHANGELOG.md
 ```

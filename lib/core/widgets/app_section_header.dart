@@ -10,7 +10,7 @@ class AppSectionHeader extends StatelessWidget {
     super.key,
     this.padding = const EdgeInsets.fromLTRB(
       AppSpacing.md,
-      AppSpacing.xl + AppSpacing.xs,
+      AppSpacing.xl,
       AppSpacing.md,
       AppSpacing.md,
     ),

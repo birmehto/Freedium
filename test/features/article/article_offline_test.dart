@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/network/article_resolver.dart';
 import 'package:freedium/core/routes/app_routes.dart';
 import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/core/services/storage_service.dart';
+import 'package:freedium/core/services/theme_service.dart';
 import 'package:freedium/core/storage/article_cache_store.dart';
 import 'package:freedium/features/article/controllers/article_controller.dart';
 import 'package:get/get.dart';
@@ -37,7 +39,13 @@ void main() {
 
   /// Opens the reader the way navigation does, so `onInit` runs with real route
   /// arguments and loads the stored position and any saved copy.
-  Future<void> openReader(WidgetTester tester) async {
+  ///
+  /// [articleOnScreen] stands in for a loaded document: no WebView exists here,
+  /// so the body of the article the reader is looking at is supplied directly.
+  Future<void> openReader(
+    WidgetTester tester, {
+    String? articleOnScreen,
+  }) async {
     // A reader left open would still be built after its services are gone.
     if (Get.isRegistered<ArticleController>()) {
       Get.back();
@@ -61,14 +69,7 @@ void main() {
               name: AppRoutes.article,
               page: () => const Scaffold(body: Text('reader')),
               binding: BindingsBuilder(() {
-                Get.put(
-                  ArticleController(
-                    ClipboardService()..onInit(),
-                    Get.find<StorageService>(),
-                    Get.find(),
-                    Get.find(),
-                  ),
-                );
+                Get.put(_buildReader(articleOnScreen));
               }),
             ),
           ],
@@ -190,13 +191,13 @@ void main() {
     });
   });
 
-  group('the cache and the reader agree', () {
-    testWidgets('clearing the cache makes the article unreadable offline', (
+  group('the store and the reader agree', () {
+    testWidgets('dropping the copy makes the article unreadable offline', (
       tester,
     ) async {
       await saveArticle();
       await openReader(tester);
-      await storage.cache.clear();
+      await storage.cache.remove(url);
 
       await controller.onPageError('boom');
 
@@ -204,10 +205,10 @@ void main() {
       expect(controller.errorMessage.value, 'boom');
     });
 
-    testWidgets('a cleared cache does not report a saved copy', (tester) async {
+    testWidgets('a dropped copy does not report a saved copy', (tester) async {
       await saveArticle();
       await openReader(tester);
-      await storage.cache.clear();
+      await storage.cache.remove(url);
 
       expect(controller.hasOfflineCopy.value, isTrue);
 
@@ -218,15 +219,85 @@ void main() {
       expect(controller.hasOfflineCopy.value, isFalse);
     });
 
-    testWidgets('the cache holds a copy of what was read', (tester) async {
+    testWidgets('reading an article stores nothing on its own', (tester) async {
       await openReader(tester);
 
       expect(
         await storage.cache.read(url),
         isNull,
-        reason: 'nothing loaded, so nothing to keep',
+        reason: 'nothing was asked to be saved, so nothing is',
       );
       expect(await storage.cache.contains(url), isFalse);
+    });
+  });
+
+  group('favoriting', () {
+    testWidgets('keeps the article on the device', (tester) async {
+      await openReader(
+        tester,
+        articleOnScreen: '<article><p>Body.</p></article>',
+      );
+
+      expect(await storage.cache.contains(url), isFalse);
+
+      await controller.toggleFavorite();
+
+      expect(storage.library.isFavorite(url), isTrue);
+      expect(controller.hasOfflineCopy.value, isTrue);
+      expect(
+        (await storage.cache.read(url))?.html,
+        '<article><p>Body.</p></article>',
+      );
+    });
+
+    testWidgets('the favorite is kept even with nothing to store', (
+      tester,
+    ) async {
+      await openReader(tester);
+
+      // Nothing is on screen, so there is no body to keep. The favorite is the
+      // reader's decision and is recorded regardless.
+      await controller.toggleFavorite();
+
+      expect(storage.library.isFavorite(url), isTrue);
+      expect(controller.hasOfflineCopy.value, isFalse);
+      expect(await storage.cache.contains(url), isFalse);
+    });
+
+    testWidgets('taking the favorite away takes the copy with it', (
+      tester,
+    ) async {
+      await openReader(
+        tester,
+        articleOnScreen: '<article><p>Body.</p></article>',
+      );
+
+      await controller.toggleFavorite();
+      expect(await storage.cache.contains(url), isTrue);
+
+      await controller.toggleFavorite();
+
+      expect(storage.library.isFavorite(url), isFalse);
+      expect(controller.hasOfflineCopy.value, isFalse);
+      expect(await storage.cache.contains(url), isFalse);
+    });
+
+    testWidgets('a second press while one is running is ignored', (
+      tester,
+    ) async {
+      await openReader(
+        tester,
+        articleOnScreen: '<article><p>Body.</p></article>',
+      );
+
+      await Future.wait([
+        controller.toggleFavorite(),
+        controller.toggleFavorite(),
+      ]);
+
+      // One favorite, rather than one that was added and immediately removed.
+      expect(storage.library.isFavorite(url), isTrue);
+      expect(controller.isStoringArticle.value, isFalse);
     });
   });
 
@@ -242,4 +313,45 @@ void main() {
       );
     });
   });
+}
+
+/// A reader with an article on screen, without a WebView behind it.
+///
+/// The body is the one thing that only ever exists inside a loaded document, so
+/// supplying it is the whole of standing in for a page.
+class _LoadedArticleController extends ArticleController {
+  _LoadedArticleController(
+    this._html,
+    ClipboardService clipboard,
+    StorageService storage,
+    ThemeService theme,
+    ArticleResolver resolver,
+  ) : super(clipboard, storage, theme, resolver);
+
+  final String _html;
+
+  @override
+  Future<String?> readArticleHtml() async => _html;
+}
+
+/// The reader the article route registers.
+///
+/// With [articleOnScreen] set, the reader has a document to store, which a real
+/// one only gets from the WebView this suite never builds.
+ArticleController _buildReader(String? articleOnScreen) {
+  final clipboard = ClipboardService()..onInit();
+  final storage = Get.find<StorageService>();
+  final theme = Get.find<ThemeService>();
+  final resolver = Get.find<ArticleResolver>();
+
+  if (articleOnScreen == null) {
+    return ArticleController(clipboard, storage, theme, resolver);
+  }
+  return _LoadedArticleController(
+    articleOnScreen,
+    clipboard,
+    storage,
+    theme,
+    resolver,
+  );
 }

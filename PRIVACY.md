@@ -35,15 +35,14 @@ Clearing the app data (or uninstalling) wipes everything.
 
 ## How article content is handled
 
-- Article text is stored **on the device only**, as you read it, so an article can be reopened without a connection. Nothing is sent anywhere to save it.
-- The offline cache is capped (24 MB in total, 2 MB per article). Past the cap the oldest articles are dropped automatically, except favorites, which are never evicted.
+- Article text is stored **on the device only**, and only for articles you favorite, so a favorite can be reopened without a connection. Nothing is stored just because you read something, and nothing is sent anywhere to store it.
+- The offline cache is capped (24 MB in total, 2 MB per article). Past the cap the oldest saved articles are dropped automatically, except favorites, which are never evicted.
 - Metadata is cached separately, so the library and "Continue reading" can render without refetching.
-- The cache can be emptied at any time from **Settings → Offline Articles**. Clearing it does not remove favorites or reading positions.
+- Removing a favorite also removes its stored copy, from the article itself or from your library.
 
 ## How users can clear local data
 
-- Favorites support per-item removal, and entries can be deleted individually.
-- Offline copies are cleared in one action from Settings, or as each one is evicted past the cache cap.
+- Favorites support per-item removal, and entries can be deleted individually. Removing one also drops the article text stored for it.
 - Uninstalling or clearing app data removes everything. Android backups are disabled (`android:allowBackup="false"` plus explicit data-extraction rules), so data does not leave the device through cloud backup or device transfer.
 
 ## Logging

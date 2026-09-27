@@ -37,7 +37,9 @@ void main() {
     expect(find.text('Send Feedback'), findsOneWidget);
   });
 
-  testWidgets('shows the stored default font size', (tester) async {
+  testWidgets('shows the stored font size in the reader appearance sheet', (
+    tester,
+  ) async {
     final services = registerServices();
     services.storage.preferences.readerSettings = const ReaderSettings(
       fontSize: 21,
@@ -47,84 +49,32 @@ void main() {
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
 
+    // The size is configured in the sheet, not on the page itself.
+    expect(find.text('21 px'), findsNothing);
+
+    await tester.tap(find.text('Reader Appearance'));
+    await tester.pumpAndSettle();
+
     expect(find.text('21 px'), findsOneWidget);
   });
 
-  testWidgets('shows how much is saved for offline reading', (tester) async {
-    // A fresh set of services, so the cache is written before the controller
-    // starts counting it.
-    final services = registerServices();
-    await services.storage.cache.save(
-      url: 'https://medium.com/a',
-      html: '<article><p>A story kept on the device.</p></article>',
-      title: 'A Story',
-    );
-    Get.put(SettingsController(services.theme, services.storage));
-
+  testWidgets('offers no separate font size entry', (tester) async {
+    // Reader typography is edited in one place, so there is no second tile
+    // that opens a sheet of its own.
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Offline Articles'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('1 article'), findsOneWidget);
+    expect(find.text('Default Font Size'), findsNothing);
+    expect(find.text('Reader'), findsNothing);
   });
 
-  testWidgets('clears the offline cache from the storage section', (
-    tester,
-  ) async {
-    final services = registerServices();
-    await services.storage.cache.save(
-      url: 'https://medium.com/a',
-      html: '<article><p>A story kept on the device.</p></article>',
-    );
-    final controller = SettingsController(services.theme, services.storage);
-    Get.put(controller);
-
+  testWidgets('offers no storage section', (tester) async {
+    // Saved articles are managed from the reader's own save button, so the
+    // settings screen has no cache section to open or clear.
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Offline Articles'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Offline Articles'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Clear saved articles'), findsOneWidget);
-    expect(services.storage.cache.cachedCount.value, 1);
-
-    await tester.tap(find.text('Clear saved articles'));
-    await tester.pumpAndSettle();
-
-    expect(services.storage.cache.cachedCount.value, 0);
-    expect(
-      await services.storage.cache.contains('https://medium.com/a'),
-      isFalse,
-    );
-    expect(controller.hasOfflineArticles, isFalse);
-  });
-
-  testWidgets('offers nothing to clear when nothing is saved', (tester) async {
-    await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('Offline Articles'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Offline Articles'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Nothing is saved yet.'), findsOneWidget);
-    expect(find.text('Clear saved articles'), findsNothing);
+    expect(find.text('Storage'), findsNothing);
+    expect(find.text('Offline Articles'), findsNothing);
   });
 }

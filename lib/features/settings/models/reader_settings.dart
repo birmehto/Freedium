@@ -38,6 +38,14 @@ class ReaderSettings {
   static const double kMaxFontSize = 28;
   static const double kFontSizeStep = 1.0;
 
+  /// Slider steps between [kMinFontSize] and [kMaxFontSize], so the control
+  /// snaps to whole pixels and cannot offer a size the reader does not apply.
+  ///
+  /// Declared here because both font-size controls (the reader's sheet and the
+  /// one in Settings) have to offer exactly the same sizes.
+  static const int kFontSizeDivisions =
+      (kMaxFontSize - kMinFontSize) ~/ kFontSizeStep;
+
   final ReaderThemeMode themeMode;
   final String fontFamily;
   final double fontSize;

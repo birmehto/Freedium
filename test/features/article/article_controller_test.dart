@@ -177,6 +177,45 @@ void main() {
     });
   });
 
+  group('progress reaching 100', () {
+    // The loading indicators are dismissed as soon as the load reports itself
+    // finished. A backend that never reports 100 is covered by
+    // `onPageCommitVisible` instead, which is why both paths dismiss.
+
+    test('stops the loading indicators', () {
+      controller
+        ..onPageStart(mirrorUrl)
+        ..updateProgress(100);
+
+      expect(controller.isLoading.value, isFalse);
+      expect(controller.isInitialLoad.value, isFalse);
+    });
+
+    test(
+      'cancels the watchdog, so a finished page is not turned into an error',
+      () {
+        fakeAsync((async) {
+          controller
+            ..onPageStart(mirrorUrl)
+            ..updateProgress(100);
+
+          async.elapse(AppConstants.webViewTimeout * 3);
+
+          expect(controller.errorMessage.value, isEmpty);
+        });
+      },
+    );
+
+    test('leaves a partial load alone', () {
+      controller
+        ..onPageStart(mirrorUrl)
+        ..updateProgress(40);
+
+      expect(controller.isLoading.value, isTrue);
+      expect(controller.isInitialLoad.value, isTrue);
+    });
+  });
+
   group('onPageLoaded', () {
     test('completes the load', () {
       controller.onPageLoaded();

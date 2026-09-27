@@ -25,8 +25,8 @@
 - **🛡️ Unlock any Medium story** — paste a link or share one from any app and read the whole article.
 - **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
 - **📖 Continue reading** — every article remembers how far you got, so the library offers the ones you left unfinished.
-- **📥 Offline reading** — articles are saved on the device as you read them and open again without a connection.
-- **🔒 On-device library** — favorites, reading positions, offline copies, settings, and article metadata are stored locally; nothing is uploaded.
+- **📥 Offline reading** — favoriting an article also keeps it on the device, ready to open again without a connection.
+- **🔒 On-device library** — favorites, reading positions, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
 - **🔐 Truly private** — no account, no ads, no analytics. Everything stays on your device.
@@ -142,7 +142,6 @@ Freedium is free and open-source, built and maintained in spare time. If you fin
 
 ## 📚 Learn more
 
-- 🧭 [How it works](ARCHITECTURE.md) — architecture and tech stack
 - 🤝 [Contributing](CONTRIBUTING.md) — build instructions and guidelines
 - 🗺️ [Roadmap](ROADMAP.md) — what's next
 - 📝 [Changelog](CHANGELOG.md) — release history

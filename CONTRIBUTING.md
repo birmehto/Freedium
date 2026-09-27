@@ -28,7 +28,7 @@ flutter run          # Android or Linux target
 
 ## Architecture
 
-Before diving in, read [ARCHITECTURE.md](ARCHITECTURE.md). In short:
+Before diving in, know the lay of the land. In short:
 
 - GetX-based, feature-first folders (`features/<name>/{controllers,models,views,widgets,bindings}`).
 - Shared UI lives in `core/widgets/`; external operations in `core/services/`.
@@ -53,7 +53,9 @@ Before diving in, read [ARCHITECTURE.md](ARCHITECTURE.md). In short:
 ### Reader
 
 - Reader CSS lives in `lib/core/constants/reader_theme.dart`; the controller in `lib/features/article/controllers/article_controller.dart`.
-- There is no offline download path. Article metadata is cached for fast list rendering, but the WebView always loads over the network.
+- Offline copies are written by one path only: `ArticleController.toggleFavorite`, because a favorite is a request to keep the article. Opening an article stores nothing. Extend `test/features/article/article_offline_test.dart` when you change it.
+- A favorite must survive a body it cannot store, so `readArticleHtml` returning `null` is not a failed save. It is also the seam that suite replaces: the WebView is never built in tests.
+- A snackbar from a controller has nowhere to go: `M3ESnackbar` inserts into the root overlay, and `Get.context` is the Navigator *above* it. Return the message and let the view show it with its own context.
 
 ### Storage
 

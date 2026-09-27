@@ -8,10 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 - **Offline reading**
-  - Articles are saved on the device as you read them and open again with no connection, falling back to the saved copy when every mirror fails.
+  - Favoriting an article also keeps it on the device, so it opens again with no connection and falls back to the stored copy when every mirror fails. Removing the favorite removes the copy, so there is nothing left behind to clean up.
+  - Nothing is stored just because an article was read.
   - An "Offline copy" banner marks a story being read from the device, with a retry action to go back online.
   - `ArticleCacheStore` keeps bodies in their own Drift table, capped at 24 MB in total and 2 MB per article, evicting the oldest first and never evicting favorites.
-  - Settings → Offline Articles reports what is stored and clears it in one action; reading positions and favorites are left alone.
 - **Reading progress**
   - Scroll position is stored per article and restored on the next open, with the reader's place also shown in the article bar.
   - "Continue reading" in the library offers the articles that were started and not finished, most recent first.
@@ -35,9 +35,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Share intents** are Android-only and reactive, so a link shared while the app is open is picked up without a restart.
 - **Android manifest** no longer claims `http`/`https` `VIEW` filters it never handled, and backups are disabled with explicit data-extraction rules.
 - **Release signing** is now conditional on `android/key.properties`; a fresh clone can still produce a debug-signed release build instead of failing.
+- **A loaded article no longer sits behind a spinner.** The loading indicators are now dismissed as soon as the WebView reports the document on screen (`onPageCommitVisible`), not only once `onLoadStop` arrives — a backend that paints the article and never reports the load finishing otherwise left the reader with a progress bar and a blocking spinner on top of an article that had already rendered.
 
 ### Removed
 - **Find-in-article** — the find bar, its WebView `findInteractionController` wiring, and the associated controller state were removed. Android's native find-in-page remains available in the WebView.
+- **Settings → Storage** — the section that reported how much was stored and cleared every saved article in one action. Favorites now own the stored copies: adding one keeps the article, removing one drops it, and there is no cache screen left to keep in step.
 - Dead offline/save-article scaffolding (`SavedArticle`, `LibraryStore.saveArticle`) that no code path could reach.
 - Unused URL-validator wrapper, logging helpers, dead routes, and duplicate reactive state.
 - All `// ignore:` lint suppressions from `lib/`.

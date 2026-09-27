@@ -1,87 +1,64 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'features/favorites/controllers/favorites_controller.dart';
+import 'core/controllers/app_shell_controller.dart';
 import 'features/favorites/views/favorites_page.dart';
 import 'features/home/views/home_page.dart';
-import 'features/settings/controllers/settings_controller.dart';
 import 'features/settings/views/settings_page.dart';
 
 /// Root shell: top-level navigation via a bottom navigation bar.
-class AppShell extends StatefulWidget {
+///
+/// Stateless: the selected tab belongs to [AppShellController], which also
+/// refreshes a tab's stored data when it comes forward.
+class AppShell extends GetView<AppShellController> {
   const AppShell({super.key});
 
-  @override
-  State<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  int _index = 0;
-
-  static const List<({IconData icon, IconData selectedIcon, String label})>
-  _destinations = [
-    (icon: M3EIcons.home, selectedIcon: M3EIcons.home_filled, label: 'Home'),
-    (
-      icon: M3EIcons.auto_stories_rounded,
-      selectedIcon: M3EIcons.auto_stories_rounded,
-      label: 'Library',
-    ),
-    (
-      icon: M3EIcons.settings,
-      selectedIcon: M3EIcons.settings,
-      label: 'Settings',
-    ),
-  ];
-
+  /// One entry per [AppShellTab], in the same order.
   static const List<Widget> _pages = [
     HomePage(),
     FavoritesPage(),
     SettingsPage(),
   ];
 
+  static const List<({String label, IconData icon, IconData? selectedIcon})>
+  _destinations = [
+    (label: 'Home', icon: M3EIcons.home, selectedIcon: M3EIcons.home_filled),
+    (label: 'Library', icon: M3EIcons.auto_stories_rounded, selectedIcon: null),
+    (label: 'Settings', icon: M3EIcons.settings, selectedIcon: null),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: M3ENavigationBar(
-        destinations: [
-          for (final d in _destinations)
-            M3ENavigationBarDestination(
-              icon: Icon(d.icon),
-              selectedIcon: Icon(d.selectedIcon),
-              label: d.label,
-            ),
-        ],
-        selectedIndex: _index,
-        onDestinationSelected: (i) {
-          setState(() => _index = i);
-          _onTabOpened(i);
-        },
-      ),
-    );
-  }
+    return Obx(() {
+      final index = controller.tab.value.index;
 
-  /// Brings a tab's stored data up to date when it becomes the visible one.
-  ///
-  /// The reader and the library share the same stored positions, and every tab
-  /// stays mounted inside the [IndexedStack], so a value read while the tab was
-  /// hidden would otherwise still be on screen when the user comes back to it.
-  void _onTabOpened(int index) {
-    switch (index) {
-      case _libraryTab:
-        if (Get.isRegistered<FavoritesController>()) {
-          unawaited(Get.find<FavoritesController>().refreshContinueReading());
-        }
-      case _settingsTab:
-        if (Get.isRegistered<SettingsController>()) {
-          Get.find<SettingsController>().syncReaderSettings();
-        }
-    }
+      return Scaffold(
+        // The children are const, so a tab switch reuses their elements and
+        // each tab keeps its scroll position and text fields.
+        body: IndexedStack(index: index, children: _pages),
+        bottomNavigationBar: M3ENavigationBar(
+          // Labels are always shown: this bar has only three destinations, and
+          // the icon alone does not say what "Library" holds. Pinned rather than
+          // left to the package default so a default change cannot silently
+          // drop every label.
+          // ignore: avoid_redundant_argument_values
+          labelBehavior: M3ENavBarLabelBehavior.alwaysShow,
+          destinations: [
+            for (final destination in _destinations)
+              M3ENavigationBarDestination(
+                icon: Icon(destination.icon),
+                selectedIcon: destination.selectedIcon == null
+                    ? null
+                    : Icon(destination.selectedIcon),
+                label: destination.label,
+              ),
+          ],
+          selectedIndex: index,
+          onDestinationSelected: (i) =>
+              controller.selectTab(AppShellTab.values[i]),
+        ),
+      );
+    });
   }
-
-  static const int _libraryTab = 1;
-  static const int _settingsTab = 2;
 }

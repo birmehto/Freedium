@@ -8,7 +8,6 @@ import '../../../core/widgets/app_pill.dart';
 import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/app_settings_tile.dart';
 import '../controllers/settings_controller.dart';
-import '../widgets/font_size_sheet.dart';
 import '../widgets/reader_appearance_sheet.dart';
 import '../widgets/settings_dialogs.dart';
 
@@ -51,28 +50,17 @@ class SettingsPage extends GetView<SettingsController> {
                   AppSettingsTile(
                     title: 'Reader Appearance',
                     supportingText:
-                        'Theme, font, spacing and alignment used in the reader',
+                        'Theme, font family and text size used in the reader',
                     icon: M3EIcons.auto_awesome_rounded,
 
-                    onTap: () => showReaderAppearanceSheet(context),
+                    onTap: () => showReaderAppearanceSheet(
+                      context,
+                      settings: controller.readerSettings,
+                      onChanged: controller.updateReaderSettings,
+                    ),
                     trailing: const Icon(M3EIcons.chevron_right_rounded),
                   ),
                 ],
-              ),
-            ),
-          ),
-
-          const AppSectionHeader(title: 'Reader'),
-          M3ECard(
-            variant: M3ECardVariant.filled,
-            child: Obx(
-              () => AppSettingsTile(
-                title: 'Default Font Size',
-                supportingText: '${controller.fontSize.toStringAsFixed(0)} px',
-                icon: M3EIcons.format_size_rounded,
-
-                onTap: () => showFontSizeSheet(context),
-                trailing: const Icon(M3EIcons.chevron_right_rounded),
               ),
             ),
           ),
@@ -107,21 +95,6 @@ class SettingsPage extends GetView<SettingsController> {
                   ),
                 ),
               ],
-            ),
-          ),
-
-          const AppSectionHeader(title: 'Storage'),
-          M3ECard(
-            variant: M3ECardVariant.filled,
-            child: Obx(
-              () => AppSettingsTile(
-                title: 'Offline Articles',
-                supportingText: controller.offlineSummary,
-                icon: M3EIcons.offline_pin_rounded,
-
-                onTap: () => showOfflineCacheDialog(context),
-                trailing: const Icon(M3EIcons.chevron_right_rounded),
-              ),
             ),
           ),
 

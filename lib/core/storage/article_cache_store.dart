@@ -8,8 +8,13 @@ import '../../features/article/models/article_meta.dart';
 import '../utils/app_log.dart';
 import 'app_database.dart';
 
-/// On-device copies of rendered articles, so a story stays readable when the
+/// On-device copies of rendered articles, so a favorite stays readable when the
 /// network or every mirror is unavailable.
+///
+/// An article is only here because the reader favorited it, so the table is the
+/// reader's own shelf rather than a side effect of reading: the reader drops a
+/// copy with [remove], and the ceiling below is the only thing that ever takes
+/// one away on its own.
 ///
 /// Bodies live in their own table instead of the key-value store because they
 /// are large and only ever needed one at a time: [read] pulls a single row when
@@ -18,9 +23,9 @@ import 'app_database.dart';
 class ArticleCacheStore {
   ArticleCacheStore(this._database);
 
-  /// Soft ceiling on the total size of the cache. The oldest articles are
-  /// evicted past it, so storage cannot grow without bound on a device that
-  /// reads a lot of long-form writing.
+  /// Soft ceiling on the total size of the stored articles. The least recently
+  /// saved are evicted past it, so storage cannot grow without bound on a device
+  /// that keeps a lot of long-form writing.
   static const int maxCacheBytes = 24 * 1024 * 1024;
 
   /// An article whose markup exceeds this is not cached at all.
@@ -65,15 +70,14 @@ class ArticleCacheStore {
     return row != null;
   }
 
-  /// Caches (or refreshes) the copy of one article.
+  /// Keeps (or refreshes) the copy of one article.
   ///
   /// Returns false when the article was too large to keep, or when the write
-  /// failed, so the caller can tell "cached" from "silently skipped". Failures
-  /// are logged rather than thrown: a reader must not fail because a cache
-  /// write did.
+  /// failed, so the caller can tell "saved" from "silently skipped". Failures
+  /// are logged rather than thrown: a reader must not fail because a save did.
   ///
-  /// [keep] lists URLs that eviction must never touch — the user's own saved
-  /// articles, as opposed to ones cached as a side effect of being read.
+  /// [keep] lists URLs that eviction must never touch — the favorited articles.
+  /// A copy with no favorite behind it is what the ceiling is allowed to reclaim.
   Future<bool> save({
     required String url,
     required String html,
@@ -171,14 +175,6 @@ class ArticleCacheStore {
     _forget(_sizeOf(removed.html));
   }
 
-  /// Empties the cache. Reading progress is left alone: the reader can still
-  /// resume, it just has to fetch the article again.
-  Future<void> clear() async {
-    await _database.delete(_database.cachedArticles).go();
-    cachedCount.value = 0;
-    cachedBytes.value = 0;
-  }
-
   /// Recounts the cache, for a store that has just been opened.
   Future<void> refreshTotals() async {
     try {
@@ -206,20 +202,7 @@ class ArticleCacheStore {
     }
   }
 
-  /// Cache size rendered for the settings screen.
-  String get formattedSize {
-    final bytes = cachedBytes.value;
-    if (bytes <= 0) return 'Empty';
-
-    const kilobyte = 1024;
-    const megabyte = kilobyte * 1024;
-    if (bytes >= megabyte) {
-      return '${(bytes / megabyte).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / kilobyte).round()} KB';
-  }
-
-  /// Removes the least recently saved articles until the cache fits again.
+  /// Removes the least recently saved articles until the store fits again.
   ///
   /// [protecting] is the article just written: a page that only fits because
   /// everything else went would otherwise evict itself on the way in, and the
@@ -235,7 +218,7 @@ class ArticleCacheStore {
 
     // Pinned articles are excluded by the query rather than skipped inside the
     // loop: a batch spent on rows that cannot be evicted frees nothing, so a
-    // cache full of saved articles could never get back under the ceiling.
+    // store full of favorites could never get back under the ceiling.
     final oldest =
         await (_database.select(_database.cachedArticles)
               ..where((table) => table.url.isNotIn(pinned))

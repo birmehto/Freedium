@@ -3,7 +3,6 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -18,7 +17,11 @@ const String _readerUserAgent =
     '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 class ArticleWebView extends StatefulWidget {
-  const ArticleWebView({required this.url, super.key});
+  const ArticleWebView({
+    required this.url,
+    required this.controller,
+    super.key,
+  });
 
   /// The mirror-proxied URL to load first.
   ///
@@ -27,12 +30,16 @@ class ArticleWebView extends StatefulWidget {
   /// changed.
   final String url;
 
+  /// The reader's controller, supplied by the route so that the WebView and the
+  /// loaders it reports progress to share one instance.
+  final ArticleController controller;
+
   @override
   State<ArticleWebView> createState() => _ArticleWebViewState();
 }
 
 class _ArticleWebViewState extends State<ArticleWebView> {
-  late final ArticleController _controller = Get.find<ArticleController>();
+  ArticleController get _controller => widget.controller;
 
   PullToRefreshController? _pullToRefreshController;
 
@@ -148,9 +155,12 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       },
       onLoadStop: (controller, url) async {
         appLog('WebView.onLoadStop: url=$url');
-        await _endRefreshing();
 
+        // The loader is dismissed before the pull-to-refresh spinner is, not
+        // after: ending the refresh can take a moment, and the reader should not
+        // be held behind a loading indicator for an article that has finished.
         _controller.onPageLoaded();
+        await _endRefreshing();
         await _controller.injectCustomCSS();
       },
       onScrollChanged: (controller, x, y) {

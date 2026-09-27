@@ -270,7 +270,7 @@ void main() {
     });
   });
 
-  group('removing and clearing', () {
+  group('removing', () {
     test('remove drops one article and updates the totals', () async {
       await cache.save(url: url, html: body(1000));
       await cache.save(url: 'https://medium.com/other', html: body(500));
@@ -290,31 +290,10 @@ void main() {
       expect(cache.cachedCount.value, 1);
       expect(cache.cachedBytes.value, 1000);
     });
-
-    test('clear empties the cache', () async {
-      await cache.save(url: url, html: body(1000));
-      await cache.save(url: 'https://medium.com/other', html: body(1000));
-
-      await cache.clear();
-
-      expect(cache.cachedCount.value, 0);
-      expect(cache.cachedBytes.value, 0);
-      expect(await cache.contains(url), isFalse);
-    });
   });
 
-  group('formattedSize', () {
-    test('reports an empty cache', () {
-      expect(cache.formattedSize, 'Empty');
-    });
-
-    test('reports kilobytes below a megabyte', () async {
-      await cache.save(url: url, html: 'x' * 2048);
-
-      expect(cache.formattedSize, '2 KB');
-    });
-
-    test('reports megabytes above a megabyte', () async {
+  group('refreshTotals', () {
+    test('reports megabytes from what is on disk', () async {
       // Written straight to the table: [save] refuses anything over the
       // per-article cap, which is deliberately well below the cache budget.
       await database
@@ -326,9 +305,11 @@ void main() {
               savedAt: DateTime.now(),
             ),
           );
+
       await cache.refreshTotals();
 
-      expect(cache.formattedSize, '1.5 MB');
+      expect(cache.cachedCount.value, 1);
+      expect(cache.cachedBytes.value, 1024 * 1024 + 512 * 1024);
     });
   });
 }
