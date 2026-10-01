@@ -39,13 +39,7 @@ class FavoritesPage extends GetView<FavoritesController> {
               leading: const Icon(M3EIcons.search_rounded),
             ),
           ),
-          // Hidden while searching: a filtered list of favorites is a specific
-          // question, and an unrelated reading queue above it is not an answer.
-          //
-          // The list is read here, inside the Obx, rather than inside
-          // ContinueReadingSection: a widget that reads an Rx during its own
-          // build is not tracked by the enclosing Obx, so the section would
-          // never rebuild once the stored positions arrived.
+
           Obx(() {
             final items = controller.continueReading;
             final searching = controller.trimmedQuery.isNotEmpty;
@@ -76,7 +70,7 @@ class FavoritesPage extends GetView<FavoritesController> {
                 );
               }
 
-              return M3EDismissibleList(
+              return M3EList.scrollable(
                 // Rebuilt when a swipe is cancelled, so the row that flew out
                 // comes back instead of leaving a hole in the list.
                 key: ValueKey(controller.dismissEpoch.value),
@@ -87,7 +81,7 @@ class FavoritesPage extends GetView<FavoritesController> {
                   AppSpacing.lg,
                   AppSpacing.lg,
                 ),
-                style: const M3EDismissibleListStyle(gap: 8),
+                dismissStyle: const M3EDismissibleListStyle(gap: 8),
                 onTap: (index) async {
                   final item = list[index];
                   final url = ArticleUrl.canonicalize(item.url);
@@ -100,21 +94,27 @@ class FavoritesPage extends GetView<FavoritesController> {
                   // Reading on the other side moved the stored position.
                   await controller.refreshContinueReading();
                 },
-                onDismiss: (index, _) => _remove(context, list[index]),
-                trailingActionsBuilder: (index) => [
-                  M3EListSwipeAction(
-                    icon: const Icon(M3EIcons.delete_rounded),
-                    isPrimary: true,
-                    backgroundColor: theme.colorScheme.errorContainer,
-                    foregroundColor: theme.colorScheme.onErrorContainer,
-                    onPressed: () => _remove(context, list[index]),
-                  ),
-                ],
                 itemBuilder: (context, index) {
                   if (index < 0 || index >= list.length) {
                     return const SizedBox.shrink();
                   }
-                  return FavoriteTile(item: list[index]);
+                  // Swipe lives on the item: the list reads it off the row it
+                  // builds, so it has to be handed over here.
+                  return FavoriteTile(
+                    item: list[index],
+                    swipe: M3EListItemSwipe(
+                      onDismiss: (_) => _remove(context, list[index]),
+                      trailing: [
+                        M3EListSwipeAction(
+                          icon: const Icon(M3EIcons.delete_rounded),
+                          isPrimary: true,
+                          backgroundColor: theme.colorScheme.errorContainer,
+                          foregroundColor: theme.colorScheme.onErrorContainer,
+                          onPressed: () => _remove(context, list[index]),
+                        ),
+                      ],
+                    ),
+                  );
                 },
               );
             }),
