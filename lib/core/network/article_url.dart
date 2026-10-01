@@ -28,6 +28,9 @@ const Set<String> kTrackingParams = {
 /// Matches a bare URL inside a larger block of share text.
 final RegExp _urlInText = RegExp(r'''https?://[^\s<>"'()\[\]]+''');
 
+/// Domains Medium publishes on itself, subdomains included.
+const Set<String> _mediumDomains = {'medium.com', 'medium.co.uk'};
+
 final RegExp _whitespace = RegExp(r'\s');
 
 /// A dotted hostname, e.g. `medium.com` or `blog.medium.co.uk`.
@@ -103,6 +106,7 @@ abstract final class ArticleUrl {
     final value = raw?.trim() ?? '';
     if (value.isEmpty) return 'Please enter a URL';
     if (!isValid(value)) return 'Please enter a valid URL';
+    if (!isMedium(value)) return 'Only Medium links are supported';
     return null;
   }
 
@@ -115,6 +119,20 @@ abstract final class ArticleUrl {
   /// Defined as the single rule [normalize] applies, so a form can never
   /// validate a URL differently from the code that loads the article.
   static bool isValid(String? raw) => normalize(raw) != null;
+
+  /// True when [raw] is a Medium article.
+  ///
+  /// A URL is only worth reading if it is a Medium one: the mirrors carry
+  /// Medium, and nothing in a custom-domain URL says who published it, so those
+  /// are refused rather than loaded and left to fail.
+  static bool isMedium(String? raw) {
+    final host = hostOf(raw);
+    if (host == null) return false;
+
+    return _mediumDomains.any(
+      (domain) => host == domain || host.endsWith('.$domain'),
+    );
+  }
 
   /// First http(s) URL found in a free-text share payload, or `null`.
   static String? extractFirstUrl(String? payload) {

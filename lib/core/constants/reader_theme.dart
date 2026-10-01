@@ -1261,15 +1261,6 @@ $hostModeSyncJs
         height: auto !important;
       }
 
-      img {
-        /*
-         * Defers decoding and layout for images below the fold, which is where
-         * most of a long article's image weight sits.
-         */
-        content-visibility: auto !important;
-        contain-intrinsic-size: auto 300px;
-      }
-
       figure {
         margin: ${m.paragraphSpacing}em 0 0 !important;
       }

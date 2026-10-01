@@ -77,6 +77,11 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       supportZoom: false,
       useShouldOverrideUrlLoading: true,
       mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+      // The reader is a scroller, not a bounce-scroller: the stylesheet already
+      // declares `overscroll-behavior-y: none`. Leaving the default would also
+      // make the plugin flip the WebView's overscroll mode twice on every
+      // overscroll near the top of the article, invalidating the view mid-gesture.
+      overScrollMode: OverScrollMode.NEVER,
     );
 
     final initialUserScripts = UnmodifiableListView<UserScript>([

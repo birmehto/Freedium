@@ -87,7 +87,7 @@ void main() {
   });
 
   group('ArticleUrl.validationError', () {
-    test('accepts a valid URL', () {
+    test('accepts a Medium URL', () {
       expect(ArticleUrl.validationError('https://medium.com/x'), isNull);
     });
 
@@ -99,6 +99,17 @@ void main() {
       );
     });
 
+    test('refuses a URL that is not Medium', () {
+      expect(
+        ArticleUrl.validationError('https://google.com'),
+        'Only Medium links are supported',
+      );
+      expect(
+        ArticleUrl.validationError('https://blog.example.com/post'),
+        'Only Medium links are supported',
+      );
+    });
+
     test('agrees with isValid', () {
       for (final input in ['', 'nope', 'https://medium.com/a']) {
         expect(
@@ -106,6 +117,28 @@ void main() {
           ArticleUrl.isValid(input),
         );
       }
+    });
+  });
+
+  group('ArticleUrl.isMedium', () {
+    test('accepts Medium and its subdomains', () {
+      expect(ArticleUrl.isMedium('https://medium.com/@user/post-abc'), isTrue);
+      expect(ArticleUrl.isMedium('https://www.medium.com/post-abc'), isTrue);
+      expect(
+        ArticleUrl.isMedium('medium.com/@user/post-abc'),
+        isTrue,
+        reason: 'a bare host is promoted to https before it is read',
+      );
+      expect(ArticleUrl.isMedium('https://blog.medium.co.uk/a-post'), isTrue);
+    });
+
+    test('refuses other hosts, lookalikes and unusable input', () {
+      expect(ArticleUrl.isMedium('https://google.com'), isFalse);
+      expect(ArticleUrl.isMedium('https://notmedium.com/x'), isFalse);
+      expect(ArticleUrl.isMedium('https://medium.com.evil.dev/x'), isFalse);
+      expect(ArticleUrl.isMedium('ftp://medium.com/post'), isFalse);
+      expect(ArticleUrl.isMedium('nope'), isFalse);
+      expect(ArticleUrl.isMedium(null), isFalse);
     });
   });
 

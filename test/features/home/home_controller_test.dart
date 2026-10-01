@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/network/article_url.dart';
 import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/core/services/share_intent_service.dart';
 import 'package:freedium/features/home/controllers/home_controller.dart';
@@ -46,10 +47,10 @@ void main() {
       expect(controller.canOpenArticle, isTrue);
     });
 
-    test('a non-Medium URL is accepted', () {
+    test('a non-Medium URL cannot be opened', () {
       controller.urlController.text = 'https://google.com';
 
-      expect(controller.canOpenArticle, isTrue);
+      expect(controller.canOpenArticle, isFalse);
     });
 
     test('whitespace alone does not enable opening', () {
@@ -106,6 +107,27 @@ void main() {
         isNull,
         reason: 'the pending share should be consumed exactly once',
       );
+    });
+
+    test('a shared URL opens even after an earlier failure', () {
+      controller.errorMessage.value = 'stale failure';
+
+      Get.find<ShareIntentService>().incomingUrl.value =
+          'https://medium.com/@user/shared-post';
+
+      expect(controller.errorMessage.value, isEmpty);
+      expect(controller.canOpenArticle, isTrue);
+    });
+
+    test('a shared non-Medium URL is refused by the field', () {
+      Get.find<ShareIntentService>().incomingUrl.value =
+          'https://google.com/search?q=medium';
+
+      expect(
+        ArticleUrl.validationError(controller.urlController.text),
+        'Only Medium links are supported',
+      );
+      expect(controller.canOpenArticle, isFalse);
     });
   });
 }

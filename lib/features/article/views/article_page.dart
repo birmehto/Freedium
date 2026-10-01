@@ -195,7 +195,9 @@ class _InitialLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       return controller.isInitialLoad.value && controller.errorMessage.isEmpty
-          ? const Positioned.fill(child: AppLoading())
+          // Full-bleed, and purely decorative: a drag that happens to start on
+          // the spinner belongs to the reader, not to the loading state.
+          ? const Positioned.fill(child: IgnorePointer(child: AppLoading()))
           : const SizedBox.shrink();
     });
   }

@@ -77,6 +77,17 @@ void main() {
       // system resolves to light, so five modes collapse to four palettes.
       expect(backgrounds.length, 4);
     });
+
+    test('does not contain article images', () {
+      // `content-visibility: auto` gives every offscreen image size
+      // containment, and the WebView scroller stops responding to drags when
+      // contained content is revealed underneath it. The reader's own scroll
+      // gesture is not worth an image-loading optimisation.
+      final css = _css();
+
+      expect(css, isNot(contains('content-visibility')));
+      expect(css, isNot(contains('contain-intrinsic-size')));
+    });
   });
 
   group('font family sanitization', () {

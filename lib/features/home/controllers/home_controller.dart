@@ -4,6 +4,7 @@ import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/share_intent_service.dart';
@@ -58,7 +59,11 @@ class HomeController extends GetxController {
   }
 
   bool get canOpenArticle {
-    return urlText.value.trim().isNotEmpty &&
+    final url = urlText.value.trim();
+
+    return url.isNotEmpty &&
+        ArticleUrl.isValid(url) &&
+        ArticleUrl.isMedium(url) &&
         errorMessage.isEmpty &&
         !isLoading.value;
   }
@@ -133,6 +138,10 @@ class HomeController extends GetxController {
   void _openSharedUrl(String? url) {
     if (url == null) return;
 
+    // A share is an explicit request to read this article, so the field is
+    // filled and opened directly. A failure left over from earlier input would
+    // otherwise block the request that is being made right now.
+    errorMessage.value = '';
     urlController.text = url;
     _shareIntentService.consume();
 
