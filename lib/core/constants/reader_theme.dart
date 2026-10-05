@@ -503,21 +503,24 @@ abstract final class ReaderTheme {
 
   window.addEventListener('load', schedule);
 
+  /*
+   * Only the root element's own attributes are watched, and only so a theme
+   * watcher cannot take the page's mode back after the reader set it.
+   *
+   * Deliberately not a `subtree` observer. Code blocks do arrive after load —
+   * rendered lazily, or restored from the back/forward cache — and repairing
+   * them was the reason this used to watch the whole document. But that made
+   * the reader a participant in page load: a `subtree` observer fires on every
+   * mutation, and this callback's `querySelector` plus the style reads in
+   * repairCodeColors turn each one into a layout flush, so on a page that is
+   * still hydrating the main thread is saturated and a scroll gesture never
+   * gets processed. The reader appeared not to scroll at all until the page was
+   * reloaded and stopped mutating.
+   *
+   * Late code is repaired by the reader instead: [injectCssScript] runs again on
+   * load and on every settings change, and each run calls `apply()` above.
+   */
   if (window.MutationObserver) {
-    /*
-     * Code can still arrive after load -- rendered lazily, or restored from the
-     * back/forward cache -- and a theme watcher can hand the page back its own
-     * mode at any point. Both are noticed here and settled once the page stops
-     * changing. Only the root element's own attributes are watched, so this
-     * does not observe the color writes repairCodeColors makes.
-     */
-    new MutationObserver(function () {
-      if (document.querySelector('pre, code')) schedule();
-    }).observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
-
     new MutationObserver(function () {
       if (hostModeDrifted()) schedule();
     }).observe(document.documentElement, {
@@ -637,20 +640,20 @@ $hostModeSyncJs
     true,
   );
 
-  if (window.MutationObserver) {
-    new MutationObserver(function () {
-      if (hydrationReady) {
-        stripPopups();
-      }
-    }).observe(
-      document.documentElement,
-      {
-        childList: true,
-        subtree: true,
-      },
-    );
-  }
-
+  /*
+   * Bounded passes rather than a `subtree` MutationObserver.
+   *
+   * Observing the whole document looks like the robust way to catch a paywall
+   * that renders late, but it makes the reader a participant in page load: every
+   * mutation anywhere fires the callback, and `stripPopups` runs a twelve-branch
+   * `querySelectorAll` across the entire document each time. On a page still
+   * hydrating that saturates the main thread, and a scroll gesture competes with
+   * it for the same thread and loses -- the reader looked frozen until the page
+   * was reloaded and stopped mutating.
+   *
+   * A popup that exists is caught instead by the `load` pass and the one deferred
+   * past it, which is where hydration-driven dialogs actually appear.
+   */
   document.addEventListener(
     'DOMContentLoaded',
     function () {
@@ -660,6 +663,11 @@ $hostModeSyncJs
       }, 350);
     },
   );
+
+  document.addEventListener('load', function () {
+    stripPopups();
+    setTimeout(stripPopups, 600);
+  });
 
   silenceJsDialogs();
   stripPopups();
@@ -793,77 +801,102 @@ $hostModeSyncJs
 ''';
 
   // ---------------------------------------------------------------------------
-  // Scroll position
+  // Scroll diagnostics
   // ---------------------------------------------------------------------------
 
-  /// Reports how far the document is scrolled.
+  /// Reports everything a "the page will not scroll" report turns on.
   ///
-  /// The scroll offset alone cannot say how far *through* an article that is —
-  /// a 400-word post and a 4000-word post report the same pixels — so the
-  /// scrollable distance is measured here too and returned alongside it.
+  /// A WebView that refuses to scroll reports nothing to the app: no callback,
+  /// no error, no visual change. The only way to tell a document that cannot
+  /// scroll from a document whose scroll gesture never arrived is to ask the
+  /// document, so this answers the questions that distinguish them:
   ///
-  /// An article shorter than the viewport is reported as fully read, which is
-  /// what it is: there is nothing left to scroll to.
-  static const String scrollMetricsJs = '''
-(function() {
-  var doc = document.documentElement;
-  var body = document.body;
-
-  var height = Math.max(
-    doc ? doc.scrollHeight : 0,
-    body ? body.scrollHeight : 0
-  );
-
-  var view = window.innerHeight || doc.clientHeight || 0;
-  var scrollable = Math.max(0, height - view);
-  var y = window.pageYOffset || (doc ? doc.scrollTop : 0) || 0;
-
-  return JSON.stringify({
-    y: y,
-    scrollable: scrollable,
-    ratio: scrollable > 0 ? Math.min(1, Math.max(0, y / scrollable)) : 1
-  });
-})();
-''';
-
-  /// Scrolls back to a stored position.
+  ///  * is the content taller than the viewport, and by how much
+  ///  * which element is the scroller, and how far is it scrolled
+  ///  * what the root and body compute to, since a root pinned to the viewport
+  ///    is the single most common reason a page that looks scrollable is not
   ///
-  /// The pixel [offset] is preferred because it is exact, but only used when
-  /// the document is still tall enough to contain it; otherwise a font-size or
-  /// theme change would land the reader past the end of a now-shorter article.
-  /// [ratio] is the fallback for exactly that case.
-  ///
-  /// Both values are JSON-encoded rather than interpolated, so a number that
-  /// somehow arrived as something else cannot break out of the script.
-  static String restoreScrollScript({
-    required double offset,
-    required double ratio,
-  }) {
-    final encodedOffset = jsonEncode(offset.clamp(0.0, double.maxFinite));
-    final encodedRatio = jsonEncode(ratio.clamp(0.0, 1.0));
-
-    return '''
+  /// Wrapped so a document that throws reports `error` instead of taking the
+  /// channel down with it.
+  static const String scrollDiagnosticsJs = '''
 (function() {
   try {
     var doc = document.documentElement;
     var body = document.body;
 
-    var height = Math.max(
-      doc ? doc.scrollHeight : 0,
-      body ? body.scrollHeight : 0
+    var viewport = window.innerHeight || 0;
+    var docHeight = doc ? doc.scrollHeight : 0;
+    var bodyHeight = body ? body.scrollHeight : 0;
+    var contentHeight = Math.max(docHeight, bodyHeight);
+
+    var scrollingElement = document.scrollingElement || doc;
+
+    // Named separately from the document, because a host shell that keeps its
+    // own scroll container scrolls an inner element and leaves the document
+    // reporting a permanently unchanging zero.
+    var scroller = 'none';
+    var candidates = [doc, body].concat(
+      Array.prototype.slice.call(
+        document.querySelectorAll(
+          'div[style*="overflow-y"], div[style*="overflow: auto"], ' +
+            'div[style*="overflow: scroll"]'
+        )
+      )
     );
 
-    var scrollable = Math.max(0, height - (window.innerHeight || 0));
-    var offset = $encodedOffset;
-    var target = offset > 0 && offset <= scrollable
-      ? offset
-      : scrollable * $encodedRatio;
+    for (var i = 0; i < candidates.length; i++) {
+      var node = candidates[i];
 
-    window.scrollTo(0, Math.max(0, Math.min(target, scrollable)));
-  } catch (e) {}
+      if (node && node.scrollHeight - node.clientHeight > 8) {
+        scroller = {
+          tagName: node.tagName ? node.tagName.toLowerCase() : '',
+          id: node.id || '',
+          className: typeof node.className === 'string' ? node.className : '',
+          scrollHeight: node.scrollHeight,
+          clientHeight: node.clientHeight,
+          scrollTop: node.scrollTop
+        };
+        break;
+      }
+    }
+
+    function styleOf(node) {
+      if (!node) return null;
+
+      var computed = getComputedStyle(node);
+
+      return {
+        overflowY: computed.overflowY,
+        overflowX: computed.overflowX,
+        height: computed.height,
+        minHeight: computed.minHeight,
+        maxHeight: computed.maxHeight,
+        position: computed.position,
+        touchAction: computed.touchAction
+      };
+    }
+
+    var visual = window.visualViewport;
+
+    return JSON.stringify({
+      contentHeight: contentHeight,
+      viewport: viewport,
+      contentTallerThanViewport: contentHeight > viewport,
+      scrollingElement: scrollingElement ? scrollingElement.tagName : null,
+      scrollY: window.pageYOffset,
+      docStyle: styleOf(doc),
+      htmlStyle: styleOf(doc),
+      bodyStyle: styleOf(body),
+      scroller: scroller,
+      visualViewport: visual
+        ? { height: visual.height, scale: visual.scale }
+        : null
+    });
+  } catch (e) {
+    return JSON.stringify({ error: String(e) });
+  }
 })();
 ''';
-  }
 
   // ---------------------------------------------------------------------------
   // CSS
@@ -897,6 +930,11 @@ $hostModeSyncJs
     style.textContent = ${jsonEncode(css)};
 
     (document.head || document.documentElement).appendChild(style);
+
+    // Force a layout recalculation to ensure scroll settings take effect
+    // on first load. Without this, the WebView may not recognize the new
+    // overflow/height settings until a refresh forces a re-layout.
+    void document.body.offsetHeight;
   } catch (e) {}
 })();
 $hostModeSyncJs
@@ -963,6 +1001,23 @@ $hostModeSyncJs
          */
         overflow-wrap: anywhere !important;
         word-break: break-word !important;
+
+        /*
+         * The root has to be the thing that scrolls, and the only way to
+         * guarantee that is to take the decision away from the host page.
+         *
+         * The mirror serves the publisher's real desktop layout, whose shell
+         * pins `html`/`body` to the height of the viewport and hides the
+         * overflow, then scrolls an inner container instead. A document pinned
+         * to the viewport is exactly `viewport` tall, so there is nothing for a
+         * drag to move: the article is present, taller than the screen, and
+         * the page will not scroll no matter how far the reader pulls. Only
+         * `min-height` is set above, so nothing overrode the host's `height`
+         * and the pin survived.
+         */
+        height: auto !important;
+        overflow: visible !important;
+        position: static !important;
       }
 
       body {
@@ -972,6 +1027,12 @@ $hostModeSyncJs
         width: 100% !important;
         max-width: 100% !important;
         min-height: 100vh !important;
+
+        /* The counterpart of the root rule above: the same pin, one level down. */
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
 
         box-sizing: border-box !important;
 
@@ -1035,6 +1096,30 @@ $hostModeSyncJs
         border: 0 !important;
         border-radius: 0 !important;
         box-shadow: none !important;
+
+        /* The article is a page, not a panel: a pinned height here is the same
+         * dead end as one on the root, one level in. */
+        height: auto !important;
+        max-height: none !important;
+      }
+
+      /*
+       * The host shell's scroll container, unwound.
+       *
+       * Matched on the inline style it pins itself with, and scoped to the
+       * article: a rule that reset every descendant would flatten the code
+       * blocks and figures the reader does want laid out as they are, and a rule
+       * that guessed at `overflow` in general would do the same.
+       */
+      article div[style*="100vh"],
+      article div[style*="100%"],
+      article main[style*="100vh"],
+      article main[style*="100%"],
+      article section[style*="100vh"],
+      article section[style*="100%"] {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
       }
 
       article .prose {

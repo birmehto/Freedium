@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -41,35 +40,6 @@ class ArticleWebView extends StatefulWidget {
 class _ArticleWebViewState extends State<ArticleWebView> {
   ArticleController get _controller => widget.controller;
 
-  PullToRefreshController? _pullToRefreshController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Pull-to-refresh is only implemented for Android in this plugin.
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      _pullToRefreshController = PullToRefreshController(
-        // Ends the indicator unconditionally: `requestRefresh` can return
-        // without loading anything (no WebView yet, no mirror available), and
-        // the spinner would otherwise stay on screen forever.
-        onRefresh: () async {
-          try {
-            await _controller.requestRefresh();
-          } finally {
-            await _endRefreshing();
-          }
-        },
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _pullToRefreshController = null;
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final initialSettings = InAppWebViewSettings(
@@ -82,6 +52,14 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       // make the plugin flip the WebView's overscroll mode twice on every
       // overscroll near the top of the article, invalidating the view mid-gesture.
       overScrollMode: OverScrollMode.NEVER,
+      // Virtual display composition, not hybrid.
+      //
+      // Hybrid composition composites the WebView in its own layer, and scroll
+      // gestures do not survive the trip: the document lays out, the native view
+      // reports it can scroll vertically, and a drag moves nothing and emits no
+      // scroll event at all. The reader is a single scroller for the whole app,
+      // so a composition mode that cannot scroll is not a trade worth making.
+      useHybridComposition: false,
     );
 
     final initialUserScripts = UnmodifiableListView<UserScript>([
@@ -109,7 +87,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       ),
       initialSettings: initialSettings,
       initialUserScripts: initialUserScripts,
-      pullToRefreshController: _pullToRefreshController,
       onWebViewCreated: _controller.setWebViewController,
       onCreateWindow: (controller, createWindowAction) async => false,
       shouldOverrideUrlLoading: (controller, navigationAction) async {
@@ -161,18 +138,31 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       onLoadStop: (controller, url) async {
         appLog('WebView.onLoadStop: url=$url');
 
-        // The loader is dismissed before the pull-to-refresh spinner is, not
-        // after: ending the refresh can take a moment, and the reader should not
-        // be held behind a loading indicator for an article that has finished.
+        // The loader is dismissed before the article is reported ready, so the
+        // reader is not held behind a loading indicator for a page that has
+        // already finished.
         _controller.onPageLoaded();
-        await _endRefreshing();
         await _controller.injectCustomCSS();
+
+        // After the stylesheet is in place, so what is measured is the
+        // document the reader is actually looking at. A page that arrives
+        // shorter than the viewport is the one explanation for a reader that
+        // "cannot scroll" that no amount of gesture debugging would reveal.
+        unawaited(_controller.logScrollDiagnostics('onLoadStop'));
       },
       onScrollChanged: (controller, x, y) {
-        // Deliberately not logged: scrolling fires hundreds of times per
-        // article. The offset alone cannot express "how far through" anyway, so
-        // the controller measures the document once the scrolling settles.
-        _controller.reportScroll();
+        // Deliberately not logged here: scrolling fires hundreds of times per
+        // article, so the write is throttled inside the controller rather than
+        // at this rate. The offset alone cannot express "how far through"
+        // anyway, so the controller measures the document once scrolling settles.
+        _controller.reportScroll(y.toInt());
+      },
+      onOverScrolled: (controller, x, y, clampedX, clampedY) {
+        // Only the vertical edge matters for a reader, and only an overscroll
+        // in that axis says anything about whether the document is scrollable
+        // at all.
+        if (!clampedY) return;
+        _controller.reportOverScroll(y, clampedY: clampedY);
       },
       onProgressChanged: (controller, progress) {
         appLog('WebView.onProgressChanged: progress=$progress');
@@ -181,7 +171,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       onReceivedError: (controller, request, error) {
         if (request.isForMainFrame ?? false) {
           appLog('WebView.onReceivedError: ${error.description}');
-          unawaited(_endRefreshing());
           unawaited(_controller.onPageError(_describe(error.description)));
         }
       },
@@ -209,10 +198,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
         }
       },
     );
-  }
-
-  Future<void> _endRefreshing() async {
-    await _pullToRefreshController?.endRefreshing();
   }
 
   /// Opens [url] outside the reader, e.g. an off-site link the user tapped.

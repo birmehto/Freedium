@@ -39,6 +39,9 @@ final RegExp _hostname = RegExp(
   caseSensitive: false,
 );
 
+/// An explicit URI scheme, e.g. the `mailto` in `mailto:someone@example.com`.
+final RegExp _scheme = RegExp('^[a-z][a-z0-9+.-]*:', caseSensitive: false);
+
 /// The single source of truth for article URL handling.
 ///
 /// Every entry point (home form, Android share intents, the library list and
@@ -60,6 +63,16 @@ abstract final class ArticleUrl {
         .firstMatch(value);
     if (markdown != null) {
       value = markdown.group(2)!;
+    } else if (_scheme.hasMatch(value)) {
+      // A scheme the reader cannot display is refused rather than promoted.
+      //
+      // These carry no `://`, so prefixing them produced a URL that looked
+      // fine and pointed somewhere else entirely: `mailto:a@example.com`
+      // became `https://mailto:a@example.com`, and its authority parses as
+      // userinfo `mailto:a` on the host `example.com` — a real-looking
+      // hostname, which is what let it past every check below.
+      final scheme = value.substring(0, value.indexOf(':')).toLowerCase();
+      if (scheme != 'http' && scheme != 'https') return null;
     } else if (!value.contains('://')) {
       value = 'https://$value';
     }
@@ -70,6 +83,10 @@ abstract final class ArticleUrl {
     // A real hostname is required, so prose such as "hello world" or a bare
     // word is never mistaken for an article URL.
     if (!_hostname.hasMatch(uri.host)) return null;
+
+    // An article link never carries credentials. Left in, userinfo is what
+    // turns an unopenable scheme into a URL that passes every test above.
+    if (uri.userInfo.isNotEmpty) return null;
 
     return value;
   }

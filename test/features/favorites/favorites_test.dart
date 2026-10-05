@@ -163,17 +163,12 @@ void main() {
           const ArticleMeta(title: 'Hello', wordCount: 400),
         );
         await storage.cache.save(url: url, html: '<article>hello</article>');
-        await storage.progress.save(url, ratio: 0.5);
-        await controller.refreshContinueReading();
-        expect(controller.continueReading, hasLength(1));
 
         await controller.removeFavorite(url);
 
         expect(controller.favorites, isEmpty);
         expect(storage.library.metaFor(url), isNull);
         expect(await storage.cache.contains(url), isFalse);
-        expect(await storage.progress.progressFor(url), isNull);
-        expect(controller.continueReading, isEmpty);
       },
     );
 
@@ -232,67 +227,6 @@ void main() {
       controller.onSearchChanged('dev.to');
       expect(controller.filteredFavorites.single.domain, 'dev.to');
     });
-
-    test('continue reading is empty when nothing has been read', () async {
-      expect(controller.continueReading, isEmpty);
-    });
-
-    test('continue reading pairs positions with article titles', () async {
-      const url = 'https://medium.com/unfinished';
-      await storage.library.cacheMeta(
-        url,
-        const ArticleMeta(
-          title: 'Halfway Through',
-          author: 'Ada',
-          wordCount: 900,
-        ),
-      );
-      await storage.progress.save(url, ratio: 0.5);
-
-      await controller.refreshContinueReading();
-
-      final item = controller.continueReading.single;
-      expect(item.url, url);
-      expect(item.title, 'Halfway Through');
-      expect(item.author, 'Ada');
-      expect(item.domain, 'medium.com');
-      expect(item.percent, 50);
-    });
-
-    test('continue reading falls back to a stand-in title', () async {
-      await storage.progress.save('https://medium.com/untitled', ratio: 0.3);
-
-      await controller.refreshContinueReading();
-
-      final item = controller.continueReading.single;
-      expect(item.title, isEmpty);
-      expect(item.displayTitle, 'Untitled article');
-    });
-
-    test('continue reading leaves out finished articles', () async {
-      await storage.progress.save('https://medium.com/done', ratio: 1.0);
-      await storage.progress.save('https://medium.com/open', ratio: 0.4);
-
-      await controller.refreshContinueReading();
-
-      expect(controller.continueReading.map((item) => item.url), [
-        'https://medium.com/open',
-      ]);
-    });
-
-    test(
-      'refreshContinueReading drops articles that have been finished',
-      () async {
-        await storage.progress.save('https://medium.com/done', ratio: 0.4);
-        await controller.refreshContinueReading();
-        expect(controller.continueReading, hasLength(1));
-
-        await storage.progress.save('https://medium.com/done', ratio: 1.0);
-        await controller.refreshContinueReading();
-
-        expect(controller.continueReading, isEmpty);
-      },
-    );
 
     test('an empty query returns everything', () async {
       await storage.library.addToFavorites(article('https://medium.com/a'));

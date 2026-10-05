@@ -91,11 +91,13 @@ class HomeController extends GetxController {
       final clipboardText = await _clipboardService.getFromClipboard();
 
       if (clipboardText == null || clipboardText.isEmpty) {
+        _showMessage('Clipboard is empty');
         return;
       }
 
       urlController.text = clipboardText.trim();
       onUrlChanged(clipboardText);
+      _showMessage('URL pasted from clipboard');
     } catch (error) {
       final exception = AppException.from(error, context: 'pasteFromClipboard');
 
@@ -124,6 +126,11 @@ class HomeController extends GetxController {
 
     try {
       await Get.toNamed(AppRoutes.article, arguments: request);
+      // Clear the form after successful navigation
+      if (Get.context?.mounted ?? false) {
+        urlController.clear();
+        errorMessage.value = '';
+      }
     } catch (error, stackTrace) {
       final exception = AppException.from(error, context: 'openArticle');
 

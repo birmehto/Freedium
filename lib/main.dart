@@ -11,11 +11,16 @@ import 'core/services/theme_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Registration order matters: later services depend on the ones above them.
   final storage = await Get.putAsync(() => StorageService().init());
   Get.put(ThemeService(storage.preferences));
-  await Get.putAsync(() => ShareIntentService().init());
+  await Get.putAsync(
+    () => ShareIntentService(storage.preferences).init(),
+  );
   Get.put(ClipboardService());
 
+  // One resolver for the whole app, so what it learns about a mirror helps the
+  // next article.
   Get.put(ArticleResolver());
 
   runApp(const Freedium());

@@ -246,6 +246,63 @@ void main() {
         lessThan(script.indexOf('var pending')),
       );
     });
+
+    test('never watches the whole document', () {
+      // Code blocks can arrive after load, which used to be the reason for a
+      // `subtree` observer. It made the reader participate in page load: the
+      // callback ran a document-wide query plus style reads on every mutation,
+      // saturating the main thread so a scroll gesture never got processed.
+      // Late code is repaired by the re-injection instead.
+      const script = ReaderTheme.hostModeSyncJs;
+      expect(script, isNot(contains('subtree: true')));
+      expect(script, isNot(contains('childList: true')));
+      expect(script, isNot(contains('querySelector(\'pre, code\')')));
+    });
+
+    test('still guards the mode against a theme watcher', () {
+      // The cheap observer it does keep is scoped to the root's own attributes.
+      const script = ReaderTheme.hostModeSyncJs;
+      expect(script, contains('hostModeDrifted'));
+      expect(script, contains("attributeFilter: ['class', 'style']"));
+    });
+
+    test('still repairs code colors on every run', () {
+      // Removing the observer must not mean repairCodeColors stops running.
+      const script = ReaderTheme.hostModeSyncJs;
+      expect(script, contains('repairCodeColors'));
+      expect(script, contains("addEventListener('load', schedule)"));
+      expect(
+        script.indexOf('apply();'),
+        lessThan(script.indexOf('if (window[INSTALLED]) return;')),
+      );
+    });
+  });
+
+  group('popup blocking', () {
+    test('never watches the whole document', () {
+      // A twelve-branch document-wide query on every mutation, on a page that
+      // is still hydrating, starved the main thread and made the reader look
+      // frozen until a reload.
+      const script = ReaderTheme.popupBlockingJs;
+      expect(script, isNot(contains('new MutationObserver')));
+      expect(script, isNot(contains('subtree: true')));
+      expect(script, isNot(contains('observe(')));
+    });
+
+    test('strips popups across hydration on bounded passes', () {
+      const script = ReaderTheme.popupBlockingJs;
+      expect(script, contains('function stripPopups()'));
+      expect(script, contains('addEventListener(\'load\''));
+      expect(script, contains('setTimeout(stripPopups, 600)'));
+      expect(script, contains('hydrationReady = true'));
+    });
+
+    test('still stops target=_blank from opening a reader-sized tab', () {
+      const script = ReaderTheme.popupBlockingJs;
+      expect(script, contains("closest(event.target, 'a')"));
+      expect(script, contains('preventDefault'));
+      expect(script, contains('function silenceJsDialogs()'));
+    });
   });
 
   group('readerIsDark', () {

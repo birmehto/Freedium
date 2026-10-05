@@ -172,6 +172,46 @@ void main() {
       expect(ArticleUrl.extractFirstUrl('  '), isNull);
       expect(ArticleUrl.extractFirstUrl('no link here'), isNull);
     });
+
+    // A share sheet carries whatever the other app put in the intent, and a
+    // mail or phone link arrives as readily as an article does.
+    test('a scheme the reader cannot display is not turned into a URL', () {
+      // `mailto:a@example.com` has no `://`, so promoting it produced
+      // `https://mailto:a@example.com` — whose authority parses as userinfo
+      // `mailto:a` on the host `example.com`, a real-looking hostname that
+      // passed every check and then loaded the wrong site.
+      expect(ArticleUrl.extractFirstUrl('mailto:someone@example.com'), isNull);
+      expect(ArticleUrl.extractFirstUrl('tel:+441234567890'), isNull);
+      expect(ArticleUrl.extractFirstUrl('ftp:ftp.example.com/a'), isNull);
+      expect(ArticleUrl.extractFirstUrl('javascript:alert(1)'), isNull);
+    });
+
+    test('a real URL alongside a mail link is still found', () {
+      expect(
+        ArticleUrl.extractFirstUrl(
+          'Mail me at someone@example.com, or read '
+          'https://medium.com/@user/a-post',
+        ),
+        'https://medium.com/@user/a-post',
+      );
+    });
+  });
+
+  group('ArticleUrl.normalize', () {
+    test('refuses a URL carrying credentials', () {
+      expect(
+        ArticleUrl.normalize('https://user:pass@medium.com/@user/a-post'),
+        isNull,
+        reason: 'an article link never carries credentials',
+      );
+    });
+
+    test('still promotes a bare host', () {
+      expect(
+        ArticleUrl.normalize('medium.com/@user/a-post'),
+        'https://medium.com/@user/a-post',
+      );
+    });
   });
 
   group('ArticleUrl.hostOf', () {

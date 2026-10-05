@@ -132,7 +132,10 @@ class AppDialog extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.sizeOf(context).height * maxContentHeightFactor,
       ),
-      child: SingleChildScrollView(child: body),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: body,
+      ),
     );
   }
 }

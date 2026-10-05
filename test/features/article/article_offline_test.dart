@@ -112,7 +112,6 @@ void main() {
       await openReader(tester);
 
       expect(controller.hasOfflineCopy.value, isFalse);
-      expect(controller.readingProgress.value, 0);
     });
 
     testWidgets('reports a saved copy', (tester) async {
@@ -122,21 +121,11 @@ void main() {
 
       expect(controller.hasOfflineCopy.value, isTrue);
     });
-
-    testWidgets('restores the stored reading position', (tester) async {
-      await storage.progress.save(url, ratio: 0.42, offset: 900);
-
-      await openReader(tester);
-
-      expect(controller.readingProgress.value, closeTo(0.42, 1e-9));
-      expect(controller.readingProgressPercent, 42);
-    });
   });
 
   group('when every mirror fails', () {
     testWidgets('shows the saved copy instead of an error', (tester) async {
       await saveArticle();
-      await storage.progress.save(url, ratio: 0.3);
 
       await openReader(tester);
       await controller.onPageError('Server unreachable');
@@ -146,7 +135,6 @@ void main() {
       expect(controller.errorMessage.value, isEmpty);
       expect(controller.articleTitle.value, 'Saved Story');
       expect(controller.articleAuthor.value, 'Cached Author');
-      expect(controller.readingProgress.value, closeTo(0.3, 1e-9));
       expect(controller.isLoading.value, isFalse);
     });
 

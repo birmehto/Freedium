@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 
-import '../../features/favorites/controllers/favorites_controller.dart';
 import '../../features/settings/controllers/settings_controller.dart';
 
 /// The top-level destinations of the root shell, in navigation-bar order.
@@ -19,9 +16,9 @@ class AppShellController extends GetxController {
 
   /// Shows [next] and refreshes whatever it displays.
   ///
-  /// Re-selecting the visible tab refreshes it too: the library and the reader
-  /// share the same stored reading positions, so a position written by the
-  /// reader is only picked up when the library is opened again.
+  /// Re-selecting the visible tab refreshes it too: a reader preference changed
+  /// while another tab was in front is only picked up when settings comes
+  /// forward again.
   void selectTab(AppShellTab next) {
     tab.value = next;
     _onTabOpened(next);
@@ -35,9 +32,9 @@ class AppShellController extends GetxController {
   void _onTabOpened(AppShellTab opened) {
     switch (opened) {
       case AppShellTab.library:
-        if (Get.isRegistered<FavoritesController>()) {
-          unawaited(Get.find<FavoritesController>().refreshContinueReading());
-        }
+        // The library reads the favorites store directly and holds no mirrored
+        // state, so a tab switch has nothing to refresh.
+        break;
       case AppShellTab.settings:
         if (Get.isRegistered<SettingsController>()) {
           Get.find<SettingsController>().syncReaderSettings();

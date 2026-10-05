@@ -222,44 +222,62 @@ class _OfflineBanner extends StatelessWidget {
 
       return Align(
         alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Material(
-            color: context.colors.secondaryContainer,
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.xs,
-                AppSpacing.xs,
-                AppSpacing.xs,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    M3EIcons.cloud_off_rounded,
-                    size: 18,
-                    color: context.colors.onSecondaryContainer,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Flexible(
-                    child: Text(
-                      'Offline copy',
-                      style: context.text.labelLarge?.copyWith(
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
+            child: Material(
+              color: context.colors.secondaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              elevation: 4,
+              shadowColor: context.colors.shadow.withValues(alpha: 0.3),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      decoration: BoxDecoration(
+                        color: context.colors.onSecondaryContainer.withValues(
+                          alpha: 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Icon(
+                        M3EIcons.cloud_off_rounded,
+                        size: 16,
                         color: context.colors.onSecondaryContainer,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  M3EIconButton(
-                    size: M3EIconButtonSize.xs,
-                    icon: const Icon(M3EIcons.refresh_rounded),
-                    tooltip: 'Try loading it again',
-                    onPressed: controller.requestRefresh,
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: Text(
+                        'Offline copy',
+                        style: context.text.labelMedium?.copyWith(
+                          color: context.colors.onSecondaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    M3EIconButton(
+                      size: M3EIconButtonSize.xs,
+                      icon: const Icon(M3EIcons.refresh_rounded, size: 18),
+                      tooltip: 'Try loading it again',
+                      onPressed: controller.requestRefresh,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -290,6 +308,15 @@ class _FabMenu extends StatelessWidget {
             settings: controller.readingSettings,
             onChanged: controller.updateReaderSettings,
           ),
+        ),
+        M3EFabMenuItem(
+          icon: const Icon(M3EIcons.refresh_rounded),
+          label: 'Refresh',
+          // The reader has no pull-to-refresh: the plugin's implementation
+          // needs the composition mode that stops scroll gestures arriving, and
+          // it disabled its own layout on every touch regardless. A refresh the
+          // reader can actually reach beats one that silently never fires.
+          onPressed: controller.requestRefresh,
         ),
         M3EFabMenuItem(
           icon: const Icon(M3EIcons.link_rounded),

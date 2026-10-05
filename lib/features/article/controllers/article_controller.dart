@@ -22,10 +22,9 @@ import '../../favorites/models/favorite_article.dart';
 import '../../settings/models/reader_settings.dart';
 import '../models/article_meta.dart';
 import '../models/article_request.dart';
-import '../models/reading_progress.dart';
 
 /// Owns the state of one open article: the loaded URL, extracted metadata,
-/// reader typography, favorite status, reading progress and the offline copy.
+/// reader typography, favorite status and the offline copy.
 class ArticleController extends GetxController {
   ArticleController(
     this._clipboard,
@@ -74,15 +73,17 @@ class ArticleController extends GetxController {
   /// second press cannot race the first.
   final isStoringArticle = false.obs;
 
-  /// How far through the article the reader is, in `0..1`.
-  final readingProgress = 0.0.obs;
-
   InAppWebViewController? webViewController;
 
   Timer? _loadingTimer;
 
-  /// Coalesces the flood of scroll callbacks into one store write.
-  Timer? _scrollTimer;
+  /// When the last scroll diagnostic was written, so a drag logs at a rate it
+  /// can afford rather than once per frame.
+  DateTime? _lastScrollLog;
+
+  /// The offset the WebView last reported, kept because a scroll callback that
+  /// never fires is the symptom itself and has to be visible in the log.
+  int _lastScrollY = 0;
 
   final List<Worker> _workers = [];
 
@@ -91,25 +92,14 @@ class ArticleController extends GetxController {
   /// they were asked for.
   final RxList<String> attemptedMirrors = <String>[].obs;
 
-  /// Where the reader left off last time, and the load that fetches it.
-  ReadingProgress? _savedProgress;
-  Future<void>? _progressLoad;
-
   /// Metadata read out of the loaded document, kept so a save pressed later
   /// does not have to extract it again.
   ArticleMeta? _meta;
-
-  /// True once the stored position has been applied to the loaded document.
-  bool _scrollRestored = false;
 
   /// Whether the failure of the current navigation has already been handled, so
   /// a second error callback for the same request cannot start a second
   /// failover. Reset when the next navigation starts.
   bool _errorHandled = false;
-
-  /// The last position written to the store, so a settled reader does not
-  /// rewrite the same value on every scroll event.
-  ReadingProgress? _persistedProgress;
 
   // ────────────────────────────── derived ────────────────────────────────
 
@@ -121,9 +111,6 @@ class ArticleController extends GetxController {
   bool get isFavorite => _storage.library.isFavorite(originalUrl.value);
 
   String get articleDomain => ArticleUrl.hostOf(originalUrl.value) ?? '';
-
-  /// Percentage of the article read, for the progress affordances.
-  int get readingProgressPercent => (readingProgress.value * 100).round();
 
   /// Hosts the reader may navigate to: every configured mirror plus the host
   /// that is currently loaded. Anything else is treated as an off-site link and
@@ -153,7 +140,6 @@ class ArticleController extends GetxController {
 
     _loadPreferences(url);
     _startLoading(request.url);
-    _progressLoad = _loadSavedProgress(url);
     unawaited(_checkOfflineCopy(url));
 
     _setupReactions();
@@ -162,7 +148,6 @@ class ArticleController extends GetxController {
   @override
   void onClose() {
     _loadingTimer?.cancel();
-    _scrollTimer?.cancel();
 
     // A debounced settings write is still pending when the reader is closed, so
     // the last change is written here rather than lost with the worker.
@@ -172,12 +157,6 @@ class ArticleController extends GetxController {
         stored.fontFamily != readingSettings.value.fontFamily) {
       _storage.preferences.readerSettings = readingSettings.value;
     }
-
-    // The last scroll position is written here rather than left to the debounce
-    // timer, which would never fire for a reader who closes the article while
-    // still scrolling. GetX marks a controller closed *before* calling
-    // `onClose`, so this is the one path allowed to write after that point.
-    unawaited(_persistProgress(afterClose: true));
 
     for (final worker in _workers) {
       worker.dispose();
@@ -451,6 +430,11 @@ class ArticleController extends GetxController {
       await controller.evaluateJavascript(
         source: ReaderTheme.injectCssScript(css),
       );
+
+      // After CSS injection, reset scroll position to ensure the WebView
+      // recognizes the new scrollability. This fixes the issue where the
+      // first load doesn't scroll until refresh.
+      await controller.evaluateJavascript(source: 'window.scrollTo(0, 0);');
     } catch (error) {
       appLog(
         'Could not inject CSS: $error',
@@ -462,12 +446,16 @@ class ArticleController extends GetxController {
 
   // ─────────────────────────────── article ───────────────────────────────
 
-  /// Everything that happens once a document is fully loaded: its metadata and
-  /// the reader's place in it.
+  /// Everything that happens once a document is fully loaded: its metadata.
   ///
   /// Nothing is written to the offline store here. An article is kept because
   /// the reader favorited it, not because it happened to be read, so simply
   /// opening a story costs no storage.
+  ///
+  /// The reader also always starts at the top. Reopening an article where it
+  /// was left off sounds helpful until the page has reflowed — a different
+  /// mirror, a resized image, a font change — and the stored offset now points
+  /// into the middle of a paragraph the reader has not read yet.
   Future<void> _onContentReady() async {
     // The saved copy is a bare article fragment: it has no metadata of its own,
     // so extracting it would find nothing and overwrite what the store recorded
@@ -475,8 +463,6 @@ class ArticleController extends GetxController {
     if (!isOffline.value) {
       _meta = await _extractMetadata();
     }
-
-    await _restoreScrollPosition();
   }
 
   /// Reads metadata out of the loaded document and publishes it.
@@ -605,7 +591,6 @@ class ArticleController extends GetxController {
     errorMessage.value = '';
     isOffline.value = true;
     hasOfflineCopy.value = true;
-    readingProgress.value = _savedProgress?.ratio ?? 0;
 
     // The metadata came from a page that never loaded, so whatever the cache
     // recorded is all there is. It is better than the title guessed from the
@@ -674,22 +659,7 @@ ${copy.html}
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;');
 
-  // ──────────────────────────── reading progress ─────────────────────────
-
-  Future<void> _loadSavedProgress(String url) async {
-    try {
-      _savedProgress = await _storage.progress.progressFor(url);
-      if (_savedProgress != null) {
-        readingProgress.value = _savedProgress!.ratio;
-      }
-    } catch (error) {
-      appLog(
-        'Could not read reading progress: $error',
-        name: 'Progress',
-        level: LogLevel.warning,
-      );
-    }
-  }
+  // ─────────────────────── scroll diagnostics & offline ──────────────────
 
   Future<void> _checkOfflineCopy(String url) async {
     try {
@@ -705,103 +675,167 @@ ${copy.html}
 
   /// Called from the WebView's scroll callback, which fires far more often than
   /// anything useful can be done with the value.
-  void reportScroll() {
-    if (isClosed) return;
-
-    _scrollTimer?.cancel();
-    _scrollTimer = Timer(
-      AppConstants.scrollSettleDelay,
-      () => unawaited(_persistProgress()),
-    );
-  }
-
-  /// Measures the document and stores the position, if it moved.
   ///
-  /// [afterClose] exists only for the final flush in `onClose`, which runs once
-  /// the controller is already flagged closed.
-  Future<void> _persistProgress({bool afterClose = false}) async {
-    final controller = webViewController;
-    if (controller == null) return;
-    if (!afterClose && isClosed) return;
-
-    final url = originalUrl.value;
-    if (url.isEmpty) return;
-
-    try {
-      final result = await controller.evaluateJavascript(
-        source: ReaderTheme.scrollMetricsJs,
-      );
-      if (result is! String || result.isEmpty) return;
-
-      final payload = jsonDecode(result);
-      if (payload is! Map<String, dynamic>) return;
-
-      final ratio = (payload['ratio'] as num?)?.toDouble() ?? 0;
-      final offset = (payload['y'] as num?)?.toDouble() ?? 0;
-
-      _storeProgress(url, ratio, offset);
-    } catch (error) {
-      // A document that cannot be measured is not worth an error report: the
-      // reader is still perfectly readable, it just will not resume.
-      appLog(
-        'Could not measure reading progress: $error',
-        name: 'Progress',
-        level: LogLevel.warning,
-      );
-    }
-  }
-
-  /// Records [ratio] unless it is unstarted, unchanged, or already stored.
-  void _storeProgress(String url, double ratio, double offset) {
-    final position = ratio.clamp(0.0, 1.0);
-
-    if (position <= ReadingProgress.kStartedThreshold) return;
-
-    final last = _persistedProgress;
-    if (last != null && (last.ratio - position).abs() < 0.01) return;
-
-    readingProgress.value = position;
-    _persistedProgress = ReadingProgress(
-      url: url,
-      ratio: position,
-      offset: offset,
-      updatedAt: DateTime.now(),
-    );
-
-    unawaited(_storage.progress.save(url, ratio: position, offset: offset));
-  }
-
-  /// Puts the reader back where they left off, once per loaded document.
-  Future<void> _restoreScrollPosition() async {
-    if (_scrollRestored) return;
-
-    // The stored position may still be in flight when the page finishes
-    // loading, so it is awaited rather than read.
-    await _progressLoad;
+  /// Diagnostics only. The position is deliberately not recorded: nothing in the
+  /// app restores it, so measuring the document here would put a JS round trip
+  /// and a database write on the critical path of every drag for no reader-
+  /// visible benefit.
+  void reportScroll(int y) {
     if (isClosed) return;
 
-    final progress = _savedProgress;
-    if (progress == null || !progress.isStarted) return;
+    _lastScrollY = y;
 
-    _scrollRestored = true;
+    unawaited(_logScroll());
+  }
+
+  /// Writes a scroll diagnostic, at a rate a drag can afford.
+  ///
+  /// A finger crossing the screen produces hundreds of callbacks, so an
+  /// unthrottled log would cost more than the scroll itself — which makes this
+  /// the wrong place to be diagnosing a scroll that stutters. Once a second is
+  /// dense enough to tell "the offset never moved" from "the offset moved and the
+  /// page followed", and cheap enough not to be noticed.
+  Future<void> _logScroll() async {
+    final now = DateTime.now();
+    if (_lastScrollLog case final last?
+        when now.difference(last) < AppConstants.scrollDiagnosticsInterval) {
+      return;
+    }
+    _lastScrollLog = now;
 
     final controller = webViewController;
-    if (controller == null) return;
+    final y = _lastScrollY;
 
+    if (controller == null) {
+      _log('scroll y=$y native=n/a (no WebView controller yet)');
+      return;
+    }
+
+    // The native view is asked as well as the document: they can disagree, and
+    // when they do the gesture is being taken by something other than the
+    // document the reader is looking at.
+    final canScroll = await _canScrollVertically(controller);
+    final nativeScrollY = await _safeNativeScrollY(controller);
+    _log(
+      'scroll y=$y nativeScrollY=$nativeScrollY '
+      'canScrollVertically=$canScroll',
+    );
+  }
+
+  Future<bool?> _canScrollVertically(InAppWebViewController controller) async {
     try {
-      await controller.evaluateJavascript(
-        source: ReaderTheme.restoreScrollScript(
-          offset: progress.offset,
-          ratio: progress.ratio,
-        ),
+      return (await controller.canScrollVertically()) as bool?;
+    } catch (error) {
+      _log('canScrollVertically failed: $error');
+      return null;
+    }
+  }
+
+  /// Records what the loaded document thinks its own scroll situation is.
+  ///
+  /// Called once the page is up, and again from [requestRefresh], because
+  /// "will not scroll" is a claim about the document that only the document can
+  /// confirm or deny.
+  Future<void> logScrollDiagnostics(String reason) async {
+    final controller = webViewController;
+    if (isClosed || controller == null) {
+      _log('[$reason] no WebView controller; nothing to measure');
+      return;
+    }
+
+    String? raw;
+    try {
+      raw = await controller.evaluateJavascript(
+        source: ReaderTheme.scrollDiagnosticsJs,
       );
     } catch (error) {
-      appLog(
-        'Could not restore reading position: $error',
-        name: 'Progress',
-        level: LogLevel.warning,
-      );
+      _log('[$reason] diagnostics failed: $error', level: LogLevel.error);
+      return;
     }
+
+    if (raw is! String || raw.isEmpty) {
+      _log('[$reason] diagnostics returned nothing');
+      return;
+    }
+
+    Map<String, dynamic>? payload;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) payload = decoded;
+    } catch (error) {
+      _log('[$reason] could not decode diagnostics: $error');
+    }
+
+    if (payload == null) {
+      _log('[$reason] diagnostics were not an object: $raw');
+      return;
+    }
+
+    final nativeScrollY = await _safeNativeScrollY(controller);
+    final canScroll = await _canScrollVertically(controller);
+
+    _log(
+      '[$reason] document=${_describeScrollDocument(payload)} '
+      'nativeScrollY=$nativeScrollY canScrollVertically=$canScroll',
+    );
+  }
+
+  /// A one-line summary of the document's scroll geometry.
+  static String _describeScrollDocument(Map<String, dynamic> payload) {
+    if (payload['error'] != null) {
+      return 'error=${payload['error']}';
+    }
+
+    final body = payload['bodyStyle'];
+    final html = payload['htmlStyle'];
+    final bodyStyle = body is Map ? body : const <String, dynamic>{};
+    final htmlStyle = html is Map ? html : const <String, dynamic>{};
+
+    return 'contentHeight=${payload['contentHeight']} '
+        'viewport=${payload['viewport']} '
+        'taller=${payload['contentTallerThanViewport']} '
+        'scrollingElement=${payload['scrollingElement']} '
+        'bodyOverflowY=${bodyStyle['overflowY']} '
+        'bodyTouchAction=${bodyStyle['touchAction']} '
+        'htmlOverflowY=${htmlStyle['overflowY']} '
+        'htmlHeight=${htmlStyle['height']} '
+        'htmlMinHeight=${htmlStyle['minHeight']} '
+        'scroller=${payload['scroller']} '
+        'visualViewport=${payload['visualViewport']}';
+  }
+
+  /// The native view's own scroll offset, or `null` when it cannot be read.
+  ///
+  /// Read separately from the document's: the two disagreeing is itself the
+  /// finding, because it means the gesture is not landing on the document.
+  Future<int?> _safeNativeScrollY(InAppWebViewController controller) async {
+    try {
+      return await controller.getScrollY();
+    } catch (error) {
+      _log('native scrollY read failed: $error');
+      return null;
+    }
+  }
+
+  /// Writes one reader log line, in every build mode.
+  ///
+  /// Diagnostics rather than telemetry, and deliberately not silenced in
+  /// release: a reader that will not scroll on a user's device is otherwise
+  /// unexplainable, since nothing on screen reports the state the gesture is
+  /// failing against.
+  static void _log(String message, {LogLevel level = LogLevel.debug}) {
+    appLog(
+      message,
+      name: 'ScrollDiag',
+      level: level,
+      force: AppConstants.scrollDiagnosticsInRelease,
+    );
+  }
+
+  /// Logs the gesture the WebView gave up on, which is the case where the
+  /// document is shorter than the reader thinks and nothing scrolls.
+  void reportOverScroll(int y, {required bool clampedY}) {
+    _log('overScrolled y=$y clampedY=$clampedY scrollY=$_lastScrollY');
   }
 
   // ─────────────────────────────── actions ──────────────────────────────
@@ -824,7 +858,10 @@ ${copy.html}
     }
   }
 
-  Future<void> copyLink() => _clipboard.copyToClipboard(originalUrl.value);
+  Future<void> copyLink() async {
+    await _clipboard.copyToClipboard(originalUrl.value);
+    showMessage('Link copied to clipboard');
+  }
 
   Future<void> shareArticle() async {
     final url = originalUrl.value;
@@ -877,9 +914,11 @@ ${copy.html}
 
       if (favorited) {
         hasOfflineCopy.value = await _saveArticleOffline();
+        showMessage('Article saved to library');
       } else {
         await _storage.cache.remove(url);
         hasOfflineCopy.value = false;
+        showMessage('Article removed from library');
       }
     } finally {
       isStoringArticle.value = false;

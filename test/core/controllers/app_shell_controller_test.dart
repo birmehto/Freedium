@@ -8,8 +8,6 @@ import 'package:get/get.dart';
 
 import '../../helpers/test_env.dart';
 
-const _articleUrl = 'https://medium.com/@someone/an-article';
-
 void main() {
   late AppShellController shell;
   late FavoritesController favorites;
@@ -45,31 +43,6 @@ void main() {
 
       shell.selectTab(AppShellTab.home);
       expect(shell.tab.value, AppShellTab.home);
-    });
-
-    test(
-      'opening Library picks up a position stored while it was hidden',
-      () async {
-        // Every tab stays mounted, so a position written by the reader is only
-        // visible once the library has re-read it.
-        await storage.progress.save(_articleUrl, ratio: 0.5);
-        expect(favorites.continueReading, isEmpty);
-
-        shell.selectTab(AppShellTab.library);
-        await pumpEventQueue();
-
-        expect(favorites.continueReading, hasLength(1));
-        expect(favorites.continueReading.single.url, _articleUrl);
-      },
-    );
-
-    test('re-opening the visible tab refreshes it again', () async {
-      shell.selectTab(AppShellTab.library);
-      await storage.progress.save(_articleUrl, ratio: 0.5);
-      shell.selectTab(AppShellTab.library);
-      await pumpEventQueue();
-
-      expect(favorites.continueReading, hasLength(1));
     });
 
     test('opening Settings re-reads the stored reader settings', () {

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_spacing.dart';
 
-class AppTextForm extends StatelessWidget {
+class AppTextForm extends StatefulWidget {
   const AppTextForm({
     super.key,
     this.controller,
@@ -55,82 +55,127 @@ class AppTextForm extends StatelessWidget {
   final int maxLines;
 
   @override
+  State<AppTextForm> createState() => _AppTextFormState();
+}
+
+class _AppTextFormState extends State<AppTextForm> {
+  bool _isFocused = false;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void dispose() {
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
+    _focusNode.removeListener(_onFocusChange);
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    setState(() {
+      _isFocused = _focusNode.hasFocus;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Material(
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        obscureText: obscureText,
-        enabled: enabled,
-        autofocus: autofocus,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        inputFormatters: inputFormatters,
-        onChanged: onChanged,
-        onFieldSubmitted: onSubmitted,
-        onTapOutside: onTapOutside,
-        validator: validator,
-        maxLines: obscureText ? 1 : maxLines,
-        style: theme.textTheme.bodyLarge,
-        cursorColor: colorScheme.primary,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hintText,
-          helperText: supportingText,
-          errorText: errorText,
-          prefixIcon: leading,
-          suffixIcon: trailing,
-          filled: true,
-          fillColor: colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.35,
-          ),
+    final textField = TextFormField(
+      controller: widget.controller,
+      focusNode: _focusNode,
+      obscureText: widget.obscureText,
+      enabled: widget.enabled,
+      autofocus: widget.autofocus,
+      keyboardType: widget.keyboardType,
+      textInputAction: widget.textInputAction,
+      inputFormatters: widget.inputFormatters,
+      onChanged: widget.onChanged,
+      onFieldSubmitted: widget.onSubmitted,
+      validator: widget.validator,
+      maxLines: widget.obscureText ? 1 : widget.maxLines,
+      style: theme.textTheme.bodyLarge,
+      cursorColor: colorScheme.primary,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        hintText: widget.hintText,
+        helperText: widget.supportingText,
+        errorText: widget.errorText,
+        prefixIcon: widget.leading,
+        suffixIcon: widget.trailing,
+        filled: true,
+        fillColor: _isFocused
+            ? colorScheme.primaryContainer.withValues(alpha: 0.15)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
 
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: BorderSide(color: colorScheme.outlineVariant),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: BorderSide(color: colorScheme.outlineVariant),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: BorderSide(color: colorScheme.primary, width: 2),
-          ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
 
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: BorderSide(color: colorScheme.error),
-          ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: colorScheme.error),
+        ),
 
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: BorderSide(color: colorScheme.error, width: 2),
-          ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(color: colorScheme.error, width: 2),
+        ),
 
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            borderSide: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-            ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
-          labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-          floatingLabelStyle: TextStyle(
-            color: colorScheme.primary,
-            fontWeight: FontWeight.w600,
-          ),
-          hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-          prefixIconColor: colorScheme.onSurfaceVariant,
-          suffixIconColor: colorScheme.onSurfaceVariant,
-          errorStyle: TextStyle(
-            color: colorScheme.error,
-            fontSize: theme.textTheme.labelSmall?.fontSize,
-          ),
+        ),
+        labelStyle: TextStyle(
+          color: _isFocused
+              ? colorScheme.primary
+              : colorScheme.onSurfaceVariant,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
+        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        prefixIconColor: _isFocused
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant,
+        suffixIconColor: _isFocused
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant,
+        errorStyle: TextStyle(
+          color: colorScheme.error,
+          fontSize: theme.textTheme.labelSmall?.fontSize,
         ),
       ),
     );
+
+    if (widget.onTapOutside != null) {
+      return TapRegion(
+        behavior: HitTestBehavior.translucent,
+        onTapOutside: widget.onTapOutside,
+        child: Material(child: textField),
+      );
+    }
+
+    return Material(child: textField);
   }
 }

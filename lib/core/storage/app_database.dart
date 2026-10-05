@@ -41,35 +41,13 @@ class CachedArticles extends Table {
   Set<Column<Object>> get primaryKey => {url};
 }
 
-/// How far the reader has got through an article.
-///
-/// Progress outlives the cached body: a finished article drops out of the cache
-/// but stays here so "Continue reading" can tell it apart from an article that
-/// was never opened.
-class ReadingProgressRows extends Table {
-  TextColumn get url => text().withLength(min: 1, max: 2048)();
-
-  /// Fraction of the scrollable distance covered, in `0..1`.
-  RealColumn get ratio => real().withDefault(const Constant(0))();
-
-  /// Absolute scroll offset in CSS pixels, used to restore the exact position
-  /// when the article's height has not changed since it was last read.
-  RealColumn get offset => real().withDefault(const Constant(0))();
-
-  DateTimeColumn get startedAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column<Object>> get primaryKey => {url};
-}
-
 /// The app's SQLite database, managed by Drift.
 ///
 /// Preferences and library data both flow through the [KvRows] table via a
 /// [DriftKeyValueStore] so reads stay synchronous while every write is
-/// persisted asynchronously through Drift/SQLite. Article bodies and reading
-/// progress live in their own tables because they are read one row at a time.
-@DriftDatabase(tables: [KvRows, CachedArticles, ReadingProgressRows])
+/// persisted asynchronously through Drift/SQLite. Cached article bodies live in
+/// their own table because they are read one row at a time.
+@DriftDatabase(tables: [KvRows, CachedArticles])
 class AppDatabase extends _$AppDatabase {
   /// Opens the on-device database (Android/iOS/desktop).
   AppDatabase.open() : super(driftDatabase(name: 'freedium'));
@@ -78,14 +56,26 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
-    // Additive only: every version so far has just added tables, and
-    // `createAll` skips the ones that already exist, so a v1 install keeps its
-    // preferences, favorites and metadata cache untouched.
-    onUpgrade: (m, from, to) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      // Additive up to v2: every version before this just added tables, and
+      // `createAll` skips the ones that already exist, so a v1 install keeps its
+      // preferences, favorites and metadata cache untouched.
+      if (from < 2) await m.createAll();
+
+      // v3 dropped the reading-progress table along with the "Continue reading"
+      // list and scroll-position restore, so the rows in it are orphaned rather
+      // than merely unread. `createAll` would leave the old table in place
+      // forever, so it is dropped explicitly.
+      if (from < 3) {
+        await m.database.customStatement(
+          'DROP TABLE IF EXISTS reading_progress_rows',
+        );
+      }
+    },
   );
 }

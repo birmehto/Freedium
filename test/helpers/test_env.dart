@@ -47,7 +47,7 @@ registerServices({Map<String, dynamic> seed = const {}}) {
   final storage = createTestStorage(seed: seed);
   final theme = ThemeService(storage.preferences);
   final resolver = ArticleResolver();
-  final shareIntent = ShareIntentService();
+  final shareIntent = ShareIntentService(storage.preferences);
 
   Get.put<StorageService>(storage);
   Get.put<ThemeService>(theme);

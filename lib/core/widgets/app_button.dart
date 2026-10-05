@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -41,6 +42,13 @@ class AppButton extends StatelessWidget {
     };
     final enabled = onPressed != null && !isLoading;
 
+    final VoidCallback? handlePress = enabled
+        ? () {
+            HapticFeedback.lightImpact();
+            onPressed?.call();
+          }
+        : null;
+
     final Widget button;
     if (isLoading) {
       button = M3EButton(
@@ -70,11 +78,11 @@ class AppButton extends StatelessWidget {
         style: style,
         size: size,
         tooltip: tooltip,
-        onPressed: enabled ? onPressed : null,
+        onPressed: handlePress,
       );
     } else {
       button = M3EButton(
-        onPressed: enabled ? onPressed : null,
+        onPressed: handlePress,
         style: style,
         size: size,
         tooltip: tooltip,

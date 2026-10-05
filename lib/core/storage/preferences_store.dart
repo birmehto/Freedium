@@ -15,6 +15,13 @@ class PreferencesStore {
   static const String preferredMirrorKey = 'preferred_mirror';
   static const String autoFallbackKey = 'auto_fallback';
 
+  /// The last URL that arrived through a share intent and was opened.
+  ///
+  /// Persisted rather than kept in memory because the re-delivery that makes
+  /// this necessary happens after Android has thrown the process away, so an
+  /// in-memory flag would start empty and the repeat would be opened again.
+  static const String lastSharedUrlKey = 'last_shared_url';
+
   static const String modeSystem = 'system';
   static const String modeLight = 'light';
   static const String modeDark = 'dark';
@@ -89,4 +96,23 @@ class PreferencesStore {
   set autoFallback(bool value) {
     _store.write(autoFallbackKey, value);
   }
+
+  // ──────────────────────────────── shares ───────────────────────────────
+
+  /// The last URL a share intent asked the app to open, or `null`.
+  ///
+  /// Android re-delivers the intent that started a task whenever that task is
+  /// relaunched, so this is how a re-delivery is told apart from a new share.
+  String? get lastSharedUrl => _store.read(lastSharedUrlKey) as String?;
+
+  set lastSharedUrl(String? value) {
+    if (value == null) {
+      _store.remove(lastSharedUrlKey);
+    } else {
+      _store.write(lastSharedUrlKey, value);
+    }
+  }
+
+  /// Forgets the last share, so the next one opens even if it is the same URL.
+  void forgetLastShare() => _store.remove(lastSharedUrlKey);
 }

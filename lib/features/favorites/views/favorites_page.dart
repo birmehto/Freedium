@@ -10,7 +10,6 @@ import '../../../core/widgets/app_empty.dart';
 import '../../../core/widgets/app_textform.dart';
 import '../controllers/favorites_controller.dart';
 import '../models/favorite_article.dart';
-import '../widgets/continue_reading_section.dart';
 import '../widgets/delete_favorite_dialog.dart';
 import '../widgets/favorite_tile.dart';
 
@@ -40,17 +39,6 @@ class FavoritesPage extends GetView<FavoritesController> {
             ),
           ),
 
-          Obx(() {
-            final items = controller.continueReading;
-            final searching = controller.trimmedQuery.isNotEmpty;
-
-            return searching || items.isEmpty
-                ? const SizedBox.shrink()
-                : ContinueReadingSection(
-                    items: items,
-                    onOpened: controller.refreshContinueReading,
-                  );
-          }),
           Expanded(
             child: Obx(() {
               final list = controller.filteredFavorites;
@@ -90,9 +78,6 @@ class FavoritesPage extends GetView<FavoritesController> {
                     AppRoutes.article,
                     arguments: {'url': url, 'originalUrl': url},
                   );
-
-                  // Reading on the other side moved the stored position.
-                  await controller.refreshContinueReading();
                 },
                 itemBuilder: (context, index) {
                   if (index < 0 || index >= list.length) {
