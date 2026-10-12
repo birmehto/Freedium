@@ -50,6 +50,7 @@ class _ArticlePageState extends State<ArticlePage> {
     return Scaffold(
       appBar: AppAppBar(
         centerTitle: false,
+        automaticallyImplyLeading: true,
         // Deliberately not the app bar's default titleLarge: a truncated article
         // title competes with the reading-time and favorite actions at 22sp.
         title: Obx(() => Text(_displayTitle, style: context.text.titleMedium)),
@@ -312,10 +313,9 @@ class _FabMenu extends StatelessWidget {
         M3EFabMenuItem(
           icon: const Icon(M3EIcons.refresh_rounded),
           label: 'Refresh',
-          // The reader has no pull-to-refresh: the plugin's implementation
-          // needs the composition mode that stops scroll gestures arriving, and
-          // it disabled its own layout on every touch regardless. A refresh the
-          // reader can actually reach beats one that silently never fires.
+          // The reader has no pull-to-refresh: the article is a WebView, so a
+          // refresh control would have to be reimplemented inside the page. An
+          // action the reader can actually reach beats one that never fires.
           onPressed: controller.requestRefresh,
         ),
         M3EFabMenuItem(

@@ -1,9 +1,8 @@
 import 'dart:async';
-import 'dart:collection';
 
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/constants/reader_theme.dart';
 import '../../../core/utils/app_log.dart';
@@ -40,164 +39,226 @@ class ArticleWebView extends StatefulWidget {
 class _ArticleWebViewState extends State<ArticleWebView> {
   ArticleController get _controller => widget.controller;
 
+  late final WebViewController _webViewController;
+
+  /// The URL of the document in the main frame.
+  ///
+  /// `flutter_inappwebview` labelled every error with `isForMainFrame`; the
+  /// official plugin does not for HTTP errors on Android, where a 404 image
+  /// would otherwise be mistaken for a dead mirror. Tracking the main-frame URL
+  /// lets a subresource error be told apart from the document's own.
+  String? _mainFrameUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _webViewController = _createWebViewController();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final initialSettings = InAppWebViewSettings(
-      userAgent: _readerUserAgent,
-      supportZoom: false,
-      useShouldOverrideUrlLoading: true,
-      mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
-      // The reader is a scroller, not a bounce-scroller: the stylesheet already
-      // declares `overscroll-behavior-y: none`. Leaving the default would also
-      // make the plugin flip the WebView's overscroll mode twice on every
-      // overscroll near the top of the article, invalidating the view mid-gesture.
-      overScrollMode: OverScrollMode.NEVER,
-      // Virtual display composition, not hybrid.
-      //
-      // Hybrid composition composites the WebView in its own layer, and scroll
-      // gestures do not survive the trip: the document lays out, the native view
-      // reports it can scroll vertically, and a drag moves nothing and emits no
-      // scroll event at all. The reader is a single scroller for the whole app,
-      // so a composition mode that cannot scroll is not a trade worth making.
-      useHybridComposition: false,
+    return WebViewWidget(controller: _webViewController);
+  }
+
+  WebViewController _createWebViewController() {
+    final webViewController = WebViewController(
+      // Dialogs the page raises are the reader's to dismiss: granting a camera
+      // or geolocation request from an article is never wanted.
+      onPermissionRequest: (request) => unawaited(request.deny()),
     );
 
-    final initialUserScripts = UnmodifiableListView<UserScript>([
-      UserScript(
-        source: ReaderTheme.esCompatPolyfills,
-        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    unawaited(webViewController.setJavaScriptMode(JavaScriptMode.unrestricted));
+    unawaited(webViewController.setUserAgent(_readerUserAgent));
+    unawaited(webViewController.enableZoom(false));
+    // The reader is a scroller, not a bounce-scroller: the stylesheet already
+    // declares `overscroll-behavior-y: none`, and the rubber-band effect only
+    // fights the article.
+    unawaited(webViewController.setOverScrollMode(WebViewOverScrollMode.never));
+    unawaited(webViewController.setOnConsoleMessage(_onConsoleMessage));
+    unawaited(
+      webViewController.setOnJavaScriptAlertDialog(_onJavaScriptAlertDialog),
+    );
+    unawaited(
+      webViewController.setOnJavaScriptConfirmDialog(
+        _onJavaScriptConfirmDialog,
       ),
-      UserScript(
-        source: ReaderTheme.earlyStyleInjector(
-          settings: _controller.readingSettings.value,
-          systemDark: _controller.isDarkMode,
-        ),
-        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+    );
+    unawaited(
+      webViewController.setOnJavaScriptTextInputDialog(
+        _onJavaScriptTextInputDialog,
       ),
-      UserScript(
-        source: ReaderTheme.popupBlockingJs,
-        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
-      ),
-    ]);
+    );
+    unawaited(
+      webViewController.setNavigationDelegate(_buildNavigationDelegate()),
+    );
 
-    return InAppWebView(
-      initialUrlRequest: URLRequest(
-        url: WebUri(widget.url),
+    _controller.setWebViewController(webViewController);
+
+    unawaited(
+      webViewController.loadRequest(
+        Uri.parse(widget.url),
         headers: const {'Accept-Language': 'en-US,en;q=0.9'},
       ),
-      initialSettings: initialSettings,
-      initialUserScripts: initialUserScripts,
-      onWebViewCreated: _controller.setWebViewController,
-      onCreateWindow: (controller, createWindowAction) async => false,
-      shouldOverrideUrlLoading: (controller, navigationAction) async {
-        final requestUrl = navigationAction.request.url;
-        if (requestUrl == null) return NavigationActionPolicy.CANCEL;
-
-        // Only the reader's own top-level navigation is redirected out;
-        // everything inside the document is left to the page.
-        final isMainFrame = navigationAction.targetFrame?.isMainFrame ?? true;
-        if (!isMainFrame) return NavigationActionPolicy.ALLOW;
-
-        final scheme = requestUrl.scheme.toLowerCase();
-        final allowed =
-            (scheme == 'http' || scheme == 'https') &&
-            _controller.allowedNavigationHosts.contains(
-              requestUrl.host.toLowerCase(),
-            );
-
-        if (allowed) return NavigationActionPolicy.ALLOW;
-
-        // A link the reader cannot follow is handed to the browser rather than
-        // dropped, which is what "cancelled" would otherwise mean silently:
-        // off-site articles, and the mailto:/tel: links a writer embeds.
-        unawaited(_openExternally(requestUrl.toString()));
-
-        return NavigationActionPolicy.CANCEL;
-      },
-      onPermissionRequest: (controller, permissionRequest) async =>
-          PermissionResponse(),
-      onJsAlert: (controller, jsAlertRequest) async =>
-          JsAlertResponse(handledByClient: true),
-      onJsConfirm: (controller, jsConfirmRequest) async =>
-          JsConfirmResponse(handledByClient: true),
-      onJsPrompt: (controller, jsPromptRequest) async =>
-          JsPromptResponse(value: '', handledByClient: true),
-      onJsBeforeUnload: (controller, jsBeforeUnloadRequest) async =>
-          JsBeforeUnloadResponse(
-            action: JsBeforeUnloadResponseAction.CANCEL,
-            handledByClient: true,
-          ),
-      onLoadStart: (controller, url) {
-        appLog('WebView.onLoadStart: url=$url');
-        _controller.onPageStart(url?.toString());
-      },
-      onPageCommitVisible: (controller, url) {
-        appLog('WebView.onPageCommitVisible: url=$url');
-        _controller.onPageCommitVisible();
-      },
-      onLoadStop: (controller, url) async {
-        appLog('WebView.onLoadStop: url=$url');
-
-        // The loader is dismissed before the article is reported ready, so the
-        // reader is not held behind a loading indicator for a page that has
-        // already finished.
-        _controller.onPageLoaded();
-        await _controller.injectCustomCSS();
-
-        // After the stylesheet is in place, so what is measured is the
-        // document the reader is actually looking at. A page that arrives
-        // shorter than the viewport is the one explanation for a reader that
-        // "cannot scroll" that no amount of gesture debugging would reveal.
-        unawaited(_controller.logScrollDiagnostics('onLoadStop'));
-      },
-      onScrollChanged: (controller, x, y) {
-        // Deliberately not logged here: scrolling fires hundreds of times per
-        // article, so the write is throttled inside the controller rather than
-        // at this rate. The offset alone cannot express "how far through"
-        // anyway, so the controller measures the document once scrolling settles.
-        _controller.reportScroll(y.toInt());
-      },
-      onOverScrolled: (controller, x, y, clampedX, clampedY) {
-        // Only the vertical edge matters for a reader, and only an overscroll
-        // in that axis says anything about whether the document is scrollable
-        // at all.
-        if (!clampedY) return;
-        _controller.reportOverScroll(y, clampedY: clampedY);
-      },
-      onProgressChanged: (controller, progress) {
-        appLog('WebView.onProgressChanged: progress=$progress');
-        _controller.updateProgress(progress.toDouble());
-      },
-      onReceivedError: (controller, request, error) {
-        if (request.isForMainFrame ?? false) {
-          appLog('WebView.onReceivedError: ${error.description}');
-          unawaited(_controller.onPageError(_describe(error.description)));
-        }
-      },
-      onReceivedHttpError: (controller, request, errorResponse) {
-        if (!(request.isForMainFrame ?? false)) return;
-        appLog(
-          'WebView.onReceivedHttpError: url=${request.url}, code=${errorResponse.statusCode}',
-        );
-        final statusCode = errorResponse.statusCode ?? 0;
-        if (statusCode >= 500) {
-          unawaited(_controller.handleServerError(statusCode));
-        } else if (statusCode >= 400) {
-          unawaited(
-            _controller.onPageError(
-              statusCode == 404
-                  ? 'Article not found (404).'
-                  : 'Server error ($statusCode)',
-            ),
-          );
-        }
-      },
-      onConsoleMessage: (controller, consoleMessage) {
-        if (consoleMessage.messageLevel == ConsoleMessageLevel.ERROR) {
-          appLog('Console: ${consoleMessage.message}', name: 'Reader');
-        }
-      },
     );
+
+    return webViewController;
+  }
+
+  NavigationDelegate _buildNavigationDelegate() {
+    return NavigationDelegate(
+      onNavigationRequest: _onNavigationRequest,
+      onPageStarted: _onPageStarted,
+      onPageFinished: _onPageFinished,
+      onProgress: _onProgress,
+      onWebResourceError: _onWebResourceError,
+      onHttpError: _onHttpError,
+    );
+  }
+
+  /// Only the reader's own top-level navigation is redirected out; everything
+  /// inside the document is left to the page.
+  NavigationDecision _onNavigationRequest(NavigationRequest request) {
+    if (!request.isMainFrame) return NavigationDecision.navigate;
+
+    final uri = Uri.tryParse(request.url);
+    if (uri == null) return NavigationDecision.prevent;
+
+    final scheme = uri.scheme.toLowerCase();
+    final allowed =
+        (scheme == 'http' || scheme == 'https') &&
+        _controller.allowedNavigationHosts.contains(uri.host.toLowerCase());
+
+    if (allowed) return NavigationDecision.navigate;
+
+    // A link the reader cannot follow is handed to the browser rather than
+    // dropped, which is what "prevented" would otherwise mean silently:
+    // off-site articles, and the mailto:/tel: links a writer embeds.
+    unawaited(_openExternally(request.url));
+
+    return NavigationDecision.prevent;
+  }
+
+  void _onPageStarted(String url) {
+    _mainFrameUrl = url;
+    appLog('WebView.onPageStarted: url=$url');
+
+    _controller.onPageStart(url);
+
+    // The document-start scripts the old plugin ran through user scripts have
+    // no equivalent in the official plugin, so they are injected as early as
+    // the platform allows. Anything that arrives too late for a first paint is
+    // re-applied once the page finishes.
+    unawaited(_injectDocumentStartScripts());
+  }
+
+  Future<void> _injectDocumentStartScripts() async {
+    for (final source in _documentScripts()) {
+      try {
+        await _webViewController.runJavaScript(source);
+      } catch (error) {
+        // The document may not exist yet when the navigation has only just
+        // started; the page-finished pass re-applies everything that matters.
+        appLog(
+          'Could not inject early script: $error',
+          name: 'Reader',
+          level: LogLevel.warning,
+        );
+      }
+    }
+  }
+
+  void _onPageFinished(String url) {
+    _mainFrameUrl = url;
+    unawaited(_handlePageFinished(url));
+  }
+
+  Future<void> _handlePageFinished(String url) async {
+    appLog('WebView.onPageFinished: url=$url');
+
+    // The loader is dismissed before the article is reported ready, so the
+    // reader is not held behind a loading indicator for a page that has
+    // already finished.
+    _controller.onPageLoaded();
+    await _controller.injectCustomCSS();
+  }
+
+  void _onProgress(int progress) {
+    appLog('WebView.onProgress: progress=$progress');
+    _controller.updateProgress(progress.toDouble());
+  }
+
+  void _onWebResourceError(WebResourceError error) {
+    if (!(error.isForMainFrame ?? false)) return;
+
+    appLog('WebView.onWebResourceError: ${error.description}');
+    unawaited(_controller.onPageError(_describe(error.description)));
+  }
+
+  void _onHttpError(HttpResponseError error) {
+    final requestUri = error.request?.uri;
+    if (requestUri != null && !_isMainFrameRequest(requestUri)) return;
+
+    final statusCode = error.response?.statusCode ?? 0;
+    appLog('WebView.onHttpError: url=$requestUri, code=$statusCode');
+
+    if (statusCode >= 500) {
+      unawaited(_controller.handleServerError(statusCode));
+    } else if (statusCode >= 400) {
+      unawaited(
+        _controller.onPageError(
+          statusCode == 404
+              ? 'Article not found (404).'
+              : 'Server error ($statusCode)',
+        ),
+      );
+    }
+  }
+
+  /// Whether an HTTP error belongs to the document rather than a subresource.
+  bool _isMainFrameRequest(Uri uri) {
+    final mainFrame = _mainFrameUrl;
+    if (mainFrame == null) return true;
+
+    final parsed = Uri.tryParse(mainFrame);
+    if (parsed == null) return true;
+
+    return parsed.replace(fragment: '').toString() ==
+        uri.replace(fragment: '').toString();
+  }
+
+  void _onConsoleMessage(JavaScriptConsoleMessage message) {
+    if (message.level == JavaScriptLogLevel.error) {
+      appLog('Console: ${message.message}', name: 'Reader');
+    }
+  }
+
+  /// Suppresses the page's own alert/confirm/prompt dialogs.
+  Future<void> _onJavaScriptAlertDialog(JavaScriptAlertDialogRequest request) {
+    return Future<void>.value();
+  }
+
+  Future<bool> _onJavaScriptConfirmDialog(
+    JavaScriptConfirmDialogRequest request,
+  ) {
+    return Future<bool>.value(false);
+  }
+
+  Future<String> _onJavaScriptTextInputDialog(
+    JavaScriptTextInputDialogRequest request,
+  ) {
+    return Future<String>.value('');
+  }
+
+  /// The scripts the reader wants in the document before its own code runs.
+  List<String> _documentScripts() {
+    return [
+      ReaderTheme.esCompatPolyfills,
+      ReaderTheme.earlyStyleInjector(
+        settings: _controller.readingSettings.value,
+        systemDark: _controller.isDarkMode,
+      ),
+      ReaderTheme.popupBlockingJs,
+    ];
   }
 
   /// Opens [url] outside the reader, e.g. an off-site link the user tapped.

@@ -3,113 +3,63 @@ import 'package:material_3_expressive/material_3_expressive.dart';
 
 import '../../../core/theme/app_spacing.dart';
 
-class HomeHeaderIcon extends StatefulWidget {
+class HomeHeaderIcon extends StatelessWidget {
   const HomeHeaderIcon({super.key});
-
-  @override
-  State<HomeHeaderIcon> createState() => _HomeHeaderIconState();
-}
-
-class _HomeHeaderIconState extends State<HomeHeaderIcon>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 2000),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    _rotationAnimation = Tween<double>(
-      begin: -0.05,
-      end: 0.05,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Transform.rotate(
-            angle: _rotationAnimation.value,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colors.primaryContainer,
-                    colors.primaryContainer.withValues(alpha: 0.7),
-                  ],
-                ),
-                border: Border.all(
-                  color: colors.primary.withValues(alpha: 0.15),
-                  width: 1.5,
-                ),
-              ),
-              child: Center(
-                child: Container(
-                  width: 82,
-                  height: 82,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colors.primary,
-                        colors.primary.withValues(alpha: 0.85),
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.3),
-                        blurRadius: 28,
-                        spreadRadius: -4,
-                        offset: const Offset(0, 10),
-                      ),
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.15),
-                        blurRadius: 16,
-                        spreadRadius: 0,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    M3EIcons.auto_stories_rounded,
-                    size: 40,
-                    color: colors.onPrimary,
-                  ),
-                ),
-              ),
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colors.primaryContainer,
+            colors.primaryContainer.withValues(alpha: 0.7),
+          ],
+        ),
+        border: Border.all(
+          color: colors.primary.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
+      ),
+      child: Center(
+        child: Container(
+          width: 82,
+          height: 82,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [colors.primary, colors.primary.withValues(alpha: 0.85)],
             ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.primary.withValues(alpha: 0.3),
+                blurRadius: 28,
+                spreadRadius: -4,
+                offset: const Offset(0, 10),
+              ),
+              BoxShadow(
+                color: colors.primary.withValues(alpha: 0.15),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        );
-      },
+          child: Icon(
+            M3EIcons.auto_stories_rounded,
+            size: 40,
+            color: colors.onPrimary,
+          ),
+        ),
+      ),
     );
   }
 }

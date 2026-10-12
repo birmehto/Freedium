@@ -1,6 +1,5 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/errors/app_exception.dart';
@@ -9,6 +8,7 @@ import '../../../core/routes/app_routes.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/share_intent_service.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../../article/models/article_request.dart';
 
 class HomeController extends GetxController {
@@ -157,8 +157,6 @@ class HomeController extends GetxController {
 
   /// Shows a transient message, if a context is available at that moment.
   void _showMessage(String message) {
-    if (Get.context case final context?) {
-      M3ESnackbar.show(context, message: message);
-    }
+    AppSnackbar.show(Get.context, message: message);
   }
 }

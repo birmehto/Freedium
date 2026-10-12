@@ -370,6 +370,40 @@ void main() {
       expect(find.text('Keep It'), findsOneWidget);
     });
 
+    testWidgets('keeping a fully-swiped article closes against a live context', (
+      tester,
+    ) async {
+      // A full swipe both auto-runs the delete action (opening the dialog) and
+      // removes the row from the list while the dialog is still asking. Pressing
+      // Keep must then close the dialog through a context that is still mounted,
+      // or the root-navigator pop throws "deactivated widget's ancestor".
+      const url = 'https://medium.com/swipe-keep';
+      await storage.library.addToFavorites(article(url, title: 'Swipe Keep'));
+
+      await mountPage(tester);
+
+      await tester.drag(find.text('Swipe Keep'), const Offset(-1600, 0));
+      // Bounded pumping: the row is flying out underneath, and its springs keep
+      // scheduling frames long after pumpAndSettle would have given up.
+      await tester.pump();
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+
+      expect(find.text('Remove from library?'), findsOneWidget);
+
+      await tester.tap(find.text('Keep'));
+      await tester.pump();
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 80));
+      }
+
+      expect(find.text('Remove from library?'), findsNothing);
+      expect(storage.library.isFavorite(url), isTrue);
+      // The cancelled swipe rebuilds the list, so the kept article is back.
+      expect(find.text('Swipe Keep'), findsOneWidget);
+    });
+
     testWidgets('confirming removes the article from the library', (
       tester,
     ) async {

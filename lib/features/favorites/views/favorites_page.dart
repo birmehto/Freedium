@@ -19,6 +19,10 @@ class FavoritesPage extends GetView<FavoritesController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // The confirm dialog and its buttons close through the page's own context:
+    // a tile's context dies with the row once a full swipe removes it, while
+    // the dialog is still asking, and a defunct context cannot navigate.
+    final pageContext = context;
 
     return Scaffold(
       appBar: const AppAppBar(title: Text('Favorites')),
@@ -88,14 +92,14 @@ class FavoritesPage extends GetView<FavoritesController> {
                   return FavoriteTile(
                     item: list[index],
                     swipe: M3EListItemSwipe(
-                      onDismiss: (_) => _remove(context, list[index]),
+                      onDismiss: (_) => _remove(pageContext, list[index]),
                       trailing: [
                         M3EListSwipeAction(
                           icon: const Icon(M3EIcons.delete_rounded),
                           isPrimary: true,
                           backgroundColor: theme.colorScheme.errorContainer,
                           foregroundColor: theme.colorScheme.onErrorContainer,
-                          onPressed: () => _remove(context, list[index]),
+                          onPressed: () => _remove(pageContext, list[index]),
                         ),
                       ],
                     ),
@@ -114,8 +118,21 @@ class FavoritesPage extends GetView<FavoritesController> {
   /// Reports back whether the article really left, so a cancelled swipe can
   /// put its row back instead of silently losing it.
   Future<bool> _remove(BuildContext context, FavoriteArticle article) async {
-    if (!await showDeleteFavoriteDialog(context, article)) {
-      if (context.mounted) controller.dismissEpoch.value++;
+    // A full swipe reports both the auto-run of the primary delete action and
+    // the list's own onDismiss as separate calls; one confirm dialog is enough.
+    if (!controller.startRemovalConfirm(article.url)) return false;
+
+    bool confirmed;
+    try {
+      confirmed = await showDeleteFavoriteDialog(context, article);
+    } finally {
+      controller.endRemovalConfirm(article.url);
+    }
+
+    if (!confirmed) {
+      // The tile that started this is gone by now (its swipe is over), so the
+      // row can only come back by rebuilding the list from the store.
+      controller.dismissEpoch.value++;
       return false;
     }
 

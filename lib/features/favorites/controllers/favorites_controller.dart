@@ -18,6 +18,19 @@ class FavoritesController extends GetxController {
   /// cascade for the same URL.
   final Set<String> _removing = <String>{};
 
+  /// URLs whose remove-confirmation dialog is open.
+  ///
+  /// A full swipe reports *both* the auto-run of the primary delete action and
+  /// the list's own `onDismiss`, so without this guard the "keep?" dialog would
+  /// be pushed twice and stacked.
+  final Set<String> _confirmingRemoval = <String>{};
+
+  /// Claims the remove-confirmation dialog for [url]. Returns false when one is
+  /// already open, so the same swipe cannot open a second.
+  bool startRemovalConfirm(String url) => _confirmingRemoval.add(url.trim());
+
+  void endRemovalConfirm(String url) => _confirmingRemoval.remove(url.trim());
+
   /// Favorites are read straight from the library store rather than mirrored
   /// into a second list, so the two can never drift apart.
   List<FavoriteArticle> get favorites => _storage.library.favorites;

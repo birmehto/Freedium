@@ -6,8 +6,7 @@ import 'package:freedium/features/settings/models/reader_settings.dart';
 /// to the height of the viewport and hides the overflow, then scrolls an inner
 /// container. A document pinned to the viewport is exactly one screen tall, so
 /// there is nothing for a drag to move: the article is there and the page will
-/// not scroll. These tests hold the stylesheet to that fix, and the measurement
-/// scripts to working either way.
+/// not scroll. These tests hold the stylesheet to that fix.
 void main() {
   group('getCss scrollability', () {
     late String css;
@@ -81,29 +80,6 @@ void main() {
       // gone, and the page still has to move.
       expect(declarationsOf('html'), isNot(contains('overflow: hidden')));
       expect(declarationsOf('body'), isNot(contains('overflow: hidden')));
-    });
-  });
-
-  group('scrollDiagnosticsJs', () {
-    test('reports the geometry a scroll failure turns on', () {
-      const js = ReaderTheme.scrollDiagnosticsJs;
-
-      expect(js, contains('contentTallerThanViewport'));
-      expect(js, contains('scrollHeight'));
-      expect(js, contains('clientHeight'));
-      expect(js, contains('innerHeight'));
-      expect(js, contains('overflowY'));
-      expect(js, contains('getComputedStyle'));
-    });
-
-    test('names an inner scroller when the document is not the scroller', () {
-      expect(ReaderTheme.scrollDiagnosticsJs, contains('scroller'));
-      expect(ReaderTheme.scrollDiagnosticsJs, contains('tagName'));
-    });
-
-    test('reports its own failure rather than throwing into the channel', () {
-      expect(ReaderTheme.scrollDiagnosticsJs, contains('catch'));
-      expect(ReaderTheme.scrollDiagnosticsJs, contains('error'));
     });
   });
 }

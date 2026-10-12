@@ -55,7 +55,7 @@ Before diving in, know the lay of the land. In short:
 - Reader CSS lives in `lib/core/constants/reader_theme.dart`; the controller in `lib/features/article/controllers/article_controller.dart`.
 - Offline copies are written by one path only: `ArticleController.toggleFavorite`, because a favorite is a request to keep the article. Opening an article stores nothing. Extend `test/features/article/article_offline_test.dart` when you change it.
 - A favorite must survive a body it cannot store, so `readArticleHtml` returning `null` is not a failed save. It is also the seam that suite replaces: the WebView is never built in tests.
-- A snackbar from a controller has nowhere to go: `M3ESnackbar` inserts into the root overlay, and `Get.context` is the Navigator *above* it. Return the message and let the view show it with its own context.
+- The one snackbar is `AppSnackbar.show` in `lib/core/widgets/app_snackbar.dart`: Flutter's own `SnackBar` presented through the nearest `ScaffoldMessenger`. It is the only path a transient message may take, and it resolves the messenger per call because a controller's `Get.context` can already be deactivated when the message fires — it stays silent rather than crash in that case.
 
 ### Storage
 

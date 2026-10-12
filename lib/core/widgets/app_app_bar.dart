@@ -11,7 +11,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     this.centerTitle = true,
     this.actions,
-    this.automaticallyImplyLeading = true,
+    this.automaticallyImplyLeading = false,
   });
 
   final Widget title;

@@ -75,7 +75,7 @@ flutter run
 | Framework | Flutter / Dart |
 | State management | GetX (controllers, bindings, routing) |
 | UI | Material 3 Expressive (`material_3_expressive`) |
-| Article rendering | `flutter_inappwebview` with injected reader CSS/JS |
+| Article rendering | `webview_flutter` with injected reader CSS/JS |
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |

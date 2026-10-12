@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -7,6 +6,7 @@ import '../../../core/errors/app_exception.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../models/reader_settings.dart';
 
 class SettingsController extends GetxController {
@@ -139,8 +139,6 @@ class SettingsController extends GetxController {
   }
 
   void showMessage(String message) {
-    if (Get.context case final context?) {
-      M3ESnackbar.show(context, message: message);
-    }
+    AppSnackbar.show(Get.context, message: message);
   }
 }

@@ -93,7 +93,13 @@ class AppDialog extends StatelessWidget {
   /// Targets the root navigator because that is the route [M3EDialog.show]
   /// pushes onto, so this stays correct for a [content] body that was built
   /// against a page context rather than a dialog one.
+  ///
+  /// A no-op when [context] is no longer mounted: the element a caller captured
+  /// may have been removed from the tree while the dialog was up (a swiped-away
+  /// list row, for example), and navigating from a defunct context would throw.
+  /// The dialog is then left for its barrier to dismiss.
   static void close<T>(BuildContext context, [T? result]) {
+    if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop(result);
   }
 

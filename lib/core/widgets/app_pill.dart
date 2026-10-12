@@ -16,7 +16,7 @@ class AppPill extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppRadius.sm + AppSpacing.sm,
+        horizontal: AppRadius.sm + AppSpacing.xs,
         vertical: AppSpacing.xs + AppSpacing.xxs,
       ),
       decoration: BoxDecoration(

@@ -681,7 +681,8 @@ $hostModeSyncJs
   /// Reads article metadata out of the loaded document.
   ///
   /// Returns a JSON string (not an object) so the result survives
-  /// `evaluateJavascript`, which stringifies its return value.
+  /// `runJavaScriptReturningResult`, which hands back a string rather than a
+  /// structured value.
   static const String extractMetaJs = r'''
 (function() {
   function meta(selector) {
@@ -775,7 +776,8 @@ $hostModeSyncJs
   /// simply fail to load.
   ///
   /// Returns a JSON string (not an object) so the result survives
-  /// `evaluateJavascript`, which stringifies its return value.
+  /// `runJavaScriptReturningResult`, which hands back a string rather than a
+  /// structured value.
   static const String extractArticleHtmlJs = '''
 (function() {
   var root =
@@ -797,104 +799,6 @@ $hostModeSyncJs
   }
 
   return JSON.stringify({ html: clone.outerHTML, found: true });
-})();
-''';
-
-  // ---------------------------------------------------------------------------
-  // Scroll diagnostics
-  // ---------------------------------------------------------------------------
-
-  /// Reports everything a "the page will not scroll" report turns on.
-  ///
-  /// A WebView that refuses to scroll reports nothing to the app: no callback,
-  /// no error, no visual change. The only way to tell a document that cannot
-  /// scroll from a document whose scroll gesture never arrived is to ask the
-  /// document, so this answers the questions that distinguish them:
-  ///
-  ///  * is the content taller than the viewport, and by how much
-  ///  * which element is the scroller, and how far is it scrolled
-  ///  * what the root and body compute to, since a root pinned to the viewport
-  ///    is the single most common reason a page that looks scrollable is not
-  ///
-  /// Wrapped so a document that throws reports `error` instead of taking the
-  /// channel down with it.
-  static const String scrollDiagnosticsJs = '''
-(function() {
-  try {
-    var doc = document.documentElement;
-    var body = document.body;
-
-    var viewport = window.innerHeight || 0;
-    var docHeight = doc ? doc.scrollHeight : 0;
-    var bodyHeight = body ? body.scrollHeight : 0;
-    var contentHeight = Math.max(docHeight, bodyHeight);
-
-    var scrollingElement = document.scrollingElement || doc;
-
-    // Named separately from the document, because a host shell that keeps its
-    // own scroll container scrolls an inner element and leaves the document
-    // reporting a permanently unchanging zero.
-    var scroller = 'none';
-    var candidates = [doc, body].concat(
-      Array.prototype.slice.call(
-        document.querySelectorAll(
-          'div[style*="overflow-y"], div[style*="overflow: auto"], ' +
-            'div[style*="overflow: scroll"]'
-        )
-      )
-    );
-
-    for (var i = 0; i < candidates.length; i++) {
-      var node = candidates[i];
-
-      if (node && node.scrollHeight - node.clientHeight > 8) {
-        scroller = {
-          tagName: node.tagName ? node.tagName.toLowerCase() : '',
-          id: node.id || '',
-          className: typeof node.className === 'string' ? node.className : '',
-          scrollHeight: node.scrollHeight,
-          clientHeight: node.clientHeight,
-          scrollTop: node.scrollTop
-        };
-        break;
-      }
-    }
-
-    function styleOf(node) {
-      if (!node) return null;
-
-      var computed = getComputedStyle(node);
-
-      return {
-        overflowY: computed.overflowY,
-        overflowX: computed.overflowX,
-        height: computed.height,
-        minHeight: computed.minHeight,
-        maxHeight: computed.maxHeight,
-        position: computed.position,
-        touchAction: computed.touchAction
-      };
-    }
-
-    var visual = window.visualViewport;
-
-    return JSON.stringify({
-      contentHeight: contentHeight,
-      viewport: viewport,
-      contentTallerThanViewport: contentHeight > viewport,
-      scrollingElement: scrollingElement ? scrollingElement.tagName : null,
-      scrollY: window.pageYOffset,
-      docStyle: styleOf(doc),
-      htmlStyle: styleOf(doc),
-      bodyStyle: styleOf(body),
-      scroller: scroller,
-      visualViewport: visual
-        ? { height: visual.height, scale: visual.scale }
-        : null
-    });
-  } catch (e) {
-    return JSON.stringify({ error: String(e) });
-  }
 })();
 ''';
 

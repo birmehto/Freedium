@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/reader_theme.dart';
@@ -18,6 +17,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/storage/app_database.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/widgets/app_snackbar.dart';
 import '../../favorites/models/favorite_article.dart';
 import '../../settings/models/reader_settings.dart';
 import '../models/article_meta.dart';
@@ -73,17 +73,9 @@ class ArticleController extends GetxController {
   /// second press cannot race the first.
   final isStoringArticle = false.obs;
 
-  InAppWebViewController? webViewController;
+  WebViewController? webViewController;
 
   Timer? _loadingTimer;
-
-  /// When the last scroll diagnostic was written, so a drag logs at a rate it
-  /// can afford rather than once per frame.
-  DateTime? _lastScrollLog;
-
-  /// The offset the WebView last reported, kept because a scroll callback that
-  /// never fires is the symptom itself and has to be visible in the log.
-  int _lastScrollY = 0;
 
   final List<Worker> _workers = [];
 
@@ -253,7 +245,7 @@ class ArticleController extends GetxController {
     if (isLoading.value || isInitialLoad.value) _stopLoading();
   }
 
-  void setWebViewController(InAppWebViewController controller) {
+  void setWebViewController(WebViewController controller) {
     webViewController = controller;
   }
 
@@ -391,12 +383,13 @@ class ArticleController extends GetxController {
   }
 
   Future<void> _loadUrl(String url) async {
-    if (webViewController == null) {
+    final controller = webViewController;
+    if (controller == null) {
       currentUrl.value = url;
       return;
     }
 
-    await webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
+    await controller.loadRequest(Uri.parse(url));
   }
 
   // ─────────────────────────────── reader ────────────────────────────────
@@ -427,14 +420,7 @@ class ArticleController extends GetxController {
     );
 
     try {
-      await controller.evaluateJavascript(
-        source: ReaderTheme.injectCssScript(css),
-      );
-
-      // After CSS injection, reset scroll position to ensure the WebView
-      // recognizes the new scrollability. This fixes the issue where the
-      // first load doesn't scroll until refresh.
-      await controller.evaluateJavascript(source: 'window.scrollTo(0, 0);');
+      await controller.runJavaScript(ReaderTheme.injectCssScript(css));
     } catch (error) {
       appLog(
         'Could not inject CSS: $error',
@@ -473,10 +459,8 @@ class ArticleController extends GetxController {
     if (isClosed || controller == null) return null;
 
     try {
-      final result = await controller.evaluateJavascript(
-        source: ReaderTheme.extractMetaJs,
-      );
-      if (result is! String || result.isEmpty) return null;
+      final result = await _readJsString(controller, ReaderTheme.extractMetaJs);
+      if (result == null || result.isEmpty) return null;
       final meta = ArticleMeta.fromJson(
         jsonDecode(result) as Map<String, dynamic>?,
       );
@@ -536,10 +520,11 @@ class ArticleController extends GetxController {
     if (isClosed || controller == null) return null;
 
     try {
-      final result = await controller.evaluateJavascript(
-        source: ReaderTheme.extractArticleHtmlJs,
+      final result = await _readJsString(
+        controller,
+        ReaderTheme.extractArticleHtmlJs,
       );
-      if (result is! String || result.isEmpty) return null;
+      if (result == null || result.isEmpty) return null;
 
       final payload = jsonDecode(result);
       if (payload is! Map<String, dynamic>) return null;
@@ -613,9 +598,9 @@ class ArticleController extends GetxController {
     try {
       // `baseUrl` lets the article's relative image paths resolve the same way
       // they did on the page they came from.
-      await controller.loadData(
-        data: _offlineDocument(copy),
-        baseUrl: WebUri(copy.url),
+      await controller.loadHtmlString(
+        _offlineDocument(copy),
+        baseUrl: copy.url,
       );
     } catch (error) {
       appLog(
@@ -659,7 +644,7 @@ ${copy.html}
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;');
 
-  // ─────────────────────── scroll diagnostics & offline ──────────────────
+  // ─────────────────────────────── offline ───────────────────────────────
 
   Future<void> _checkOfflineCopy(String url) async {
     try {
@@ -673,169 +658,29 @@ ${copy.html}
     }
   }
 
-  /// Called from the WebView's scroll callback, which fires far more often than
-  /// anything useful can be done with the value.
+  /// Runs [script] and returns its string result, normalized across platforms.
   ///
-  /// Diagnostics only. The position is deliberately not recorded: nothing in the
-  /// app restores it, so measuring the document here would put a JS round trip
-  /// and a database write on the critical path of every drag for no reader-
-  /// visible benefit.
-  void reportScroll(int y) {
-    if (isClosed) return;
+  /// Android reports `evaluateJavascript` results as JSON, so a script that
+  /// returns a string comes back wrapped in quotes and escapes; the WebKit
+  /// implementation hands back the string itself. Unwrapping the JSON here
+  /// keeps every caller working with the plain string it expects.
+  Future<String?> _readJsString(
+    WebViewController controller,
+    String script,
+  ) async {
+    final result = await controller.runJavaScriptReturningResult(script);
+    if (result is! String) return result.toString();
 
-    _lastScrollY = y;
-
-    unawaited(_logScroll());
-  }
-
-  /// Writes a scroll diagnostic, at a rate a drag can afford.
-  ///
-  /// A finger crossing the screen produces hundreds of callbacks, so an
-  /// unthrottled log would cost more than the scroll itself — which makes this
-  /// the wrong place to be diagnosing a scroll that stutters. Once a second is
-  /// dense enough to tell "the offset never moved" from "the offset moved and the
-  /// page followed", and cheap enough not to be noticed.
-  Future<void> _logScroll() async {
-    final now = DateTime.now();
-    if (_lastScrollLog case final last?
-        when now.difference(last) < AppConstants.scrollDiagnosticsInterval) {
-      return;
-    }
-    _lastScrollLog = now;
-
-    final controller = webViewController;
-    final y = _lastScrollY;
-
-    if (controller == null) {
-      _log('scroll y=$y native=n/a (no WebView controller yet)');
-      return;
+    if (result.length >= 2 && result.startsWith('"') && result.endsWith('"')) {
+      try {
+        final decoded = jsonDecode(result);
+        if (decoded is String) return decoded;
+      } on FormatException {
+        // Not JSON after all; the raw string is the best answer available.
+      }
     }
 
-    // The native view is asked as well as the document: they can disagree, and
-    // when they do the gesture is being taken by something other than the
-    // document the reader is looking at.
-    final canScroll = await _canScrollVertically(controller);
-    final nativeScrollY = await _safeNativeScrollY(controller);
-    _log(
-      'scroll y=$y nativeScrollY=$nativeScrollY '
-      'canScrollVertically=$canScroll',
-    );
-  }
-
-  Future<bool?> _canScrollVertically(InAppWebViewController controller) async {
-    try {
-      return (await controller.canScrollVertically()) as bool?;
-    } catch (error) {
-      _log('canScrollVertically failed: $error');
-      return null;
-    }
-  }
-
-  /// Records what the loaded document thinks its own scroll situation is.
-  ///
-  /// Called once the page is up, and again from [requestRefresh], because
-  /// "will not scroll" is a claim about the document that only the document can
-  /// confirm or deny.
-  Future<void> logScrollDiagnostics(String reason) async {
-    final controller = webViewController;
-    if (isClosed || controller == null) {
-      _log('[$reason] no WebView controller; nothing to measure');
-      return;
-    }
-
-    String? raw;
-    try {
-      raw = await controller.evaluateJavascript(
-        source: ReaderTheme.scrollDiagnosticsJs,
-      );
-    } catch (error) {
-      _log('[$reason] diagnostics failed: $error', level: LogLevel.error);
-      return;
-    }
-
-    if (raw is! String || raw.isEmpty) {
-      _log('[$reason] diagnostics returned nothing');
-      return;
-    }
-
-    Map<String, dynamic>? payload;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) payload = decoded;
-    } catch (error) {
-      _log('[$reason] could not decode diagnostics: $error');
-    }
-
-    if (payload == null) {
-      _log('[$reason] diagnostics were not an object: $raw');
-      return;
-    }
-
-    final nativeScrollY = await _safeNativeScrollY(controller);
-    final canScroll = await _canScrollVertically(controller);
-
-    _log(
-      '[$reason] document=${_describeScrollDocument(payload)} '
-      'nativeScrollY=$nativeScrollY canScrollVertically=$canScroll',
-    );
-  }
-
-  /// A one-line summary of the document's scroll geometry.
-  static String _describeScrollDocument(Map<String, dynamic> payload) {
-    if (payload['error'] != null) {
-      return 'error=${payload['error']}';
-    }
-
-    final body = payload['bodyStyle'];
-    final html = payload['htmlStyle'];
-    final bodyStyle = body is Map ? body : const <String, dynamic>{};
-    final htmlStyle = html is Map ? html : const <String, dynamic>{};
-
-    return 'contentHeight=${payload['contentHeight']} '
-        'viewport=${payload['viewport']} '
-        'taller=${payload['contentTallerThanViewport']} '
-        'scrollingElement=${payload['scrollingElement']} '
-        'bodyOverflowY=${bodyStyle['overflowY']} '
-        'bodyTouchAction=${bodyStyle['touchAction']} '
-        'htmlOverflowY=${htmlStyle['overflowY']} '
-        'htmlHeight=${htmlStyle['height']} '
-        'htmlMinHeight=${htmlStyle['minHeight']} '
-        'scroller=${payload['scroller']} '
-        'visualViewport=${payload['visualViewport']}';
-  }
-
-  /// The native view's own scroll offset, or `null` when it cannot be read.
-  ///
-  /// Read separately from the document's: the two disagreeing is itself the
-  /// finding, because it means the gesture is not landing on the document.
-  Future<int?> _safeNativeScrollY(InAppWebViewController controller) async {
-    try {
-      return await controller.getScrollY();
-    } catch (error) {
-      _log('native scrollY read failed: $error');
-      return null;
-    }
-  }
-
-  /// Writes one reader log line, in every build mode.
-  ///
-  /// Diagnostics rather than telemetry, and deliberately not silenced in
-  /// release: a reader that will not scroll on a user's device is otherwise
-  /// unexplainable, since nothing on screen reports the state the gesture is
-  /// failing against.
-  static void _log(String message, {LogLevel level = LogLevel.debug}) {
-    appLog(
-      message,
-      name: 'ScrollDiag',
-      level: level,
-      force: AppConstants.scrollDiagnosticsInRelease,
-    );
-  }
-
-  /// Logs the gesture the WebView gave up on, which is the case where the
-  /// document is shorter than the reader thinks and nothing scrolls.
-  void reportOverScroll(int y, {required bool clampedY}) {
-    _log('overScrolled y=$y clampedY=$clampedY scrollY=$_lastScrollY');
+    return result;
   }
 
   // ─────────────────────────────── actions ──────────────────────────────
@@ -955,9 +800,7 @@ ${copy.html}
 
   /// Shows a short message to the reader, e.g. when a share has nowhere to go.
   void showMessage(String message) {
-    if (Get.context case final context?) {
-      M3ESnackbar.show(context, message: message);
-    }
+    AppSnackbar.show(Get.context, message: message);
   }
 
   // ──────────────────────────────── timer ────────────────────────────────
