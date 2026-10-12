@@ -5,6 +5,7 @@ import '../../features/article/views/article_page.dart';
 import '../../features/favorites/bindings/favorites_binding.dart';
 import '../../features/home/bindings/home_binding.dart';
 import '../../features/settings/bindings/settings_binding.dart';
+import '../../features/support/bindings/support_binding.dart';
 import '../bindings/shell_binding.dart';
 import 'app_routes.dart';
 
@@ -20,6 +21,7 @@ abstract final class AppPages {
         HomeBinding(),
         FavoritesBinding(),
         SettingsBinding(),
+        SupportBinding(),
       ],
     ),
     GetPage(

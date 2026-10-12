@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:freedium/core/network/article_resolver.dart';
+import 'package:freedium/core/services/ad_service.dart';
 import 'package:freedium/core/services/share_intent_service.dart';
 import 'package:freedium/core/services/storage_service.dart';
 import 'package:freedium/core/services/theme_service.dart';
@@ -40,6 +41,7 @@ StorageService createTestStorage({Map<String, dynamic> seed = const {}}) {
   ThemeService theme,
   ArticleResolver resolver,
   ShareIntentService shareIntent,
+  AdService ads,
 })
 registerServices({Map<String, dynamic> seed = const {}}) {
   Get.reset();
@@ -48,18 +50,48 @@ registerServices({Map<String, dynamic> seed = const {}}) {
   final theme = ThemeService(storage.preferences);
   final resolver = ArticleResolver();
   final shareIntent = ShareIntentService(storage.preferences);
+  final ads = FakeAdService();
 
   Get.put<StorageService>(storage);
   Get.put<ThemeService>(theme);
   Get.put<ArticleResolver>(resolver);
   Get.put<ShareIntentService>(shareIntent);
+  Get.put<AdService>(ads);
 
   return (
     storage: storage,
     theme: theme,
     resolver: resolver,
     shareIntent: shareIntent,
+    ads: ads,
   );
+}
+
+/// A controllable [AdService] stand-in, so ad-driven flows can be tested without
+/// a device or the Google Mobile Ads SDK.
+class FakeAdService implements AdService {
+  FakeAdService({this.outcome = RewardedAdOutcome.earnedReward});
+
+  /// The outcome the next [showRewarded] call reports.
+  RewardedAdOutcome outcome;
+
+  /// How many times [showRewarded] was called.
+  int showCount = 0;
+
+  /// Whether [initialize] was called.
+  bool initialized = false;
+
+  @override
+  final RxBool isReady = true.obs;
+
+  @override
+  Future<void> initialize() async => initialized = true;
+
+  @override
+  Future<RewardedAdOutcome> showRewarded() async {
+    showCount++;
+    return outcome;
+  }
 }
 
 const Color testSeedColor = Color(0xFF00695C);

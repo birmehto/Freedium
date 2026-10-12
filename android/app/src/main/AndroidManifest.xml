@@ -2,6 +2,8 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Advertising ID, declared by the Google Mobile Ads SDK on Android 13+. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
     <application
         android:label="Freedium"
@@ -44,6 +46,15 @@
                 <data android:mimeType="text/plain"/>
             </intent-filter>
         </activity>
+
+        <!--
+          Google Mobile Ads application id. This is Google's public test id;
+          replace it (together with the rewarded unit in AdConfig) with the
+          app's own AdMob id before publishing.
+        -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
 
         <meta-data
             android:name="flutterEmbedding"

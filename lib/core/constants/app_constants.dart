@@ -2,4 +2,10 @@
 abstract final class AppConstants {
   /// How long the reader waits before offering a retry.
   static const Duration webViewTimeout = Duration(seconds: 45);
+
+  /// Where the "buy me a coffee" support option sends the user.
+  ///
+  /// Placeholder: point this at the project's real donation page before
+  /// publishing.
+  static const String supportUrl = 'https://www.buymeacoffee.com/freedium';
 }
