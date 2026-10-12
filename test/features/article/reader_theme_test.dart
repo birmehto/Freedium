@@ -279,29 +279,26 @@ void main() {
   });
 
   group('popup blocking', () {
-    test('never watches the whole document', () {
-      // A twelve-branch document-wide query on every mutation, on a page that
-      // is still hydrating, starved the main thread and made the reader look
-      // frozen until a reload.
-      const script = ReaderTheme.popupBlockingJs;
-      expect(script, isNot(contains('new MutationObserver')));
-      expect(script, isNot(contains('subtree: true')));
-      expect(script, isNot(contains('observe(')));
-    });
+    const script = ReaderTheme.popupBlockingJs;
 
-    test('strips popups across hydration on bounded passes', () {
-      const script = ReaderTheme.popupBlockingJs;
-      expect(script, contains('function stripPopups()'));
-      expect(script, contains('addEventListener(\'load\''));
-      expect(script, contains('setTimeout(stripPopups, 600)'));
-      expect(script, contains('hydrationReady = true'));
-    });
-
-    test('still stops target=_blank from opening a reader-sized tab', () {
-      const script = ReaderTheme.popupBlockingJs;
-      expect(script, contains("closest(event.target, 'a')"));
+    test('stops new windows at the source', () {
+      // The plugin auto-enables `supportMultipleWindows`, so `window.open`
+      // and `target="_blank"` clicks must never reach `onCreateWindow`, whose
+      // first load can land back in this WebView.
+      expect(script, contains("Object.defineProperty(window, 'open'"));
+      expect(script, contains('closest(event.target, \'a\')'));
       expect(script, contains('preventDefault'));
-      expect(script, contains('function silenceJsDialogs()'));
+    });
+
+    test('keeps only the guard, not platform- or CSS-owned work', () {
+      // Alert/confirm/prompt are suppressed by the view's platform handlers
+      // and overlays are hidden by the stylesheet, so the script must not
+      // carry a second copy of either.
+      expect(script, isNot(contains('silenceJsDialogs')));
+      expect(script, isNot(contains('stripPopups')));
+      expect(script, isNot(contains('data-dialog')));
+      expect(script, isNot(contains('MutationObserver')));
+      expect(script, isNot(contains('subtree: true')));
     });
   });
 
@@ -343,6 +340,53 @@ void main() {
       const system = ReaderSettings();
       expect(ReaderTheme.readerIsDark(system, systemDark: true), isTrue);
       expect(ReaderTheme.readerIsDark(system, systemDark: false), isFalse);
+    });
+  });
+
+  group('previewColors', () {
+    test('system mode follows the platform brightness', () {
+      const system = ReaderSettings();
+      final light = ReaderTheme.previewColors(system, systemDark: false);
+      final dark = ReaderTheme.previewColors(system, systemDark: true);
+
+      expect(light.background, isNot(dark.background));
+      expect(light.text, isNot(dark.text));
+    });
+
+    test('explicit themes ignore the platform brightness', () {
+      for (final systemDark in [false, true]) {
+        final light = ReaderTheme.previewColors(
+          const ReaderSettings(themeMode: ReaderThemeMode.light),
+          systemDark: systemDark,
+        );
+        final oled = ReaderTheme.previewColors(
+          const ReaderSettings(themeMode: ReaderThemeMode.oled),
+          systemDark: systemDark,
+        );
+
+        expect(light.background, '#fbfaf7');
+        expect(light.text, '#2b2823');
+        expect(oled.background, '#000000');
+      }
+    });
+
+    test('matches the backgrounds the stylesheet emits', () {
+      for (final mode in ReaderThemeMode.values) {
+        final preview = ReaderTheme.previewColors(
+          ReaderSettings(themeMode: mode),
+          systemDark: false,
+        );
+        final css = ReaderTheme.getCss(
+          settings: ReaderSettings(themeMode: mode),
+          systemDark: false,
+        );
+
+        expect(
+          css,
+          contains('background: ${preview.background} !important'),
+          reason: 'preview and stylesheet disagree for $mode',
+        );
+      }
     });
   });
 }

@@ -13,6 +13,8 @@ class AppSliderRow extends StatelessWidget {
     required this.max,
     required this.divisions,
     required this.onChanged,
+    this.leading,
+    this.trailing,
     super.key,
   });
 
@@ -23,6 +25,11 @@ class AppSliderRow extends StatelessWidget {
   final double max;
   final int divisions;
   final ValueChanged<double> onChanged;
+
+  /// Optional glyphs flanking the slider (e.g. small/large "A" for a font
+  /// size control), so the reach of the range is visible at a glance.
+  final Widget? leading;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +49,27 @@ class AppSliderRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: M3ESlider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: divisions,
-              label: label,
-              onChanged: onChanged,
+            child: Row(
+              children: [
+                if (leading case final Widget leading?) ...[
+                  leading,
+                  const SizedBox(width: AppSpacing.xs),
+                ],
+                Expanded(
+                  child: M3ESlider(
+                    value: value,
+                    min: min,
+                    max: max,
+                    divisions: divisions,
+                    label: label,
+                    onChanged: onChanged,
+                  ),
+                ),
+                if (trailing case final Widget trailing?) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  trailing,
+                ],
+              ],
             ),
           ),
         ],

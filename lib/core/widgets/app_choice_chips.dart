@@ -9,6 +9,7 @@ class AppChoiceChips extends StatelessWidget {
     required this.labels,
     required this.selected,
     required this.onSelected,
+    this.labelBuilder,
     super.key,
   });
 
@@ -16,6 +17,12 @@ class AppChoiceChips extends StatelessWidget {
   final List<String> labels;
   final String selected;
   final ValueChanged<String> onSelected;
+
+  /// Builds a chip's label; defaults to a plain [Text] of the label.
+  ///
+  /// Lets a caller dress up the options (e.g. a color swatch next to the
+  /// theme name) while keeping the single-select row behavior identical.
+  final Widget Function(BuildContext context, String label)? labelBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +39,7 @@ class AppChoiceChips extends StatelessWidget {
           children: [
             for (final label in labels)
               ChoiceChip(
-                label: Text(label),
+                label: labelBuilder?.call(context, label) ?? Text(label),
                 selected: selected == label,
                 onSelected: (_) => onSelected(label),
               ),

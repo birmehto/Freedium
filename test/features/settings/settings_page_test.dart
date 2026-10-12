@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' show Scrollable;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/features/settings/controllers/settings_controller.dart';
 import 'package:freedium/features/settings/models/reader_settings.dart';
@@ -56,6 +56,64 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('21 px'), findsOneWidget);
+  });
+
+  testWidgets('previews the active reader palette in the appearance sheet', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reader Appearance'));
+    await tester.pumpAndSettle();
+
+    // The preview paints a miniature of the reader from the current settings.
+    expect(find.text('The shape of readable text'), findsOneWidget);
+    expect(find.text('Read the full story'), findsOneWidget);
+  });
+
+  testWidgets('reset is disabled while the appearance is already default', (
+    tester,
+  ) async {
+    await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reader Appearance'));
+    await tester.pumpAndSettle();
+
+    final reset = tester.widget<TextButton>(
+      find.ancestor(
+        of: find.text('Reset defaults'),
+        matching: find.bySubtype<TextButton>(),
+      ),
+    );
+    expect(reset.onPressed, isNull);
+  });
+
+  testWidgets('reset returns the appearance to defaults', (tester) async {
+    final services = registerServices();
+    services.storage.preferences.readerSettings = const ReaderSettings(
+      fontSize: 21,
+    );
+    Get.put(SettingsController(services.theme, services.storage));
+
+    await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reader Appearance'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('21 px'), findsOneWidget);
+
+    // The reset action sits below the fold in the test viewport.
+    await tester.ensureVisible(find.text('Reset defaults'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reset defaults'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('21 px'), findsNothing);
+    expect(find.text('17 px'), findsOneWidget);
   });
 
   testWidgets('offers no separate font size entry', (tester) async {

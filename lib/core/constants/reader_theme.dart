@@ -19,72 +19,6 @@ abstract final class ReaderTheme {
   static const String _earlyCssId = 'freedium-early-flash-prevention';
 
   // ---------------------------------------------------------------------------
-  // JavaScript compatibility
-  // ---------------------------------------------------------------------------
-
-  /// Polyfills for host-page code, not for Freedium's own scripts.
-  ///
-  /// These guard third-party bundles against older WebViews. Any WebView new
-  /// enough to run the rest of the reader already implements them, so this is
-  /// cheap insurance rather than a hot path.
-  static const String esCompatPolyfills = '''
-(function () {
-  'use strict';
-
-  if (!Array.prototype.at) {
-    Array.prototype.at = function (index) {
-      var length = this.length;
-      var i = index < 0 ? length + index : index;
-      return i >= 0 && i < length ? this[i] : undefined;
-    };
-  }
-
-  if (!Array.prototype.findLast) {
-    Array.prototype.findLast = function (callback, thisArg) {
-      for (var i = this.length - 1; i >= 0; i--) {
-        if (i in this && callback.call(thisArg, this[i], i, this)) {
-          return this[i];
-        }
-      }
-
-      return undefined;
-    };
-  }
-
-  if (!Array.prototype.findLastIndex) {
-    Array.prototype.findLastIndex = function (callback, thisArg) {
-      for (var i = this.length - 1; i >= 0; i--) {
-        if (i in this && callback.call(thisArg, this[i], i, this)) {
-          return i;
-        }
-      }
-
-      return -1;
-    };
-  }
-
-  if (!Object.hasOwn) {
-    Object.defineProperty(Object, 'hasOwn', {
-      value: function (obj, prop) {
-        if (obj == null) {
-          throw new TypeError(
-            'Cannot convert undefined or null to object'
-          );
-        }
-
-        return Object.prototype.hasOwnProperty.call(
-          Object(obj),
-          prop,
-        );
-      },
-      configurable: true,
-      writable: true,
-    });
-  }
-})();
-''';
-
-  // ---------------------------------------------------------------------------
   // Theme colors
   // ---------------------------------------------------------------------------
 
@@ -159,6 +93,22 @@ abstract final class ReaderTheme {
       ReaderThemeMode.dark || ReaderThemeMode.oled => true,
       ReaderThemeMode.sepia => false,
     };
+  }
+
+  /// The palette [settings] resolves to, exposed as hex so UI that previews
+  /// the reader can paint with exactly the colors the stylesheet applies.
+  ///
+  /// Kept here so a preview can never drift from the document: the appearance
+  /// sheet shows the same values [getCss] embeds.
+  static ({String background, String text, String secondaryText, String link})
+  previewColors(ReaderSettings settings, {required bool systemDark}) {
+    final colors = _palette(settings.themeMode, systemDark: systemDark);
+    return (
+      background: colors.background,
+      text: colors.text,
+      secondaryText: colors.secondaryText,
+      link: colors.link,
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -563,57 +513,20 @@ $hostModeSyncJs
   // Popup handling
   // ---------------------------------------------------------------------------
 
+  /// Stops a page from opening a window before the platform is asked.
+  ///
+  /// This is the popup script's only job now. The view already suppresses
+  /// alert/confirm/prompt through its platform dialog handlers, and the
+  /// stylesheet already hides overlay markup, so a script that duplicated
+  /// either would be pure overhead on every page load. What only a script can
+  /// do is keep the request from ever reaching the WebView: the official
+  /// plugin enables `supportMultipleWindows`, so `window.open` and
+  /// `target="_blank"` clicks would otherwise be auto-accepted by
+  /// `onCreateWindow`, whose first load can end up navigating this very
+  /// WebView to the popup's URL.
   static const String popupBlockingJs = '''
 (function () {
   'use strict';
-
-  function silenceJsDialogs() {
-    try {
-      window.alert = function () {};
-
-      window.confirm = function () {
-        return false;
-      };
-
-      window.prompt = function () {
-        return null;
-      };
-
-      try {
-        Object.defineProperty(window, 'open', {
-          value: function () {
-            return null;
-          },
-          configurable: true,
-          writable: false
-        });
-      } catch (err) {}
-    } catch (err) {}
-  }
-
-  var POPUPS =
-    '[data-dialog-content], [data-dialog-overlay], ' +
-    '[data-drawer-content], [data-drawer-overlay], ' +
-    '[data-dropdown-menu-content], [data-menu-content], ' +
-    '[data-popover-content], [data-tooltip-content], ' +
-    '[role="dialog"], [role="alertdialog"], [role="menu"], ' +
-    '[data-sonner-toaster], [data-sonner-toast]';
-
-  var hydrationReady = false;
-
-  function stripPopups() {
-    if (!hydrationReady) return;
-
-    var nodes = document.querySelectorAll(POPUPS);
-
-    for (var i = 0; i < nodes.length; i++) {
-      var node = nodes[i];
-
-      if (node && node.parentNode) {
-        node.parentNode.removeChild(node);
-      }
-    }
-  }
 
   function closest(el, selector) {
     while (el && el.nodeType === 1) {
@@ -627,6 +540,16 @@ $hostModeSyncJs
     return null;
   }
 
+  try {
+    Object.defineProperty(window, 'open', {
+      value: function () {
+        return null;
+      },
+      configurable: true,
+      writable: false
+    });
+  } catch (err) {}
+
   document.addEventListener(
     'click',
     function (event) {
@@ -639,38 +562,6 @@ $hostModeSyncJs
     },
     true,
   );
-
-  /*
-   * Bounded passes rather than a `subtree` MutationObserver.
-   *
-   * Observing the whole document looks like the robust way to catch a paywall
-   * that renders late, but it makes the reader a participant in page load: every
-   * mutation anywhere fires the callback, and `stripPopups` runs a twelve-branch
-   * `querySelectorAll` across the entire document each time. On a page still
-   * hydrating that saturates the main thread, and a scroll gesture competes with
-   * it for the same thread and loses -- the reader looked frozen until the page
-   * was reloaded and stopped mutating.
-   *
-   * A popup that exists is caught instead by the `load` pass and the one deferred
-   * past it, which is where hydration-driven dialogs actually appear.
-   */
-  document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-      setTimeout(function () {
-        hydrationReady = true;
-        stripPopups();
-      }, 350);
-    },
-  );
-
-  document.addEventListener('load', function () {
-    stripPopups();
-    setTimeout(stripPopups, 600);
-  });
-
-  silenceJsDialogs();
-  stripPopups();
 })();
 ''';
 

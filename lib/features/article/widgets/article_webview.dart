@@ -252,7 +252,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
   /// The scripts the reader wants in the document before its own code runs.
   List<String> _documentScripts() {
     return [
-      ReaderTheme.esCompatPolyfills,
       ReaderTheme.earlyStyleInjector(
         settings: _controller.readingSettings.value,
         systemDark: _controller.isDarkMode,
