@@ -1,38 +1,50 @@
 # Privacy Policy
 
 **App:** Freedium
-**Last updated:** September 15, 2026
+**Last updated:** October 13, 2026
 
 Freedium is built around a simple principle: **your reading stays on your device.** We do not collect, sell, or share your personal data.
 
 ## What Freedium does
 
-Freedium is a reader for Medium. You paste or share a Medium article URL, and Freedium loads the article through the **Freedium mirror network** (a third-party, publicly available reader service) to display it in a clean, ad-free reader.
+Freedium is a reader for Medium. You paste or share a Medium article URL, and Freedium loads the article through the **Freedium mirror network** (a third-party, publicly available reader service) to display it in a clean, distraction-free reader.
 
 ## Data we do NOT collect
 
 - ❌ No accounts, no sign-ups, no profiles
-- ❌ No analytics, tracking, or crash-reporting SDKs
+- ❌ No analytics, crash-reporting, or background-tracking SDKs of our own
 - ❌ No location data
-- ❌ No advertising identifiers
 - ❌ No unsolicited data uploads
+
+## Optional rewarded ads
+
+Freedium shows no ads unless you ask for one. The home screen offers a **Support Freedium** button. So a video is ready without a wait, the app warms the Google Mobile Ads SDK up when it starts: it initializes the SDK and requests a single rewarded ad in the background. That request may include the device's advertising identifier (the use of which is declared in the Android manifest) and is handled under Google's own privacy policy.
+
+That startup request is the only ad-related traffic unless you actually watch a video — no ad is ever shown unless you choose one. Watching an ad is entirely optional; you can support the project by donating instead.
+
 
 ## Data stored locally on your device
 
-Everything below is saved **only on your device** using local storage (`get_storage`). Nothing is transmitted to us or to any server:
+Everything below is saved **only on your device** in the app's local SQLite database (managed by Drift). Nothing is transmitted to us or to any server:
 
 | What | Why it's stored |
 |------|-----------------|
-| Favorite articles (title, URL, author, domain, image) | So your saved library appears offline |
-| Reading progress per article | So you can resume where you left off |
-| Theme (dark/light) and font size preferences | To remember your reading setup |
+| Favorite articles (title, URL, author, domain) | So your favorites list is available without refetching |
+| Cached article metadata (title, author, publication, word count, reading time) | So a favorited article renders instantly when you reopen it |
+| Article text of the articles you favorite | So you can read them again without a connection (see below) |
+| How far you got through each article, and when | So the app can offer to continue where you stopped |
+| Theme, reader theme, font family, and font size preferences | To remember your reading setup |
+| Preferred mirror source and auto-fallback flag | So article loading behaves the way you configured it |
 | App version | Displayed in the Settings screen |
 
-You can clear all of this anytime by uninstalling the app or clearing the app data.
+Saved article text never leaves your device. Nothing is stored unless you favorite an article, and removing that favorite also removes its stored copy. The offline copies are capped at 24 MB in total and 2 MB per article, and the oldest ones are dropped automatically as you favorite more — your favorites are never dropped. There is no bulk clear: each stored article is removed on its own, by removing the favorite.
+
+You can clear all of this anytime by removing favorites in the app, uninstalling, or clearing the app data. Android cloud backup and device transfer are disabled, so this data does not leave the device.
 
 ## Data sent to third parties
 
 - **Article URLs (Freedium mirror):** The only data that ever leaves your device is the article URL you choose to open. It is sent to the Freedium mirror network to fetch the article content. Freedium is an independent, open-source project **not affiliated with the mirror service**; its terms and privacy practices apply to that request.
+- **Rewarded ads (Google Mobile Ads):** Only if you choose to watch a rewarded ad. That choice sends an ad request to Google, which may include the device advertising identifier. Declining to watch an ad sends nothing.
 - **Email / donations:** If you contact us by email or click "Buy me a coffee", you are sharing that information directly with the relevant service (email provider / Buy Me a Coffee) under their own terms.
 
 ## Third-party services
@@ -40,6 +52,7 @@ You can clear all of this anytime by uninstalling the app or clearing the app da
 | Service | Purpose |
 |---------|---------|
 | Freedium mirror network | Fetching the article you requested |
+| Google Mobile Ads | Delivering a rewarded video, only when you choose to watch one |
 | Buy Me a Coffee | Optional donations (via link in the app) |
 
 We do not control and are not responsible for the privacy practices of these third parties.

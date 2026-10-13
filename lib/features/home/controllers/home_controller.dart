@@ -1,73 +1,109 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/errors/app_exception.dart';
+import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/share_intent_service.dart';
 import '../../../core/utils/app_log.dart';
-import '../../../core/utils/url_validator.dart';
+import '../../../core/widgets/app_snackbar.dart';
+import '../../article/models/article_request.dart';
 
 class HomeController extends GetxController {
-  final ClipboardService _clipboardService = Get.find();
+  HomeController(this._clipboardService, this._shareIntentService);
+
+  final ClipboardService _clipboardService;
+  final ShareIntentService _shareIntentService;
+
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   final TextEditingController urlController = TextEditingController();
+  final FocusNode urlFocusNode = FocusNode();
+
+  /// Reactive view of [urlController] text, for enabling the submit button.
   final RxString urlText = ''.obs;
+
+  /// Non-empty when an action failed; the field validator handles bad input.
   final RxString errorMessage = ''.obs;
+
   final RxBool isLoading = false.obs;
+
+  late final Worker _shareWorker;
 
   @override
   void onInit() {
     super.onInit();
-    urlController.addListener(() {
-      urlText.value = urlController.text;
-    });
 
-    // Process any shared URL received before UI was ready
-    if (Get.isRegistered<ShareIntentService>()) {
-      final shareService = Get.find<ShareIntentService>();
-      if (shareService.pendingUrl != null) {
-        final url = shareService.pendingUrl!;
-        shareService.pendingUrl = null;
-        urlController.text = url;
-        WidgetsBinding.instance.addPostFrameCallback((_) => openArticle());
-      }
+    urlController.addListener(_onUrlTextChanged);
+
+    _shareWorker = ever(_shareIntentService.incomingUrl, _openSharedUrl);
+
+    // A share received before Home existed is still waiting in the service.
+    final pending = _shareIntentService.incomingUrl.value;
+
+    if (pending != null) {
+      _openSharedUrl(pending);
     }
   }
 
   @override
   void onClose() {
+    _shareWorker.dispose();
+    urlController.removeListener(_onUrlTextChanged);
     urlController.dispose();
+    urlFocusNode.dispose();
+
     super.onClose();
   }
 
   bool get canOpenArticle {
-    return urlText.isNotEmpty && errorMessage.isEmpty && !isLoading.value;
+    final url = urlText.value.trim();
+
+    return url.isNotEmpty &&
+        ArticleUrl.isValid(url) &&
+        ArticleUrl.isMedium(url) &&
+        errorMessage.isEmpty &&
+        !isLoading.value;
   }
 
-  String? _validateUrl(String url) {
-    if (url.isEmpty) return null;
-    final cleaned = UrlValidator.cleanUrl(url);
-    if (cleaned == null) return 'Please enter a valid URL';
-    return null;
+  void _onUrlTextChanged() {
+    urlText.value = urlController.text;
   }
 
   void onUrlChanged(String value) {
-    errorMessage.value = _validateUrl(value.trim()) ?? '';
+    errorMessage.value = '';
+  }
+
+  void submit() {
+    urlFocusNode.unfocus();
+
+    final isValid = formKey.currentState?.validate() ?? false;
+
+    if (!isValid) return;
+
+    openArticle();
   }
 
   Future<void> pasteFromClipboard() async {
     try {
       final clipboardText = await _clipboardService.getFromClipboard();
-      if (clipboardText != null && clipboardText.isNotEmpty) {
-        urlController.text = clipboardText;
-        onUrlChanged(clipboardText);
+
+      if (clipboardText == null || clipboardText.isEmpty) {
+        _showMessage('Clipboard is empty');
+        return;
       }
-    } catch (e) {
-      M3ESnackbar.show(
-        Get.context!,
-        message: 'Failed to paste from clipboard: $e',
-      );
+
+      urlController.text = clipboardText.trim();
+      onUrlChanged(clipboardText);
+      _showMessage('URL pasted from clipboard');
+    } catch (error) {
+      final exception = AppException.from(error, context: 'pasteFromClipboard');
+
+      appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
+
+      _showMessage('Failed to paste from clipboard: ${exception.userMessage}');
     }
   }
 
@@ -79,28 +115,48 @@ class HomeController extends GetxController {
   Future<void> openArticle() async {
     if (!canOpenArticle) return;
 
-    final url = urlController.text.trim();
-    final cleanedUrl = UrlValidator.cleanUrl(url);
-    if (cleanedUrl == null) {
-      errorMessage.value = 'Please enter a valid URL';
+    final request = ArticleRequest.parse(urlController.text);
+
+    if (!request.isValid) {
+      errorMessage.value = AppException.invalidUrl().userMessage;
       return;
     }
+
     isLoading.value = true;
+
     try {
-      final freediumUrl = UrlValidator.convertToFreediumUrl(cleanedUrl);
-      if (freediumUrl != null) {
-        await Get.toNamed(
-          AppRoutes.article,
-          arguments: {'url': freediumUrl, 'originalUrl': cleanedUrl},
-        );
-      } else {
-        errorMessage.value = 'Failed to process the URL';
+      await Get.toNamed(AppRoutes.article, arguments: request);
+      // Clear the form after successful navigation
+      if (Get.context?.mounted ?? false) {
+        urlController.clear();
+        errorMessage.value = '';
       }
-    } catch (e) {
-      appLog(e.toString());
-      errorMessage.value = 'Failed to open article: ${e.toString()}';
+    } catch (error, stackTrace) {
+      final exception = AppException.from(error, context: 'openArticle');
+
+      appLog('$exception\n$stackTrace', name: 'Home', level: LogLevel.error);
+
+      errorMessage.value = exception.userMessage;
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void _openSharedUrl(String? url) {
+    if (url == null) return;
+
+    // A share is an explicit request to read this article, so the field is
+    // filled and opened directly. A failure left over from earlier input would
+    // otherwise block the request that is being made right now.
+    errorMessage.value = '';
+    urlController.text = url;
+    _shareIntentService.consume();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => submit());
+  }
+
+  /// Shows a transient message, if a context is available at that moment.
+  void _showMessage(String message) {
+    AppSnackbar.show(Get.context, message: message);
   }
 }

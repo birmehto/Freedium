@@ -1,89 +1,144 @@
 import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/errors/app_exception.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/widgets/app_snackbar.dart';
+import '../models/reader_settings.dart';
 
 class SettingsController extends GetxController {
-  final ThemeService _themeService = Get.find();
-  final StorageService _storage = Get.find();
+  SettingsController(this._themeService, this._storage);
+
+  final ThemeService _themeService;
+  final StorageService _storage;
 
   final appVersion = ''.obs;
 
-  // Reader preferences
-  final fontSize = 17.0.obs;
+  // Appearance
+  final themeMode = ''.obs;
+
+  // Reader defaults
+  final readerSettings = const ReaderSettings().obs;
+
+  // Network & source
+  final preferredMirror = RxnString();
+  final autoFallback = true.obs;
 
   bool get isDarkMode => _themeService.isDarkMode.value;
+
+  /// Font size is part of the reader settings, not a separate value.
+  double get fontSize => readerSettings.value.fontSize;
 
   @override
   void onInit() {
     super.onInit();
     _loadAppVersion();
-    fontSize.value = _storage.fontSize;
+    themeMode.value = _themeService.preferredMode;
+    readerSettings.value = _storage.preferences.readerSettings;
+    preferredMirror.value = _storage.preferences.preferredMirror;
+    autoFallback.value = _storage.preferences.autoFallback;
+  }
+
+  /// Re-reads the reader defaults from storage.
+  ///
+  /// The reader writes the same settings the settings screen shows, so a font
+  /// size changed while reading is picked up when the tab is opened again
+  /// instead of showing the value this controller happened to start with.
+  void syncReaderSettings() {
+    readerSettings.value = _storage.preferences.readerSettings;
+  }
+
+  // ─────────────────────────────── appearance ─────────────────────────
+
+  void setThemeMode(String mode) {
+    themeMode.value = mode;
+    _themeService.setThemeMode(mode);
   }
 
   void toggleTheme(bool value) {
     _themeService.toggleTheme(value);
+    themeMode.value = _themeService.preferredMode;
   }
+
+  // ──────────────────────────────── reader ────────────────────────────
 
   void setFontSize(double size) {
-    fontSize.value = size;
-    _storage.fontSize = size;
+    updateReaderSettings(
+      readerSettings.value.copyWith(
+        fontSize: size.clamp(
+          ReaderSettings.kMinFontSize,
+          ReaderSettings.kMaxFontSize,
+        ),
+      ),
+    );
   }
+
+  void updateReaderSettings(ReaderSettings settings) {
+    readerSettings.value = settings;
+    _storage.preferences.readerSettings = settings;
+  }
+
+  // ─────────────────────────────── source ─────────────────────────────
+
+  void setPreferredMirror(String? mirrorId) {
+    preferredMirror.value = mirrorId;
+    _storage.preferences.preferredMirror = mirrorId;
+  }
+
+  void setAutoFallback(bool value) {
+    autoFallback.value = value;
+    _storage.preferences.autoFallback = value;
+  }
+
+  // ──────────────────────────────── about ────────────────────────────
 
   Future<void> sendFeedback() async {
+    const address = 'birmehto@gmail.com';
+
     final uri = Uri(
       scheme: 'mailto',
-      path: 'birmehto@gmail.com',
-      queryParameters: {'subject': 'Freedium Feedback'},
+      path: address,
+      queryParameters: const {'subject': 'Freedium Feedback'},
     );
 
-    try {
-      final canLaunch = await canLaunchUrl(uri);
-      if (!canLaunch) {
-        M3ESnackbar.show(
-          // ignore: use_build_context_synchronously
-          Get.context!,
-          message: 'No email app found. Email us at birmehto@gmail.com',
-        );
-        return;
-      }
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      appLog('Failed to open email client: $e');
-      M3ESnackbar.show(Get.context!, message: "Couldn't open email app");
+    // `reportFailure: false`: the caller owns the message, so the user is not
+    // told "could not open link" and "no email app" for one failed attempt.
+    if (!await _openExternal(uri, reportFailure: false)) {
+      showMessage('No email app found. Email us at $address');
     }
   }
 
-  Future<void> openGitHub() async {
-    await _openExternal('https://github.com/birmehto/Freedium');
-  }
+  Future<void> openGitHub() =>
+      _openExternal(Uri.parse('https://github.com/birmehto/Freedium'));
 
-  Future<void> _openExternal(String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
+  Future<bool> _openExternal(Uri uri, {bool reportFailure = true}) async {
     try {
-      final canLaunch = await canLaunchUrl(uri);
-      if (!canLaunch) {
-        M3ESnackbar.show(Get.context!, message: 'Could not open link');
-        return;
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return true;
       }
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (e) {
-      appLog('Failed to open link: $e');
-      M3ESnackbar.show(Get.context!, message: "Couldn't open link");
+    } catch (error) {
+      final exception = AppException.from(error, context: 'openExternal');
+      appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
     }
+
+    if (reportFailure) showMessage('Could not open link');
+    return false;
   }
 
   Future<void> _loadAppVersion() async {
     try {
-      final info = await PackageInfo.fromPlatform();
-      appVersion.value = info.version;
-    } catch (e) {
-      appLog('Failed to load app version: $e');
+      appVersion.value = (await PackageInfo.fromPlatform()).version;
+    } catch (error) {
+      final exception = AppException.from(error, context: 'loadAppVersion');
+      appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
     }
+  }
+
+  void showMessage(String message) {
+    AppSnackbar.show(Get.context, message: message);
   }
 }

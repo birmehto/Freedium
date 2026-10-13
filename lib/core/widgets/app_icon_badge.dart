@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../theme/app_spacing.dart';
+
 /// Rounded container that frames an icon (list leading, settings tiles...).
 class AppIconBadge extends StatelessWidget {
   const AppIconBadge({
@@ -25,7 +27,7 @@ class AppIconBadge extends StatelessWidget {
 
     final decoration = BoxDecoration(
       color: backgroundColor ?? c.primaryContainer,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
     );
     final content = Icon(
       icon,
@@ -42,7 +44,7 @@ class AppIconBadge extends StatelessWidget {
       );
     }
     return Container(
-      padding: padding ?? const EdgeInsets.all(10),
+      padding: padding ?? const EdgeInsets.all(AppSpacing.sm + AppSpacing.xs),
       decoration: decoration,
       child: content,
     );

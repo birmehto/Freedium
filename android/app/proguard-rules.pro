@@ -7,10 +7,7 @@
 -keep class io.flutter.plugins.**  { *; }
 
 # WebView
--keep class com.pichillilorenzo.flutter_inappwebview.** { *; }
--keep public class com.pichillilorenzo.flutter_inappwebview.InAppWebViewFlutterPlugin {
-  public static void registerWith(io.flutter.plugin.common.PluginRegistry$Registrar);
-}
+-keep class io.flutter.plugins.webviewflutter.** { *; }
 
 # General
 -dontwarn io.flutter.**

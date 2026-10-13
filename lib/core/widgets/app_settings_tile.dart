@@ -15,6 +15,7 @@ class AppSettingsTile extends StatelessWidget {
     this.onTap,
     this.iconColor,
     this.backgroundColor,
+    this.enabled = true,
   });
 
   final String title;
@@ -24,6 +25,9 @@ class AppSettingsTile extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? iconColor;
   final Color? backgroundColor;
+
+  /// When false the row uses disabled tokens and ignores taps.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +39,7 @@ class AppSettingsTile extends StatelessWidget {
       leading: _buildLeading(colorScheme),
       trailing: _buildTrailing(),
       onTap: onTap,
+      enabled: enabled,
     );
   }
 

@@ -2,238 +2,338 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/constants/app_constants.dart';
+import '../../../core/extensions/context_ext.dart';
+import '../../../core/network/article_resolver.dart';
+import '../../../core/services/clipboard_service.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../core/services/theme_service.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/app_error.dart';
 import '../../../core/widgets/app_loading.dart';
 import '../../../core/widgets/app_pill.dart';
+import '../../settings/widgets/reader_appearance_sheet.dart';
 import '../controllers/article_controller.dart';
 import '../widgets/article_webview.dart';
 
-class ArticlePage extends GetView<ArticleController> {
+class ArticlePage extends StatefulWidget {
   const ArticlePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  State<ArticlePage> createState() => _ArticlePageState();
+}
 
+class _ArticlePageState extends State<ArticlePage> {
+  /// The controller for this reader, owned by the page.
+  ///
+  /// Deliberately not registered with GetX: `Get.create` builds a *new*
+  /// instance on every `Get.find`, so each widget that looked the controller up
+  /// for itself drove a private copy — only the WebView's copy received load
+  /// callbacks while every loader's copy stayed at `isLoading = true` forever.
+  /// Owning one instance per page also makes opening a second reader
+  /// independent of whatever the first one left in the container.
+  late final ArticleController controller = ArticleController(
+    Get.find<ClipboardService>(),
+    Get.find<StorageService>(),
+    Get.find<ThemeService>(),
+    Get.find<ArticleResolver>(),
+  )..onStart();
+
+  @override
+  void dispose() {
+    controller.onDelete();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppAppBar(
-        title: controller.articleTitle,
         centerTitle: false,
+        automaticallyImplyLeading: true,
+        // Deliberately not the app bar's default titleLarge: a truncated article
+        // title competes with the reading-time and favorite actions at 22sp.
+        title: Obx(() => Text(_displayTitle, style: context.text.titleMedium)),
         actions: [
-          Obx(
-            () => controller.readingTime.value > 0
-                ? AppPill(label: '${controller.readingTime.value} min read')
-                : const SizedBox.shrink(),
-          ),
-          const SizedBox(width: 4),
-          M3EIconButton(
-            icon: const Icon(M3EIcons.share_rounded),
-            tooltip: 'Share article',
-            onPressed: controller.shareArticle,
-          ),
+          _ReadingTime(controller: controller),
+          _FavoriteButton(controller: controller),
+          const SizedBox(width: AppSpacing.xxs),
         ],
       ),
       body: Stack(
         children: [
-          Obx(() => ArticleWebView(url: controller.currentUrl.value)),
-
-          // Loading progress bar.
-          Obx(
-            () => AnimatedOpacity(
-              opacity: controller.isLoading.value ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: IgnorePointer(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: M3EProgressIndicator.linear(
-                    value:
-                        controller.loadingProgress.value > 0 &&
-                            controller.loadingProgress.value < 1.0
-                        ? controller.loadingProgress.value
-                        : null,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-              ),
+          if (controller.currentUrl.value.isNotEmpty)
+            ArticleWebView(
+              url: controller.currentUrl.value,
+              controller: controller,
             ),
-          ),
-
-          Obx(() {
-            if (controller.errorMessage.isEmpty) {
-              return const SizedBox.shrink();
-            }
-            return Positioned.fill(
-              child: Material(
-                color: theme.scaffoldBackgroundColor,
-                child: AppError(
-                  title: 'Failed to Load Article',
-                  message: controller.errorMessage.value,
-                  onRetry: controller.requestRefresh,
-                  secondaryLabel: 'Open in Browser',
-                  onSecondary: controller.openInBrowser,
-                  hint:
-                      'Try refreshing or opening the article in your browser.',
-                ),
-              ),
-            );
-          }),
-
-          Obx(
-            () => controller.isInitialLoad.value
-                ? const Positioned.fill(child: AppLoading())
-                : const SizedBox.shrink(),
-          ),
+          _LoadingIndicator(controller: controller),
+          _OfflineBanner(controller: controller),
+          _ErrorState(controller: controller),
+          _InitialLoader(controller: controller),
         ],
       ),
-      bottomNavigationBar: Material(
-        color: theme.colorScheme.surfaceContainer,
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Obx(
-                  () => M3EIconButton(
-                    icon: Icon(
-                      controller.isFavorite.value
-                          ? M3EIcons.favorite_rounded
-                          : M3EIcons.favorite_border_rounded,
-                      color: controller.isFavorite.value
-                          ? theme.colorScheme.error
-                          : null,
-                    ),
-                    tooltip: controller.isFavorite.value
-                        ? 'Remove from favorites'
-                        : 'Add to favorites',
-                    onPressed: controller.toggleFavorite,
-                  ),
-                ),
-                M3EIconButton(
-                  icon: const Icon(M3EIcons.format_size_rounded),
-                  tooltip: 'Reading settings',
-                  onPressed: () => _showAppearanceSheet(context),
-                ),
-                M3EIconButton(
-                  icon: const Icon(M3EIcons.copy_rounded),
-                  tooltip: 'Copy link',
-                  onPressed: controller.copyLink,
-                ),
-                M3EIconButton(
-                  icon: const Icon(M3EIcons.open_in_browser_rounded),
-                  tooltip: 'Open in browser',
-                  onPressed: controller.openInBrowser,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      floatingActionButton: _FabMenu(controller: controller),
     );
   }
 
-  void _showAppearanceSheet(BuildContext context) {
-    final theme = Theme.of(context);
-    final c = theme.colorScheme;
-    final controller = Get.find<ArticleController>();
+  String get _displayTitle {
+    final title = controller.articleTitle.value;
+    return title.length > 42 ? '${title.substring(0, 39)}...' : title;
+  }
+}
 
-    final sheet = Material(
-      color: c.surfaceContainer,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      clipBehavior: Clip.antiAlias,
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: c.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Text('Reading Settings', style: theme.textTheme.titleLarge),
-              const SizedBox(height: 16),
+/// Full-bleed error state shown inside the article stack when loading fails.
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.controller});
 
-              // Font size
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Font Size', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 4),
-                        Obx(
-                          () => Text(
-                            '${controller.fontSize.value.toStringAsFixed(0)} px',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: c.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Decrease font size',
-                    onPressed: controller.decrementFontSize,
-                    icon: const Icon(M3EIcons.remove_rounded),
-                  ),
-                  Obx(
-                    () => SizedBox(
-                      width: 160,
-                      child: M3ESlider(
-                        value: controller.fontSize.value,
-                        min: AppConstants.minFontSize,
-                        max: AppConstants.maxFontSize,
-                        divisions:
-                            ((AppConstants.maxFontSize -
-                                        AppConstants.minFontSize) ~/
-                                    AppConstants.fontSizeStep)
-                                .toInt(),
-                        label: controller.fontSize.value.toStringAsFixed(0),
-                        onChanged: controller.setFontSize,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Increase font size',
-                    onPressed: controller.incrementFontSize,
-                    icon: const Icon(M3EIcons.add_rounded),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // Reset font size
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: controller.resetFontSize,
-                  child: const Text('Reset'),
-                ),
-              ),
-            ],
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    // Reactive: `errorMessage` is set after the page is built, so reading it
+    // outside an `Obx` meant this view never appeared.
+    return Obx(() {
+      final message = controller.errorMessage.value;
+
+      if (message.isEmpty) return const SizedBox.shrink();
+
+      return Positioned.fill(
+        child: Material(
+          color: context.colors.surface,
+          child: AppError(
+            title: 'Failed to Load Article',
+            message: message,
+            onRetry: controller.requestRefresh,
+            secondaryLabel: 'Open in Browser',
+            onSecondary: controller.openInBrowser,
+            hint: 'Try refreshing or opening the article in your browser.',
           ),
         ),
-      ),
-    );
+      );
+    });
+  }
+}
 
-    Get.bottomSheet(
-      sheet,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+class _ReadingTime extends StatelessWidget {
+  const _ReadingTime({required this.controller});
+
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final minutes = controller.readingTime.value;
+
+      return minutes > 0
+          ? AppPill(label: '$minutes min')
+          : const SizedBox.shrink();
+    });
+  }
+}
+
+class _FavoriteButton extends StatelessWidget {
+  const _FavoriteButton({required this.controller});
+
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final favorite = controller.isFavorite;
+      final busy = controller.isStoringArticle.value;
+
+      return M3EIconButton(
+        size: M3EIconButtonSize.xs,
+        icon: Icon(
+          favorite
+              ? M3EIcons.favorite_rounded
+              : M3EIcons.favorite_border_rounded,
+          color: favorite ? context.colors.onPrimary : null,
+        ),
+        tooltip: favorite ? 'Remove from favorites' : 'Save to favorites',
+        onPressed: busy ? null : controller.toggleFavorite,
+      );
+    });
+  }
+}
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator({required this.controller});
+
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final loading = controller.isLoading.value;
+      final progress = controller.loadingProgress.value;
+
+      return Visibility(
+        visible: loading,
+        maintainAnimation: true,
+        maintainState: true,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: M3EProgressIndicator.linear(
+            // A determinate bar that is already full, rather than flipping to
+            // an indeterminate spinner at exactly 100%.
+            value: progress >= 1 ? 1 : (progress > 0 ? progress : null),
+            color: context.colors.primary,
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _InitialLoader extends StatelessWidget {
+  const _InitialLoader({required this.controller});
+
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      return controller.isInitialLoad.value && controller.errorMessage.isEmpty
+          // Full-bleed, and purely decorative: a drag that happens to start on
+          // the spinner belongs to the reader, not to the loading state.
+          ? const Positioned.fill(child: IgnorePointer(child: AppLoading()))
+          : const SizedBox.shrink();
+    });
+  }
+}
+
+/// Shown while the article on screen is the saved copy rather than a live
+/// mirror response.
+///
+/// A reader who cannot get a connection still expects to know whether they are
+/// looking at yesterday's copy, so this is stated rather than left to be
+/// guessed from the content.
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner({required this.controller});
+
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final offline = controller.isOffline.value;
+      if (!offline) return const SizedBox.shrink();
+
+      return Align(
+        alignment: Alignment.topCenter,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              0,
+            ),
+            child: Material(
+              color: context.colors.secondaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              elevation: 4,
+              shadowColor: context.colors.shadow.withValues(alpha: 0.3),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      decoration: BoxDecoration(
+                        color: context.colors.onSecondaryContainer.withValues(
+                          alpha: 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Icon(
+                        M3EIcons.cloud_off_rounded,
+                        size: 16,
+                        color: context.colors.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Flexible(
+                      child: Text(
+                        'Offline copy',
+                        style: context.text.labelMedium?.copyWith(
+                          color: context.colors.onSecondaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    M3EIconButton(
+                      size: M3EIconButtonSize.xs,
+                      icon: const Icon(M3EIcons.refresh_rounded, size: 18),
+                      tooltip: 'Try loading it again',
+                      onPressed: controller.requestRefresh,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _FabMenu extends StatelessWidget {
+  const _FabMenu({required this.controller});
+
+  final ArticleController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return M3EFabMenu(
+      size: M3EFabSize.regular,
+      icon: const Icon(M3EIcons.more_horiz_rounded),
+      items: [
+        M3EFabMenuItem(
+          icon: const Icon(M3EIcons.read_more_rounded),
+          label: 'Reading settings',
+          // The same sheet Settings uses, so reader typography is configured
+          // in one place with one set of options.
+          onPressed: () => showReaderAppearanceSheet(
+            context,
+            settings: controller.readingSettings,
+            onChanged: controller.updateReaderSettings,
+          ),
+        ),
+        M3EFabMenuItem(
+          icon: const Icon(M3EIcons.refresh_rounded),
+          label: 'Refresh',
+          // The reader has no pull-to-refresh: the article is a WebView, so a
+          // refresh control would have to be reimplemented inside the page. An
+          // action the reader can actually reach beats one that never fires.
+          onPressed: controller.requestRefresh,
+        ),
+        M3EFabMenuItem(
+          icon: const Icon(M3EIcons.link_rounded),
+          label: 'Copy link',
+          onPressed: controller.copyLink,
+        ),
+        M3EFabMenuItem(
+          icon: const Icon(M3EIcons.open_in_browser_rounded),
+          label: 'Open in browser',
+          onPressed: controller.openInBrowser,
+        ),
+        M3EFabMenuItem(
+          icon: const Icon(M3EIcons.share),
+          label: 'Share',
+          onPressed: controller.shareArticle,
+        ),
+      ],
     );
   }
 }

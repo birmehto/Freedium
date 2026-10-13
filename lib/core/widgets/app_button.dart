@@ -1,5 +1,8 @@
+import 'package:flutter/services.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../theme/app_spacing.dart';
 
 /// Visual variants mapped to [M3EButtonStyle].
 enum AppButtonVariant { filled, tonal, outlined, elevated, text }
@@ -39,6 +42,13 @@ class AppButton extends StatelessWidget {
     };
     final enabled = onPressed != null && !isLoading;
 
+    final VoidCallback? handlePress = enabled
+        ? () {
+            HapticFeedback.lightImpact();
+            onPressed?.call();
+          }
+        : null;
+
     final Widget button;
     if (isLoading) {
       button = M3EButton(
@@ -55,7 +65,7 @@ class AppButton extends StatelessWidget {
               child: M3EProgressIndicator.circular(size: 20),
             ),
             if (label case final Widget label?) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               label,
             ],
           ],
@@ -68,11 +78,11 @@ class AppButton extends StatelessWidget {
         style: style,
         size: size,
         tooltip: tooltip,
-        onPressed: enabled ? onPressed : null,
+        onPressed: handlePress,
       );
     } else {
       button = M3EButton(
-        onPressed: enabled ? onPressed : null,
+        onPressed: handlePress,
         style: style,
         size: size,
         tooltip: tooltip,

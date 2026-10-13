@@ -1,12 +1,8 @@
-class AppConstants {
-  static const String freediumUrl = 'https://freedium-mirror.cfd/';
-
-  // Timeouts
+/// App-wide constants that are not tied to a single feature.
+abstract final class AppConstants {
+  /// How long the reader waits before offering a retry.
   static const Duration webViewTimeout = Duration(seconds: 45);
 
-  // Reader defaults
-  static const double defaultFontSize = 17.0;
-  static const double minFontSize = 12.0;
-  static const double maxFontSize = 28.0;
-  static const double fontSizeStep = 1.0;
+  /// Where the "buy me a coffee" support option sends the user.
+  static const String supportUrl = 'https://buymeacoffee.com/birmehto';
 }

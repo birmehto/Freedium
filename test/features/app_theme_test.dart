@@ -2,54 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/app.dart';
 import 'package:freedium/core/services/clipboard_service.dart';
-import 'package:freedium/core/services/share_intent_service.dart';
-import 'package:freedium/core/services/storage_service.dart';
 import 'package:freedium/core/services/theme_service.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 
-class MockStorageService extends StorageService {
-  bool _dark = false;
+import '../helpers/test_env.dart';
 
-  @override
-  bool get isDarkMode => _dark;
-
-  @override
-  set isDarkMode(bool value) {
-    _dark = value;
-  }
-
-  @override
-  double get fontSize => 17.0;
-
-  @override
-  List<dynamic> get favorites => [];
-}
-
-class MockShareIntentService extends ShareIntentService {
-  @override
-  Future<ShareIntentService> init() async => this;
-}
-
-class MockClipboardService extends ClipboardService {}
-
-class MockThemeService extends ThemeService {
-  @override
-  void onInit() {
-    super.onInit();
-    isDarkMode.value = Get.find<StorageService>().isDarkMode;
-  }
-}
-
+/// Verifies the app's M3E theme actually follows [ThemeService], end to end.
+///
+/// The service-level tests cover the stored preference; this one covers the
+/// wiring in [Freedium] — that flipping the theme rebuilds the tree to the new
+/// brightness instead of leaving it pinned to whatever it started with.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    Get.reset();
-    Get.put<StorageService>(MockStorageService());
-    Get.put<ThemeService>(MockThemeService());
-    Get.put<ShareIntentService>(MockShareIntentService());
-    Get.put<ClipboardService>(MockClipboardService());
+    registerServices();
+    Get.put<ClipboardService>(ClipboardService());
   });
 
   Brightness resolvedBrightness(WidgetTester tester) {
@@ -78,9 +47,8 @@ void main() {
     expect(resolvedBrightness(tester), Brightness.light);
   });
 
-  testWidgets('dark mode preference is applied on startup', (tester) async {
-    Get.find<StorageService>().isDarkMode = true;
-    Get.find<ThemeService>().isDarkMode.value = true;
+  testWidgets('a stored dark preference is applied on startup', (tester) async {
+    Get.find<ThemeService>().toggleTheme(true);
 
     await tester.pumpWidget(const Freedium());
     await tester.pumpAndSettle();

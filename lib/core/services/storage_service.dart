@@ -1,69 +1,69 @@
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 
+import '../storage/app_database.dart';
+import '../storage/article_cache_store.dart';
+import '../storage/key_value_store.dart';
+import '../storage/library_store.dart';
+import '../storage/preferences_store.dart';
+
+/// Owns the on-device SQLite database and exposes the focused stores.
+///
+/// Registered as a permanent service during startup, so every feature binding
+/// resolves the same [preferences], [library] and [cache] instances.
 class StorageService extends GetxService {
-  late final GetStorage _box;
+  /// Production constructor: opens the SQLite database.
+  StorageService();
 
-  static const _themeModeKey = 'theme_mode';
-  static const _fontSizeKey = 'font_size';
-  static const _favoritesKey = 'favorites_list';
-  static const _readingProgressKey = 'reading_progress';
+  /// Test constructor: uses an already-prepared [KeyValueStore] and [database].
+  StorageService.withStore(
+    KeyValueStore store, {
+    required AppDatabase database,
+  }) {
+    _keyValueStore = store;
+    _database = database;
+    _attachStores();
+  }
 
+  late final PreferencesStore preferences;
+  late final LibraryStore library;
+
+  /// The articles behind the reader's favorites, kept on the device so they can
+  /// be read without a network.
+  late final ArticleCacheStore cache;
+
+  KeyValueStore? _keyValueStore;
+  AppDatabase? _database;
+
+  /// Opens the database and warms the synchronous read cache.
   Future<StorageService> init() async {
-    _box = GetStorage();
-    await _box.initStorage;
+    final database = AppDatabase.open();
+    final store = DriftKeyValueStore(database);
+    await store.init();
+
+    _keyValueStore = store;
+    _database = database;
+    _attachStores();
+
+    // Counted up front so eviction knows what the store already holds, rather
+    // than treating a reopened database as empty and letting it grow unchecked.
+    await cache.refreshTotals();
     return this;
   }
 
-  bool get isDarkMode => _box.read(_themeModeKey) ?? true;
-  set isDarkMode(bool value) => _box.write(_themeModeKey, value);
-
-  double get fontSize => _box.read(_fontSizeKey) ?? 17.0;
-  set fontSize(double value) => _box.write(_fontSizeKey, value);
-
-  // --- Reading progress ---
-
-  Map<String, dynamic> get _readingProgress =>
-      Map<String, dynamic>.from(_box.read(_readingProgressKey) ?? {});
-
-  Future<void> saveReadingProgress(String url, double scrollY) async {
-    final data = Map<String, dynamic>.from(_readingProgress);
-    data[url] = {
-      'scrollY': scrollY,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
-    await _box.write(_readingProgressKey, data);
+  @override
+  void onClose() {
+    // Only close what this service opened; an injected store belongs to the
+    // caller that created it.
+    final store = _keyValueStore;
+    if (store is DriftKeyValueStore) store.close();
+    super.onClose();
   }
 
-  double? getReadingProgress(String url) {
-    final entry = _readingProgress[url];
-    if (entry is Map) {
-      return (entry['scrollY'] as num?)?.toDouble();
-    }
-    return null;
+  void _attachStores() {
+    final store = _keyValueStore!;
+    final database = _database!;
+    preferences = PreferencesStore(store);
+    library = LibraryStore(store);
+    cache = ArticleCacheStore(database);
   }
-
-  // --- Favorites ---
-
-  /// Bumped on every add/remove so observers stay in sync.
-  final favoritesRevision = 0.obs;
-
-  List<dynamic> get favorites => _box.read(_favoritesKey) ?? [];
-
-  Future<void> addToFavorites(Map<String, dynamic> item) async {
-    final list = favorites;
-
-    if (list.any((e) => e['url'] == item['url'])) return;
-
-    await _box.write(_favoritesKey, [item, ...list]);
-    favoritesRevision.value++;
-  }
-
-  Future<void> removeFromFavorites(String url) async {
-    final list = favorites..removeWhere((e) => e['url'] == url);
-    await _box.write(_favoritesKey, list);
-    favoritesRevision.value++;
-  }
-
-  bool isFavorite(String url) => favorites.any((e) => e['url'] == url);
 }

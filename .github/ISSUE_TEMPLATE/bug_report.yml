@@ -1,0 +1,56 @@
+name: 🐞 Bug report
+description: Report a problem with Freedium
+labels: ["bug", "flutter"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is the problem?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we trigger it?
+      placeholder: |
+        1. Open the article ...
+        2. Tap ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: e.g. Pixel 9, Samsung Galaxy S24
+  - type: input
+    id: android-version
+    attributes:
+      label: Android version
+      description: e.g. Android 15
+  - type: input
+    id: flutter-version
+    attributes:
+      label: Flutter version
+      description: Output of `flutter --version`
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots / logs
+      description: Paste screenshots or `flutter run` logs (remove any private data).

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../extensions/context_ext.dart';
+import '../theme/app_spacing.dart';
 
 /// Small rounded container that frames a short piece of text (version, tag).
 class AppPill extends StatelessWidget {
@@ -14,10 +15,13 @@ class AppPill extends StatelessWidget {
     final c = context.colors;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppRadius.sm + AppSpacing.xs,
+        vertical: AppSpacing.xs + AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: c.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(color: c.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Text(

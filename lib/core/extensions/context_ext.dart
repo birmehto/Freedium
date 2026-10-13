@@ -1,40 +1,16 @@
 import 'package:material_ui/material_ui.dart';
 
+/// Small, allocation-free conveniences for the theme data every screen needs.
 extension ContextX on BuildContext {
-  // THEME
   ThemeData get theme => Theme.of(this);
+
   ColorScheme get colors => theme.colorScheme;
+
   TextTheme get text => theme.textTheme;
-  Brightness get brightness => theme.brightness;
-  bool get isDark => brightness == Brightness.dark;
-  bool get isLight => brightness == Brightness.light;
 
-  // SNACKBARS (Safe)
-  void snack(
-    String message, {
-    Duration duration = const Duration(seconds: 3),
-    SnackBarAction? action,
-    Color? bg,
-  }) {
-    final messenger = ScaffoldMessenger.maybeOf(this);
-    if (messenger == null) return;
-    messenger
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: duration,
-          action: action,
-          backgroundColor: bg,
-        ),
-      );
-  }
-
-  // FOCUS & KEYBOARD
+  /// Dismisses the software keyboard when something else should take focus.
   void unfocus() {
-    final FocusScopeNode current = FocusScope.of(this);
-    if (!current.hasPrimaryFocus) current.unfocus();
+    final scope = FocusScope.of(this);
+    if (scope.hasPrimaryFocus) scope.unfocus();
   }
-
-  void focus(FocusNode node) => FocusScope.of(this).requestFocus(node);
 }
