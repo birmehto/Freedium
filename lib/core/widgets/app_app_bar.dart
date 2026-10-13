@@ -20,12 +20,15 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool automaticallyImplyLeading;
 
   @override
-  Size get preferredSize => const Size.fromHeight(72);
+  Size get preferredSize => const Size.fromHeight(65);
 
   @override
   Widget build(BuildContext context) {
     return M3EAppBar.top(
-      title: title,
+      title: DefaultTextStyle.merge(
+        style: const TextStyle(fontWeight: FontWeight.bold),
+        child: title,
+      ),
       centerTitle: centerTitle,
       actions: actions,
       automaticallyImplyLeading: automaticallyImplyLeading,

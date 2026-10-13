@@ -22,7 +22,11 @@ class AppShell extends GetView<AppShellController> {
   static const List<({String label, IconData icon, IconData? selectedIcon})>
   _destinations = [
     (label: 'Home', icon: M3EIcons.home, selectedIcon: M3EIcons.home_filled),
-    (label: 'Library', icon: M3EIcons.auto_stories_rounded, selectedIcon: null),
+    (
+      label: 'Favorites',
+      icon: M3EIcons.favorite_border_rounded,
+      selectedIcon: M3EIcons.favorite,
+    ),
     (label: 'Settings', icon: M3EIcons.settings, selectedIcon: null),
   ];
 

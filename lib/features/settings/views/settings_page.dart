@@ -19,7 +19,7 @@ class SettingsPage extends GetView<SettingsController> {
     return Scaffold(
       appBar: const AppAppBar(title: Text('Settings')),
       body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         children: [
           const AppSectionHeader(title: 'Appearance'),
           M3ECard(
