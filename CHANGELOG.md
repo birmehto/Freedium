@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-13
+
 ### Added
 - **Support the project (opt-in rewarded ads)**
   - A floating action button on Home opens a "Support Freedium" dialog offering two ways to help: a short rewarded video, or a one-off "buy me a coffee" donation.
@@ -28,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Reader theme selection (System / Light / Dark / Sepia / OLED), font family, and font size.
   - Reader actions: favorite, share, copy link, open in browser, find.
 - **Theme modes** — System / Light / Dark full-app theme selection.
-- **Tests** for the URL source of truth, mirror resolver, library store, article cache and reading progress stores, the offline reader flow, the continue-reading section, reader settings/models, article models, support/ad flow, and widget flows (309 tests total).
+- **Tests** for the URL source of truth, mirror resolver, library store, article cache and reading progress stores, the offline reader flow, the continue-reading section, reader settings/models, article models, support/ad flow, and widget flows (311 tests total).
 - **CI workflow** (`.github/workflows/ci.yml`) — code generation (`dart run build_runner build`), format check, `flutter analyze`, `flutter test`, and an Android debug build on every pull request.
 
 ### Changed
