@@ -21,16 +21,19 @@ Clearing the app data (or uninstalling) wipes everything.
 
 - **Article URLs** — the only data sent is the article URL you choose to open, sent to the selected mirror service to fetch the page. The mirror's own terms and privacy practices apply to that request. Freedium is independent and not affiliated with the mirrors.
 - **Optional links** — emailing feedback or opening the donation link shares data directly with those third parties under their own terms.
+- **Optional rewarded ads** — no ad is shown unless the user chooses to watch one. To avoid a wait, the app warms the ad SDK up at startup and requests a single rewarded ad; that request goes to Google Mobile Ads, may include the advertising identifier, and is the only ad traffic unless a video is actually watched.
 
 ## Analytics
 
 - **No analytics, tracking, or crash-reporting SDKs** are bundled, and the app collects no usage statistics of its own.
+- The only ad SDK is Google Mobile Ads. No ad is ever shown unless the user asks for one, though the app warms the SDK up at startup — initializing it and requesting a single rewarded ad — so the video is ready without a wait. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
 ## External services contacted
 
 | Service | Purpose | When |
 |---------|---------|------|
 | Mirror sources (`MirrorCatalog.defaults`) | Fetch article content for the URL you opened | On article open / retry |
+| Google Mobile Ads | Optional rewarded video | Only when the user chooses "Watch a short ad" |
 | Email / Buy Me a Coffee (links) | Feedback and optional donations | Only when you explicitly use them |
 
 ## How article content is handled
@@ -52,3 +55,4 @@ Clearing the app data (or uninstalling) wipes everything.
 ## Secrecy
 
 - No API keys or secrets are compiled into the app; mirrors are public endpoints fetched over HTTPS.
+- The one secret is the AdMob configuration (application id and rewarded unit). It is **not** committed: `envied` reads the ids from a git-ignored `.env` and emits an obfuscated `env.g.dart`, and the Android build injects the application id into the manifest at build time. Without a `.env`, Google's public test ids are used.

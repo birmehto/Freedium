@@ -10,8 +10,9 @@ import '../../../core/widgets/app_snackbar.dart';
 /// Drives the "support Freedium" options: watching a rewarded ad, or opening
 /// the donation page.
 ///
-/// Owns the outcome handling (including the platform without an ad SDK) so the
-/// view only has to say *what* was chosen, never how to present an ad or a link.
+/// Owns the ad interaction and the donation hand-off, and reports how an ad
+/// attempt went — including the platform with no ad SDK, which simply reports
+/// [RewardedAdOutcome.unavailable] — so the view can present the result.
 class SupportController extends GetxController {
   SupportController(AdService ads) : _ads = ads;
 
@@ -20,20 +21,16 @@ class SupportController extends GetxController {
   /// Whether a rewarded video is loaded and can be shown right now.
   bool get adReady => _ads.isReady.value;
 
-  /// Plays a rewarded video and reports the result to the user.
-  Future<void> watchAd() async {
-    final outcome = await _ads.showRewarded();
+  /// Whether an ad is on its way, so the dialog can show progress.
+  bool get adLoading => _ads.isLoading.value;
 
-    switch (outcome) {
-      case RewardedAdOutcome.earnedReward:
-        _showMessage('Thank you for supporting Freedium!');
-      case RewardedAdOutcome.unavailable:
-        _showMessage('No ad is ready right now. Please try again in a moment.');
-      case RewardedAdOutcome.dismissed:
-        // Closed early: nothing earned, and nothing worth saying.
-        break;
-    }
-  }
+  /// Why the last request produced no ad, for the view to explain after
+  /// [watchAd] completes with [RewardedAdOutcome.unavailable].
+  AdFailureReason get adFailureReason => _ads.lastFailureReason;
+
+  /// Plays a rewarded video, completing with how the attempt ended so the
+  /// caller can thank the user or explain why nothing played.
+  Future<RewardedAdOutcome> watchAd() => _ads.showRewarded();
 
   /// Opens the donation page in the browser.
   Future<void> buyCoffee() async {
@@ -49,10 +46,6 @@ class SupportController extends GetxController {
       appLog(exception.toString(), name: 'Support', level: LogLevel.warning);
     }
 
-    _showMessage('Could not open the support page');
-  }
-
-  void _showMessage(String message) {
-    AppSnackbar.show(Get.context, message: message);
+    AppSnackbar.show(Get.context, message: 'Could not open the support page');
   }
 }

@@ -66,6 +66,10 @@ app.*.map.json
 .envrc
 *.env
 
+# envied output — obfuscates the values from .env at build time, so it must
+# stay out of the repo even though it is generated from a public annotation.
+/lib/core/config/env.g.dart
+
 # Google Play / service accounts
 google-play.json
 play-service-account.json

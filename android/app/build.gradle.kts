@@ -24,6 +24,22 @@ if (hasReleaseKeystore) {
     )
 }
 
+/**
+ * AdMob application id, kept out of version control.
+ *
+ * Read from the repo-root `.env` — the same file `envied` reads for the Dart
+ * side — so a real id is never committed. Copy `.env.example` to `.env` and set
+ * `ADMOB_APP_ID`. When the file or key is missing (fresh clone, CI), Google's
+ * public test id is used so builds keep working and serve test ads.
+ */
+val admobAppId: String = run {
+    val envFile = rootProject.file("../.env")
+    val envProperties = Properties()
+    if (envFile.exists()) envFile.inputStream().use { envProperties.load(it) }
+    envProperties.getProperty("ADMOB_APP_ID")?.takeIf { it.isNotBlank() }
+        ?: "ca-app-pub-3940256099942544~3347511713"
+}
+
 android {
     namespace = "com.bir.freedium"
     compileSdk = 37
@@ -40,6 +56,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["admobAppId"] = admobAppId
     }
 
     signingConfigs {

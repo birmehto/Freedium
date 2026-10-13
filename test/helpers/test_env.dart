@@ -78,14 +78,20 @@ class FakeAdService implements AdService {
   /// How many times [showRewarded] was called.
   int showCount = 0;
 
-  /// Whether [initialize] was called.
-  bool initialized = false;
+  /// How many times [prepare] was called.
+  int prepareCount = 0;
 
   @override
   final RxBool isReady = true.obs;
 
   @override
-  Future<void> initialize() async => initialized = true;
+  final RxBool isLoading = false.obs;
+
+  @override
+  AdFailureReason lastFailureReason = AdFailureReason.unknown;
+
+  @override
+  Future<void> prepare() async => prepareCount++;
 
   @override
   Future<RewardedAdOutcome> showRewarded() async {

@@ -29,7 +29,8 @@
 - **🔒 On-device library** — favorites, reading positions, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
-- **🔐 Truly private** — no account, no ads, no analytics. Everything stays on your device.
+- **☕ Support the project** — keep Freedium free by watching a short rewarded ad or buying a coffee, straight from the home screen.
+- **🔐 Truly private** — no account, no analytics, no background tracking. The only ad is an optional rewarded one: none is ever shown unless you choose to watch.
 
 ---
 
@@ -51,11 +52,14 @@ cd Freedium
 # Install dependencies
 flutter pub get
 
+# Generate code (git-ignored env.g.dart, plus Drift)
+dart run build_runner build
+
 # Run on a connected device or emulator
 flutter run
 ```
 
-> After changing a Drift table definition, regenerate the database code with `dart run build_runner build`.
+> AdMob ids live in a git-ignored `.env` (copy `.env.example`); without it the app uses Google's public test ids. Regenerate with `dart run build_runner build` after changing a Drift table or editing `.env`.
 
 ### 📲 Download
 
@@ -76,10 +80,11 @@ flutter run
 | State management | GetX (controllers, bindings, routing) |
 | UI | Material 3 Expressive (`material_3_expressive`) |
 | Article rendering | `webview_flutter` with injected reader CSS/JS |
+| Ads | `google_mobile_ads` — an optional rewarded video; the SDK warms up at startup so there is no wait; ids come from a git-ignored `.env` via `envied` |
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 231 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
+| Quality | `flutter_lints`, 309 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
 
 ---
 

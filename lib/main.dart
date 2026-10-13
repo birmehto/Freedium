@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:get/get.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -25,12 +23,15 @@ void main() async {
   // next article.
   Get.put(ArticleResolver());
 
-  // Ads are non-essential: the SDK warms up in the background so a slow — or
-  // absent — ad network can never delay the first frame. The service degrades
-  // to "no ad available" on platforms without the SDK.
+  // Ads are warmed up as soon as the app is up, so the support dialog finds a
+  // video already loaded instead of making the user wait. The service is
+  // registered here for the support flow to find; the request itself is
+  // fire-and-forget, and only a user who asks for an ad ever sees the result.
+  // On platforms without the SDK it degrades to "no ad available".
   final ads = GoogleMobileAdsService();
   Get.put<AdService>(ads);
-  unawaited(ads.initialize());
 
   runApp(const Freedium());
+
+  ads.prepare();
 }

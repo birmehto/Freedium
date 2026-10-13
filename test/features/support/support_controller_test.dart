@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/services/ad_service.dart';
 import 'package:freedium/features/support/controllers/support_controller.dart';
@@ -25,61 +24,34 @@ void main() {
       expect(controller.adReady, isTrue);
     });
 
+    test('adLoading mirrors the ad service', () {
+      ads.isLoading.value = false;
+      expect(controller.adLoading, isFalse);
+
+      ads.isLoading.value = true;
+      expect(controller.adLoading, isTrue);
+    });
+
+    test('adFailureReason mirrors the ad service', () {
+      ads.lastFailureReason = AdFailureReason.noFill;
+
+      expect(controller.adFailureReason, AdFailureReason.noFill);
+    });
+
     test('watchAd presents a video and consumes the attempt', () async {
       await controller.watchAd();
 
       expect(ads.showCount, 1);
     });
 
-    test('watchAd reports each outcome without throwing', () async {
+    test('watchAd reports each outcome the ad service returns', () async {
       for (final outcome in RewardedAdOutcome.values) {
         ads.outcome = outcome;
 
-        await expectLater(controller.watchAd(), completes);
+        expect(await controller.watchAd(), outcome);
       }
 
       expect(ads.showCount, RewardedAdOutcome.values.length);
-    });
-
-    testWidgets('thanks the user after a rewarded video', (tester) async {
-      ads.outcome = RewardedAdOutcome.earnedReward;
-
-      await tester.pumpWidget(
-        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
-      );
-
-      await controller.watchAd();
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Thank you'), findsOneWidget);
-    });
-
-    testWidgets('explains when no ad could be shown', (tester) async {
-      ads.outcome = RewardedAdOutcome.unavailable;
-
-      await tester.pumpWidget(
-        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
-      );
-
-      await controller.watchAd();
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('No ad is ready'), findsOneWidget);
-    });
-
-    testWidgets('stays quiet when the user closes the ad early', (
-      tester,
-    ) async {
-      ads.outcome = RewardedAdOutcome.dismissed;
-
-      await tester.pumpWidget(
-        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
-      );
-
-      await controller.watchAd();
-      await tester.pumpAndSettle();
-
-      expect(find.byType(SnackBar), findsNothing);
     });
   });
 }

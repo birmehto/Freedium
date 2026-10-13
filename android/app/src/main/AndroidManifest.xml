@@ -48,13 +48,14 @@
         </activity>
 
         <!--
-          Google Mobile Ads application id. This is Google's public test id;
-          replace it (together with the rewarded unit in AdConfig) with the
-          app's own AdMob id before publishing.
+          Google Mobile Ads application id, injected at build time from the
+          git-ignored `.env` (`ADMOB_APP_ID`) through the `admobAppId` manifest
+          placeholder in app/build.gradle.kts — so a real id is never committed.
+          When `.env` is missing the build falls back to Google's public test id.
         -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="${admobAppId}" />
 
         <meta-data
             android:name="flutterEmbedding"

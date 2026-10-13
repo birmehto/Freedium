@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [Unreleased]
 
 ### Added
+- **Support the project (opt-in rewarded ads)**
+  - A floating action button on Home opens a "Support Freedium" dialog offering two ways to help: a short rewarded video, or a one-off "buy me a coffee" donation.
+  - Ads go through an `AdService` seam (`lib/core/services/ad_service.dart`): the Google Mobile Ads implementation is warmed up at startup so a video is ready before the support flow opens, and platforms without the SDK (Linux desktop) degrade to "no ad available" instead of failing.
+  - Ad ids are never committed: `envied` reads them from a git-ignored `.env` into an obfuscated `env.g.dart`, and `android/app/build.gradle.kts` injects the application id into the manifest from the same file. Without a `.env` the build falls back to Google's public test ids, so a fresh clone still builds and serves test ads.
 - **Offline reading**
   - Favoriting an article also keeps it on the device, so it opens again with no connection and falls back to the stored copy when every mirror fails. Removing the favorite removes the copy, so there is nothing left behind to clean up.
   - Nothing is stored just because an article was read.
@@ -24,10 +28,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - Reader theme selection (System / Light / Dark / Sepia / OLED), font family, and font size.
   - Reader actions: favorite, share, copy link, open in browser, find.
 - **Theme modes** — System / Light / Dark full-app theme selection.
-- **Tests** for the URL source of truth, mirror resolver, library store, article cache and reading progress stores, the offline reader flow, the continue-reading section, reader settings/models, article models, and widget flows (231 tests total).
-- **CI workflow** (`.github/workflows/ci.yml`) — format check, `flutter analyze`, `flutter test`, and an Android debug build on every pull request.
+- **Tests** for the URL source of truth, mirror resolver, library store, article cache and reading progress stores, the offline reader flow, the continue-reading section, reader settings/models, article models, support/ad flow, and widget flows (309 tests total).
+- **CI workflow** (`.github/workflows/ci.yml`) — code generation (`dart run build_runner build`), format check, `flutter analyze`, `flutter test`, and an Android debug build on every pull request.
 
 ### Changed
+- **Privacy promises now match the app.** The README and privacy policy no longer claim there are no ads or no advertising identifiers. No ad is ever shown unless the user chooses to watch one, though the SDK is warmed up at startup: the app initializes Google Mobile Ads and requests a single rewarded ad so the video is ready without a wait. That startup request — which is what lets Google Mobile Ads use the device advertising identifier — is the only ad traffic a user who never watches anything generates.
+- **Ad configuration moved out of the source.** The rewarded unit is obfuscated into a git-ignored `env.g.dart` by `envied`, and the Android build passes `ADMOB_APP_ID` from the same git-ignored `.env` into the manifest as the `admobAppId` placeholder, so no real AdMob id is ever committed. The manifest still declares `com.google.android.gms.permission.AD_ID`.
 - **iOS support removed.** The `ios/` project and its metadata references are gone; the supported targets are Android and Linux. Android share intents, the WebView reader, and Drift storage are unaffected.
 - **Storage** is split into `PreferencesStore` (settings) and `LibraryStore` (favorites + article metadata) behind a `KeyValueStore` interface, backed by Drift/SQLite in production and `MemoryKeyValueStore` in tests. Writes are serialized so concurrent updates cannot interleave. Article bodies and reading positions sit in their own Drift tables rather than in the key-value store, which would load every row on startup.
 - **Reader** renders with the official `webview_flutter` plugin, migrated from `flutter_inappwebview`; the saved copy is served with `loadHtmlString` so it and the fetched page go through the same path.
