@@ -16,6 +16,8 @@
 
 [![Download](https://img.shields.io/badge/⬇️_Download-APK-2E8B57?style=for-the-badge)](https://github.com/birmehto/Freedium/releases/latest)
 
+<a href="https://play.google.com/store/apps/details?id=com.bir.freedium"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="54"/></a>
+
 </div>
 
 ---
@@ -65,10 +67,10 @@ flutter run
 
 | Platform | Get it |
 |----------|--------|
-| 🤖 **Android** | [Download the latest APK](https://github.com/birmehto/Freedium/releases/latest) |
+| 🤖 **Android** | [Get it on Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium) · [Download the latest APK](https://github.com/birmehto/Freedium/releases/latest) |
 | 🐧 **Linux** | Build from source — see [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-> On Android, enable "Install unknown apps" for your browser to install the APK.
+> Prefer Google Play for automatic updates. To sideload the APK, enable "Install unknown apps" for your browser.
 
 ---
 
