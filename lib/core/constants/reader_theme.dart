@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import '../../features/settings/models/reader_settings.dart';
 import '../../features/settings/models/reader_theme_mode.dart';
@@ -109,6 +110,13 @@ abstract final class ReaderTheme {
       secondaryText: colors.secondaryText,
       link: colors.link,
     );
+  }
+
+  /// Converts a hex color string like `#fbfaf7` or `#1b1915` to a [Color].
+  static Color hexToColor(String hex) {
+    final clean = hex.replaceAll('#', '');
+    final val = int.tryParse(clean, radix: 16) ?? 0xFFFFFF;
+    return clean.length == 6 ? Color(0xFF000000 | val) : Color(val);
   }
 
   // ---------------------------------------------------------------------------
@@ -929,46 +937,12 @@ $hostModeSyncJs
          Article text
          ============================================================ */
 
-      article > header,
-      article > header h1,
-      article > header h2,
-      article > header h3,
-      article > header p,
-      article > header span,
-      article > header div {
+      article,
+      article :not(pre, pre *, code, code *):is(header, .prose, div, p, li, blockquote, strong, em, figcaption) {
         color: ${colors.text} !important;
       }
 
-      article .prose,
-      article .prose p,
-      article .prose li,
-      article .prose blockquote,
-      article .prose h1,
-      article .prose h2,
-      article .prose h3,
-      article .prose h4,
-      article .prose h5,
-      article .prose h6,
-      article .prose strong,
-      article .prose em,
-      article .prose figcaption {
-        color: ${colors.text} !important;
-      }
-
-      article > div > p,
-      article > div > h1,
-      article > div > h2,
-      article > div > h3,
-      article > div > h4,
-      article > div > h5,
-      article > div > h6,
-      article > div > span {
-        color: ${colors.text} !important;
-      }
-
-      article small,
-      article .text-sm,
-      article .text-xs {
+      article :is(small, .text-sm, .text-xs) {
         color: ${colors.secondaryText} !important;
       }
 
@@ -1000,79 +974,36 @@ $hostModeSyncJs
          Headings
          ============================================================ */
 
-      article h1,
-      article h2,
-      article h3,
-      article h4,
-      article h5,
-      article h6,
-      article .prose h1,
-      article .prose h2,
-      article .prose h3,
-      article .prose h4,
-      article .prose h5,
-      article .prose h6 {
+      article :is(h1, h2, h3, h4, h5, h6, .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6) {
         color: ${colors.text} !important;
-
         line-height: ${m.headingLineHeight} !important;
         font-weight: 700 !important;
         letter-spacing: -0.01em !important;
-
-        /* Headings are short, so even out the line lengths. */
         text-wrap: balance !important;
-      }
-
-      article h1,
-      article .prose h1 {
-        font-size: 1.75em !important;
         margin-bottom: 0 !important;
       }
 
-      article h2,
-      article .prose h2 {
-        font-size: 1.4em !important;
-        margin-bottom: 0 !important;
-      }
-
-      article h3,
-      article .prose h3 {
-        font-size: 1.2em !important;
-        margin-bottom: 0 !important;
-      }
-
-      article h4,
-      article .prose h4,
-      article h5,
-      article .prose h5,
-      article h6,
-      article .prose h6 {
-        font-size: 1em !important;
-        margin-bottom: 0 !important;
-      }
+      article :is(h1, .prose h1) { font-size: 1.75em !important; }
+      article :is(h2, .prose h2) { font-size: 1.4em !important; }
+      article :is(h3, .prose h3) { font-size: 1.2em !important; }
+      article :is(h4, h5, h6, .prose h4, .prose h5, .prose h6) { font-size: 1em !important; }
 
       /* ============================================================
          Blockquotes
          ============================================================ */
 
-      article blockquote,
-      article .prose blockquote,
-      article > div > blockquote {
+      article :is(blockquote, .prose blockquote, > div > blockquote) {
         margin-top: ${m.paragraphSpacing}em !important;
         margin-bottom: 0 !important;
-
         padding: 0.1em 0 0.1em ${m.quoteIndent}em !important;
-
         border: 0 !important;
         border-left: 3px solid ${colors.quoteBar} !important;
         border-radius: 0 !important;
-
         background: transparent !important;
-
         color: ${colors.secondaryText} !important;
       }
 
-      article blockquote p,
-      article .prose blockquote p {
+      article :is(blockquote p, .prose blockquote p) {
         color: inherit !important;
       }
 
@@ -1080,28 +1011,21 @@ $hostModeSyncJs
          Lists
          ============================================================ */
 
-      article ul,
-      article ol,
-      article .prose ul,
-      article .prose ol {
+      article :is(ul, ol, .prose ul, .prose ol) {
         margin-top: ${m.paragraphSpacing}em !important;
         margin-bottom: 0 !important;
-
         padding-left: ${m.listIndent}em !important;
       }
 
-      article ul,
-      article .prose ul {
+      article :is(ul, .prose ul) {
         list-style: disc !important;
       }
 
-      article ol,
-      article .prose ol {
+      article :is(ol, .prose ol) {
         list-style: decimal !important;
       }
 
-      article li::marker,
-      article .prose li::marker {
+      article :is(li::marker, .prose li::marker) {
         color: ${colors.secondaryText} !important;
       }
 
@@ -1109,10 +1033,8 @@ $hostModeSyncJs
          Links
          ============================================================ */
 
-      article .prose a,
-      article a {
+      article :is(a, .prose a) {
         color: ${colors.link} !important;
-
         text-decoration: underline !important;
         text-underline-offset: 2px !important;
         text-decoration-thickness: from-font !important;
@@ -1256,6 +1178,58 @@ $hostModeSyncJs
 
       pre button {
         color: inherit !important;
+      }
+
+      /* ============================================================
+         Syntax Highlighting (Colorful Code)
+         ============================================================ */
+
+      /* Keywords, storage, declarations */
+      pre :is(.token.keyword, .hljs-keyword, .k, .kd, .kn, .kp, .kr, .kt, .token.tag, .hljs-tag) {
+        color: ${isDark ? '#ff7b72' : '#cf222e'} !important;
+        font-weight: 600 !important;
+      }
+
+      /* Strings, characters */
+      pre :is(.token.string, .token.char, .hljs-string, .s, .s1, .s2, .sb, .sc) {
+        color: ${isDark ? '#7ee787' : '#0a7037'} !important;
+      }
+
+      /* Functions, methods, class names, types */
+      pre :is(.token.function, .token.class-name, .hljs-title, .hljs-function, .hljs-title.function_, .nf, .nc) {
+        color: ${isDark ? '#d2a8ff' : '#8250df'} !important;
+        font-weight: 500 !important;
+      }
+
+      /* Numbers, booleans, constants */
+      pre :is(.token.number, .token.boolean, .token.constant, .hljs-number, .hljs-literal, .m, .mf, .mi, .kc) {
+        color: ${isDark ? '#ffa657' : '#953800'} !important;
+      }
+
+      /* Comments */
+      pre :is(.token.comment, .token.prolog, .token.doctype, .token.cdata, .hljs-comment, .c, .c1, .cm) {
+        color: ${isDark ? '#8b949e' : '#6e7781'} !important;
+        font-style: italic !important;
+      }
+
+      /* Built-ins, variables, properties */
+      pre :is(.token.builtin, .token.variable, .token.property, .hljs-built_in, .hljs-variable, .nv, .na) {
+        color: ${isDark ? '#79c0ff' : '#0550ae'} !important;
+      }
+
+      /* Attributes, selectors */
+      pre :is(.token.attr-name, .token.selector, .hljs-attr, .hljs-attribute) {
+        color: ${isDark ? '#a5d6ff' : '#116329'} !important;
+      }
+
+      /* Regular expressions, escape characters */
+      pre :is(.token.regex, .token.important, .hljs-regexp) {
+        color: ${isDark ? '#f0883e' : '#b35900'} !important;
+      }
+
+      /* Operators, punctuation */
+      pre :is(.token.operator, .token.punctuation, .hljs-punctuation, .o, .p) {
+        color: ${colors.secondaryText} !important;
       }
 
       /* ============================================================

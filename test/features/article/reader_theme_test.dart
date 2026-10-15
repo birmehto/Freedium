@@ -88,6 +88,18 @@ void main() {
       expect(css, isNot(contains('content-visibility')));
       expect(css, isNot(contains('contain-intrinsic-size')));
     });
+
+    test('emits colorful syntax highlighting rules for code blocks', () {
+      final darkCss = _css(mode: ReaderThemeMode.dark);
+      final lightCss = _css(mode: ReaderThemeMode.light);
+
+      expect(darkCss, contains('.token.keyword'));
+      expect(darkCss, contains('.hljs-keyword'));
+      expect(darkCss, contains('.token.string'));
+      expect(darkCss, contains('.token.function'));
+      expect(lightCss, contains('.token.keyword'));
+      expect(lightCss, contains('.token.string'));
+    });
   });
 
   group('font family sanitization', () {

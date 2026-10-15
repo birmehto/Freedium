@@ -67,6 +67,14 @@ class _ArticleWebViewState extends State<ArticleWebView> {
       onPermissionRequest: (request) => unawaited(request.deny()),
     );
 
+    final bgHex = ReaderTheme.previewColors(
+      _controller.readingSettings.value,
+      systemDark: _controller.isDarkMode,
+    ).background;
+    unawaited(
+      webViewController.setBackgroundColor(ReaderTheme.hexToColor(bgHex)),
+    );
+
     unawaited(webViewController.setJavaScriptMode(JavaScriptMode.unrestricted));
     unawaited(webViewController.setUserAgent(_readerUserAgent));
     unawaited(webViewController.enableZoom(false));
@@ -74,18 +82,17 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     // declares `overscroll-behavior-y: none`, and the rubber-band effect only
     // fights the article.
     unawaited(webViewController.setOverScrollMode(WebViewOverScrollMode.never));
-    unawaited(webViewController.setOnConsoleMessage(_onConsoleMessage));
     unawaited(
-      webViewController.setOnJavaScriptAlertDialog(_onJavaScriptAlertDialog),
+      webViewController.setOnJavaScriptAlertDialog((_) => Future<void>.value()),
     );
     unawaited(
       webViewController.setOnJavaScriptConfirmDialog(
-        _onJavaScriptConfirmDialog,
+        (_) => Future<bool>.value(false),
       ),
     );
     unawaited(
       webViewController.setOnJavaScriptTextInputDialog(
-        _onJavaScriptTextInputDialog,
+        (_) => Future<String>.value(''),
       ),
     );
     unawaited(
@@ -141,30 +148,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
   void _onPageStarted(String url) {
     _mainFrameUrl = url;
     appLog('WebView.onPageStarted: url=$url');
-
     _controller.onPageStart(url);
-
-    // The document-start scripts the old plugin ran through user scripts have
-    // no equivalent in the official plugin, so they are injected as early as
-    // the platform allows. Anything that arrives too late for a first paint is
-    // re-applied once the page finishes.
-    unawaited(_injectDocumentStartScripts());
-  }
-
-  Future<void> _injectDocumentStartScripts() async {
-    for (final source in _documentScripts()) {
-      try {
-        await _webViewController.runJavaScript(source);
-      } catch (error) {
-        // The document may not exist yet when the navigation has only just
-        // started; the page-finished pass re-applies everything that matters.
-        appLog(
-          'Could not inject early script: $error',
-          name: 'Reader',
-          level: LogLevel.warning,
-        );
-      }
-    }
   }
 
   void _onPageFinished(String url) {
@@ -175,15 +159,13 @@ class _ArticleWebViewState extends State<ArticleWebView> {
   Future<void> _handlePageFinished(String url) async {
     appLog('WebView.onPageFinished: url=$url');
 
-    // The loader is dismissed before the article is reported ready, so the
-    // reader is not held behind a loading indicator for a page that has
-    // already finished.
-    _controller.onPageLoaded();
+    // Inject styles first so the document renders with proper typography and
+    // palette before the loader is dismissed.
     await _controller.injectCustomCSS();
+    _controller.onPageLoaded();
   }
 
   void _onProgress(int progress) {
-    appLog('WebView.onProgress: progress=$progress');
     _controller.updateProgress(progress.toDouble());
   }
 
@@ -224,40 +206,6 @@ class _ArticleWebViewState extends State<ArticleWebView> {
 
     return parsed.replace(fragment: '').toString() ==
         uri.replace(fragment: '').toString();
-  }
-
-  void _onConsoleMessage(JavaScriptConsoleMessage message) {
-    if (message.level == JavaScriptLogLevel.error) {
-      appLog('Console: ${message.message}', name: 'Reader');
-    }
-  }
-
-  /// Suppresses the page's own alert/confirm/prompt dialogs.
-  Future<void> _onJavaScriptAlertDialog(JavaScriptAlertDialogRequest request) {
-    return Future<void>.value();
-  }
-
-  Future<bool> _onJavaScriptConfirmDialog(
-    JavaScriptConfirmDialogRequest request,
-  ) {
-    return Future<bool>.value(false);
-  }
-
-  Future<String> _onJavaScriptTextInputDialog(
-    JavaScriptTextInputDialogRequest request,
-  ) {
-    return Future<String>.value('');
-  }
-
-  /// The scripts the reader wants in the document before its own code runs.
-  List<String> _documentScripts() {
-    return [
-      ReaderTheme.earlyStyleInjector(
-        settings: _controller.readingSettings.value,
-        systemDark: _controller.isDarkMode,
-      ),
-      ReaderTheme.popupBlockingJs,
-    ];
   }
 
   /// Opens [url] outside the reader, e.g. an off-site link the user tapped.
