@@ -317,9 +317,6 @@ class ArticleController extends GetxController {
   void updateProgress(double progress) {
     final value = (progress / 100).clamp(0.0, 1.0).toDouble();
     loadingProgress.value = value;
-    appLog(
-      'ArticleController.updateProgress: value=$value, isLoading=${isLoading.value}',
-    );
     if (value >= 1.0) _stopLoading();
   }
 
@@ -413,6 +410,14 @@ class ArticleController extends GetxController {
   Future<void> injectCustomCSS() async {
     final controller = webViewController;
     if (isClosed || controller == null) return;
+
+    final preview = ReaderTheme.previewColors(
+      readingSettings.value,
+      systemDark: isDarkMode,
+    );
+    unawaited(
+      controller.setBackgroundColor(ReaderTheme.hexToColor(preview.background)),
+    );
 
     final css = ReaderTheme.getCss(
       settings: readingSettings.value,
