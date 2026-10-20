@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/features/support/controllers/support_controller.dart';
 import 'package:freedium/features/support/widgets/support_dialog.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/routes/app_routes.dart';
 import 'package:freedium/core/services/storage_service.dart';
@@ -10,6 +9,7 @@ import 'package:freedium/features/favorites/widgets/favorite_tile.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 

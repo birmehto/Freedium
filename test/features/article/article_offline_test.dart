@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/network/article_resolver.dart';
 import 'package:freedium/core/routes/app_routes.dart';
-import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/core/services/storage_service.dart';
 import 'package:freedium/core/services/theme_service.dart';
 import 'package:freedium/core/storage/article_cache_store.dart';
@@ -10,6 +8,7 @@ import 'package:freedium/features/article/controllers/article_controller.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 
@@ -310,11 +309,10 @@ void main() {
 class _LoadedArticleController extends ArticleController {
   _LoadedArticleController(
     this._html,
-    ClipboardService clipboard,
     StorageService storage,
     ThemeService theme,
     ArticleResolver resolver,
-  ) : super(clipboard, storage, theme, resolver);
+  ) : super(storage, theme, resolver);
 
   final String _html;
 
@@ -327,19 +325,12 @@ class _LoadedArticleController extends ArticleController {
 /// With [articleOnScreen] set, the reader has a document to store, which a real
 /// one only gets from the WebView this suite never builds.
 ArticleController _buildReader(String? articleOnScreen) {
-  final clipboard = ClipboardService()..onInit();
   final storage = Get.find<StorageService>();
   final theme = Get.find<ThemeService>();
   final resolver = Get.find<ArticleResolver>();
 
   if (articleOnScreen == null) {
-    return ArticleController(clipboard, storage, theme, resolver);
+    return ArticleController(storage, theme, resolver);
   }
-  return _LoadedArticleController(
-    articleOnScreen,
-    clipboard,
-    storage,
-    theme,
-    resolver,
-  );
+  return _LoadedArticleController(articleOnScreen, storage, theme, resolver);
 }

@@ -37,6 +37,7 @@ class FavoritesPage extends GetView<FavoritesController> {
               AppSpacing.sm,
             ),
             child: AppTextForm(
+              showClearButton: true,
               label: 'Search your library...',
               onChanged: controller.onSearchChanged,
               leading: const Icon(M3EIcons.search_rounded),

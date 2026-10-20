@@ -23,6 +23,7 @@ class AppTextForm extends StatelessWidget {
     this.obscureText = false,
     this.enabled = true,
     this.autofocus = false,
+    this.showClearButton = false,
     this.keyboardType,
     this.textInputAction,
     this.inputFormatters,
@@ -54,6 +55,7 @@ class AppTextForm extends StatelessWidget {
   final bool obscureText;
   final bool enabled;
   final bool autofocus;
+  final bool showClearButton;
 
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -86,6 +88,7 @@ class AppTextForm extends StatelessWidget {
           leading: leading,
           trailing: trailing,
           variant: variant,
+          showClearButton: showClearButton,
           obscureText: obscureText,
           enabled: enabled,
           autofocus: autofocus,

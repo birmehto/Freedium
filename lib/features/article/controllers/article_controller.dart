@@ -12,7 +12,6 @@ import '../../../core/constants/reader_theme.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/network/article_resolver.dart';
 import '../../../core/network/article_url.dart';
-import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/storage/app_database.dart';
@@ -26,14 +25,8 @@ import '../models/article_request.dart';
 /// Owns the state of one open article: the loaded URL, extracted metadata,
 /// reader typography, favorite status and the offline copy.
 class ArticleController extends GetxController {
-  ArticleController(
-    this._clipboard,
-    this._storage,
-    this._theme,
-    this._resolver,
-  );
+  ArticleController(this._storage, this._theme, this._resolver);
 
-  final ClipboardService _clipboard;
   final StorageService _storage;
   final ThemeService _theme;
   final ArticleResolver _resolver;
@@ -706,11 +699,6 @@ ${copy.html}
       appLog(exception.toString(), name: 'Reader', level: LogLevel.warning);
       showMessage('No app available to open this link');
     }
-  }
-
-  Future<void> copyLink() async {
-    await _clipboard.copyToClipboard(originalUrl.value);
-    showMessage('Link copied to clipboard');
   }
 
   Future<void> shareArticle() async {

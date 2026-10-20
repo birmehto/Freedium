@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/features/settings/controllers/settings_controller.dart';
 import 'package:freedium/features/settings/models/reader_settings.dart';
 import 'package:freedium/features/settings/views/settings_page.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 

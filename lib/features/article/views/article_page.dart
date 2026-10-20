@@ -4,7 +4,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/extensions/context_ext.dart';
 import '../../../core/network/article_resolver.dart';
-import '../../../core/services/clipboard_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -33,7 +32,6 @@ class _ArticlePageState extends State<ArticlePage> {
   /// Owning one instance per page also makes opening a second reader
   /// independent of whatever the first one left in the container.
   late final ArticleController controller = ArticleController(
-    Get.find<ClipboardService>(),
     Get.find<StorageService>(),
     Get.find<ThemeService>(),
     Get.find<ArticleResolver>(),
@@ -315,11 +313,7 @@ class _FabMenu extends StatelessWidget {
           // action the reader can actually reach beats one that never fires.
           onPressed: controller.requestRefresh,
         ),
-        M3EFabMenuItem(
-          icon: const Icon(M3EIcons.link_rounded),
-          label: 'Copy link',
-          onPressed: controller.copyLink,
-        ),
+
         M3EFabMenuItem(
           icon: const Icon(M3EIcons.open_in_browser_rounded),
           label: 'Open in browser',

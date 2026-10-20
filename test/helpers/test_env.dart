@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
 import 'package:freedium/core/network/article_resolver.dart';
 import 'package:freedium/core/services/share_intent_service.dart';
 import 'package:freedium/core/services/storage_service.dart';
@@ -11,6 +10,7 @@ import 'package:freedium/features/settings/models/reader_settings.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart' as ui;
+import 'package:material_ui/material_ui.dart';
 
 /// Builds a [StorageService] backed by an in-memory key-value store.
 ///

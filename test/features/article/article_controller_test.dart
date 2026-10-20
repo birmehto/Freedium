@@ -2,7 +2,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/constants/app_constants.dart';
 import 'package:freedium/core/network/article_resolver.dart';
-import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/features/article/controllers/article_controller.dart';
 import 'package:get/get.dart';
 
@@ -14,7 +13,6 @@ import '../../helpers/test_env.dart';
 /// reports: `onLoadStart`, `onPageCommitVisible`, progress updates,
 /// `onLoadStop` and page errors.
 void main() {
-  late ClipboardService clipboard;
   late ArticleController controller;
   late ArticleResolver resolver;
 
@@ -25,13 +23,11 @@ void main() {
     Get.testMode = true;
     final services = registerServices();
     resolver = services.resolver;
-    clipboard = ClipboardService()..onInit();
 
     // Deliberately not calling onInit(): it resolves the article from the Get
     // route arguments, which are not available outside a real navigation. The
     // loading state under test is already correct for a fresh controller.
     controller = ArticleController(
-      clipboard,
       services.storage,
       services.theme,
       services.resolver,

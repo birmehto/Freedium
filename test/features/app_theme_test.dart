@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/app.dart';
 import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/core/services/theme_service.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../helpers/test_env.dart';
 

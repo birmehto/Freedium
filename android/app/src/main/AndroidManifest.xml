@@ -30,14 +30,6 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!--
-              Share target: accepts text and pasted links from other apps.
-
-              Freedium deliberately does NOT declare VIEW filters for http/https.
-              Claiming every web link on the device while the Dart side never
-              handles an inbound VIEW intent means the app hijacked the browser's
-              share/open-with menu and then ignored the request.
-            -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -50,10 +42,6 @@
             android:value="2" />
     </application>
 
-    <!--
-      Required on Android 11+ so url_launcher and share_plus can resolve the
-      browser, mail and share targets they hand off to.
-    -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
