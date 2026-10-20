@@ -7,7 +7,6 @@
 [![Version](https://img.shields.io/badge/Release-v1.1.1-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Linux-blue?style=flat-square)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/birmehto/Freedium/ci.yml?style=flat-square&label=CI)](https://github.com/birmehto/Freedium/actions/workflows/ci.yml)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
 
 <img src="screenshots/banner.png" width="640" alt="Freedium banner"/>
@@ -85,7 +84,7 @@ flutter run
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 283 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
+| Quality | `flutter_lints`, 283 unit/widget tests |
 
 ---
 
