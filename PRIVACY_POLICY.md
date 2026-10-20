@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **App:** Freedium
-**Last updated:** October 13, 2026
+**Last updated:** October 20, 2026
 
 Freedium is built around a simple principle: **your reading stays on your device.** We do not collect, sell, or share your personal data.
 
@@ -15,13 +15,7 @@ Freedium is a reader for Medium. You paste or share a Medium article URL, and Fr
 - ❌ No analytics, crash-reporting, or background-tracking SDKs of our own
 - ❌ No location data
 - ❌ No unsolicited data uploads
-
-## Optional rewarded ads
-
-Freedium shows no ads unless you ask for one. The home screen offers a **Support Freedium** button. So a video is ready without a wait, the app warms the Google Mobile Ads SDK up when it starts: it initializes the SDK and requests a single rewarded ad in the background. That request may include the device's advertising identifier (the use of which is declared in the Android manifest) and is handled under Google's own privacy policy.
-
-That startup request is the only ad-related traffic unless you actually watch a video — no ad is ever shown unless you choose one. Watching an ad is entirely optional; you can support the project by donating instead.
-
+- ❌ No ads and no advertising identifiers
 
 ## Data stored locally on your device
 
@@ -44,7 +38,6 @@ You can clear all of this anytime by removing favorites in the app, uninstalling
 ## Data sent to third parties
 
 - **Article URLs (Freedium mirror):** The only data that ever leaves your device is the article URL you choose to open. It is sent to the Freedium mirror network to fetch the article content. Freedium is an independent, open-source project **not affiliated with the mirror service**; its terms and privacy practices apply to that request.
-- **Rewarded ads (Google Mobile Ads):** Only if you choose to watch a rewarded ad. That choice sends an ad request to Google, which may include the device advertising identifier. Declining to watch an ad sends nothing.
 - **Email / donations:** If you contact us by email or click "Buy me a coffee", you are sharing that information directly with the relevant service (email provider / Buy Me a Coffee) under their own terms.
 
 ## Third-party services
@@ -52,7 +45,6 @@ You can clear all of this anytime by removing favorites in the app, uninstalling
 | Service | Purpose |
 |---------|---------|
 | Freedium mirror network | Fetching the article you requested |
-| Google Mobile Ads | Delivering a rewarded video, only when you choose to watch one |
 | Buy Me a Coffee | Optional donations (via link in the app) |
 
 We do not control and are not responsible for the privacy practices of these third parties.

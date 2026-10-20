@@ -31,8 +31,8 @@
 - **🔒 On-device library** — favorites, reading positions, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
-- **☕ Support the project** — keep Freedium free by watching a short rewarded ad or buying a coffee, straight from the home screen.
-- **🔐 Truly private** — no account, no analytics, no background tracking. The only ad is an optional rewarded one: none is ever shown unless you choose to watch.
+- **☕ Support the project** — keep Freedium free by buying a coffee, straight from the home screen.
+- **🔐 Truly private** — no account, no analytics, no background tracking, no ads.
 
 ---
 
@@ -61,7 +61,7 @@ dart run build_runner build
 flutter run
 ```
 
-> AdMob ids live in a git-ignored `.env` (copy `.env.example`); without it the app uses Google's public test ids. Regenerate with `dart run build_runner build` after changing a Drift table or editing `.env`.
+> Regenerate with `dart run build_runner build` after changing a Drift table.
 
 ### 📲 Download
 
@@ -82,11 +82,10 @@ flutter run
 | State management | GetX (controllers, bindings, routing) |
 | UI | Material 3 Expressive (`material_3_expressive`) |
 | Article rendering | `webview_flutter` with injected reader CSS/JS |
-| Ads | `google_mobile_ads` — an optional rewarded video; the SDK warms up at startup so there is no wait; ids come from a git-ignored `.env` via `envied` |
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 309 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
+| Quality | `flutter_lints`, 283 unit/widget tests, GitHub Actions CI (format → analyze → test → Android debug build) |
 
 ---
 

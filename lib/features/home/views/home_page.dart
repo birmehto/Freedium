@@ -21,8 +21,7 @@ class HomePage extends GetView<HomeController> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: const [HomeHero(), HomeUnlockForm(), SizedBox(height: 80)],
       ),
-      // The way users keep Freedium running: a rewarded video or a donation,
-      // offered side by side in one dialog.
+      // The way users keep Freedium running: a donation, one dialog away.
       floatingActionButton: M3EFab(
         icon: const Icon(M3EIcons.volunteer_activism_rounded),
         tooltip: 'Support Freedium',

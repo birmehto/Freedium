@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_spacing.dart';
 
-/// A titled row of single-select [ChoiceChip]s.
+/// A titled row of single-select [M3EChip]s.
 class AppChoiceChips extends StatelessWidget {
   const AppChoiceChips({
     required this.title,
     required this.labels,
     required this.selected,
     required this.onSelected,
-    this.labelBuilder,
+    this.leadingBuilder,
     super.key,
   });
 
@@ -18,11 +19,11 @@ class AppChoiceChips extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onSelected;
 
-  /// Builds a chip's label; defaults to a plain [Text] of the label.
+  /// Builds a chip's optional leading; a chip gets none by default.
   ///
   /// Lets a caller dress up the options (e.g. a color swatch next to the
   /// theme name) while keeping the single-select row behavior identical.
-  final Widget Function(BuildContext context, String label)? labelBuilder;
+  final Widget Function(BuildContext context, String label)? leadingBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -34,14 +35,16 @@ class AppChoiceChips extends StatelessWidget {
         Text(title, style: theme.textTheme.titleSmall),
         const SizedBox(height: AppSpacing.sm),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
           children: [
             for (final label in labels)
-              ChoiceChip(
-                label: labelBuilder?.call(context, label) ?? Text(label),
+              M3EChip(
+                type: M3EChipType.filter,
+                label: label,
+                leading: leadingBuilder?.call(context, label),
                 selected: selected == label,
-                onSelected: (_) => onSelected(label),
+                onPressed: () => onSelected(label),
               ),
           ],
         ),

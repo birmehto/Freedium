@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' as fm;
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -56,7 +55,7 @@ class _AppEmptyState extends State<AppEmpty>
 
   @override
   Widget build(BuildContext context) {
-    final theme = fm.Theme.of(context);
+    final theme = Theme.of(context);
     final c = theme.colorScheme;
 
     return AnimatedBuilder(

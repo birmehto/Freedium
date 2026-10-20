@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// App's dialog: the single place that owns how a dialog is presented, painted
 /// and dismissed.

@@ -99,7 +99,7 @@ class _ErrorState extends StatelessWidget {
       if (message.isEmpty) return const SizedBox.shrink();
 
       return Positioned.fill(
-        child: Material(
+        child: ColoredBox(
           color: context.colors.surface,
           child: AppError(
             title: 'Failed to Load Article',
@@ -232,53 +232,50 @@ class _OfflineBanner extends StatelessWidget {
               AppSpacing.lg,
               0,
             ),
-            child: Material(
+            child: M3ECard(
               color: context.colors.secondaryContainer,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
               elevation: 4,
-              shadowColor: context.colors.shadow.withValues(alpha: 0.3),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.xs),
-                      decoration: BoxDecoration(
-                        color: context.colors.onSecondaryContainer.withValues(
-                          alpha: 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.xs),
+                    decoration: BoxDecoration(
+                      color: context.colors.onSecondaryContainer.withValues(
+                        alpha: 0.1,
                       ),
-                      child: Icon(
-                        M3EIcons.cloud_off_rounded,
-                        size: 16,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Icon(
+                      M3EIcons.cloud_off_rounded,
+                      size: 16,
+                      color: context.colors.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      'Offline copy',
+                      style: context.text.labelMedium?.copyWith(
                         color: context.colors.onSecondaryContainer,
+                        fontWeight: FontWeight.w600,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Flexible(
-                      child: Text(
-                        'Offline copy',
-                        style: context.text.labelMedium?.copyWith(
-                          color: context.colors.onSecondaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    M3EIconButton(
-                      size: M3EIconButtonSize.xs,
-                      icon: const Icon(M3EIcons.refresh_rounded, size: 18),
-                      tooltip: 'Try loading it again',
-                      onPressed: controller.requestRefresh,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  M3EIconButton(
+                    size: M3EIconButtonSize.xs,
+                    icon: const Icon(M3EIcons.refresh_rounded, size: 18),
+                    tooltip: 'Try loading it again',
+                    onPressed: controller.requestRefresh,
+                  ),
+                ],
               ),
             ),
           ),

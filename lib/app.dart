@@ -18,6 +18,13 @@ class Freedium extends StatefulWidget {
 class _FreediumState extends State<Freedium> {
   static const seedColor = Color(0xFF00695C);
 
+  /// The one theme every surface reads: M3E tokens derived from the app's
+  /// seed color, set in the UI font. Single-sourced so the theme wrapping the
+  /// app and the shell GetMaterialApp paints below it cannot drift apart.
+  static final M3EThemeData m3eThemeData = M3EThemeData.light(
+    seedColor: seedColor,
+  ).copyWith(fontFamily: 'Inter');
+
   final M3EThemeController _themeController = M3EThemeController();
 
   ThemeService get _themeService => Get.find<ThemeService>();
@@ -39,9 +46,13 @@ class _FreediumState extends State<Freedium> {
       dynamicColoring: true,
       autoTheming: false,
       controller: _themeController,
-      data: M3EThemeData.light(seedColor: seedColor),
+      data: m3eThemeData,
       child: GetMaterialApp(
         title: 'Freedium',
+        // GetX needs a Flutter [ThemeData], which cannot carry M3E's token
+        // projection. It only paints the shell around the pages, and every
+        // screen reads the M3E theme above it instead, so both are seeded
+        // alike to keep the two in step.
         theme: fm.ThemeData(
           useMaterial3: true,
           fontFamily: 'Inter',

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:freedium/core/widgets/app_snackbar.dart';
+import 'package:get/get.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+
+import '../../helpers/test_env.dart';
 
 void main() {
   group('AppSnackbar.show', () {
-    testWidgets('shows the message on the nearest ScaffoldMessenger', (
+    testWidgets('shows the message over the page it was handed', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -17,10 +20,26 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(M3ESnackbar), findsOneWidget);
       expect(find.text('Saved'), findsOneWidget);
-      final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
-      expect(snackBar.behavior, SnackBarBehavior.floating);
+    });
+
+    testWidgets('shows from the navigator context a controller owns', (
+      tester,
+    ) async {
+      // The real callers are view-less controllers: they hold `Get.context`,
+      // which sits above the overlay entries M3E presents into.
+      await tester.pumpWidget(
+        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
+      );
+      await tester.pumpAndSettle();
+
+      AppSnackbar.show(Get.context, message: 'Saved');
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(M3ESnackbar), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
     });
 
     testWidgets('is silent when the context was unmounted', (tester) async {
@@ -46,10 +65,10 @@ void main() {
         returnsNormally,
       );
       await tester.pump();
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(M3ESnackbar), findsNothing);
     });
 
-    testWidgets('is silent when there is no ScaffoldMessenger ancestor', (
+    testWidgets('is silent when there is no overlay to present into', (
       tester,
     ) async {
       BuildContext? context;
@@ -70,7 +89,7 @@ void main() {
         returnsNormally,
       );
       await tester.pump();
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(M3ESnackbar), findsNothing);
     });
 
     testWidgets('is silent on a null context', (tester) async {
@@ -83,7 +102,7 @@ void main() {
         returnsNormally,
       );
       await tester.pump();
-      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(M3ESnackbar), findsNothing);
     });
 
     testWidgets('shows one at a time: the latest replaces the previous', (
@@ -100,7 +119,7 @@ void main() {
       AppSnackbar.show(context, message: 'second');
       await tester.pumpAndSettle();
 
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byType(M3ESnackbar), findsOneWidget);
       expect(find.text('second'), findsOneWidget);
       expect(find.text('first'), findsNothing);
     });

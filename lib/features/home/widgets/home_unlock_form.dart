@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/network/article_url.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -34,15 +34,17 @@ class HomeUnlockForm extends GetView<HomeController> {
                 builder: (context, value, _) {
                   final isEmpty = value.text.isEmpty;
 
-                  return IconButton(
+                  return M3EIconButton(
+                    variant: M3EIconButtonVariant.standard,
+                    size: M3EIconButtonSize.xs,
                     tooltip: isEmpty ? 'Paste from clipboard' : 'Clear',
                     onPressed: isEmpty
                         ? controller.pasteFromClipboard
                         : controller.clearUrl,
                     icon: Icon(
                       isEmpty
-                          ? Icons.content_paste_rounded
-                          : Icons.clear_rounded,
+                          ? M3EIcons.content_paste_rounded
+                          : M3EIcons.clear_rounded,
                     ),
                   );
                 },
@@ -54,7 +56,7 @@ class HomeUnlockForm extends GetView<HomeController> {
             () => AppButton(
               label: const Text('Unlock Article'),
               size: M3EButtonSize.md,
-              icon: const Icon(Icons.bolt_rounded),
+              icon: const Icon(M3EIcons.bolt_rounded),
               isFullWidth: true,
               isLoading: controller.isLoading.value,
               onPressed: controller.submit,

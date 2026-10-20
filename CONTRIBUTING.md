@@ -10,11 +10,9 @@ Thanks for helping out! This is a small, friendly, open-source project — code 
 git clone https://github.com/birmehto/Freedium.git
 cd Freedium
 flutter pub get
-dart run build_runner build   # generates the git-ignored env.g.dart (+ Drift code)
+dart run build_runner build   # generates Drift code
 flutter run          # Android or Linux target
 ```
-
-AdMob ids are kept out of the repo: `envied` reads them from a git-ignored `.env` (copy `.env.example` to `.env`) and generates `lib/core/config/env.g.dart`, which is also git-ignored. Without a `.env` the build falls back to Google's public test ids, so a fresh clone works as-is.
 
 ## Development workflow
 
@@ -37,7 +35,6 @@ Before diving in, know the lay of the land. In short:
 - Shared UI lives in `core/widgets/`; external operations in `core/services/`.
 - Storage is split into `PreferencesStore` (settings) and `LibraryStore` (content) behind a `KeyValueStore` interface; the production backend is a Drift/SQLite `kv` table, and tests use `MemoryKeyValueStore`. After touching a Drift table in `core/storage/app_database.dart`, regenerate code with `dart run build_runner build`.
 - Reader theming and metadata are driven from `core/constants/reader_theme.dart`.
-- Ad ids are secrets, not source: `lib/core/config/env.dart` (`envied`) reads a git-ignored `.env` into an obfuscated `env.g.dart`, and `android/app/build.gradle.kts` injects `ADMOB_APP_ID` into the manifest from the same file. Never commit `.env` or `env.g.dart`.
 
 ## Guidelines
 
@@ -46,7 +43,7 @@ Before diving in, know the lay of the land. In short:
 - **Add tests** for new models, URL/store logic, and important widget flows. Run them with `flutter test`.
 - **Match existing code style** — single quotes, trailing commas, M3 Expressive widgets (`M3E*`) from `material_3_expressive`, shared `App*` widgets for buttons/empty/error states.
 - **Accessibility** — don't rely on icons alone; provide tooltips / semantic labels.
-- **Privacy** — never log or transmit article URLs or user data beyond what is needed; nothing is ever sent to external telemetry. Ads are opt-in (rewarded): no ad is shown unless the user chooses to watch one, though the ad SDK is warmed up at startup so the support flow never waits.
+- **Privacy** — never log or transmit article URLs or user data beyond what is needed; nothing is ever sent to external telemetry, and the app ships no ad or analytics SDKs.
 
 ## Topic workflows
 
@@ -65,10 +62,9 @@ Before diving in, know the lay of the land. In short:
 
 - Changing persistence touches `lib/core/storage/*`; extend the matching test in `test/features/library/library_store_test.dart`.
 
-### Ads / support
+### Support
 
-- The "Support Freedium" flow lives in `lib/features/support/`. Ads go through the `AdService` seam (`lib/core/services/ad_service.dart`) and are warmed up at app startup so the support dialog never waits for a video. Tests use `FakeAdService` and never touch the SDK.
-- Ad ids are never committed. Edit `.env` (not the manifest or the defaults in `lib/core/config/env.dart`) and regenerate with `dart run build_runner build`.
+- The "Support Freedium" flow lives in `lib/features/support/`: a dialog whose single hand-off is `SupportController.buyCoffee`, which opens the donation page in the browser.
 
 ## Release process
 

@@ -1,9 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
-import '../theme/app_spacing.dart';
-
-class AppTextForm extends StatefulWidget {
+/// A text field that registers with the surrounding [Form].
+///
+/// [M3ETextField] paints the field; the [FormField] wrapped around it is what
+/// keeps `Form.validate()` working. Validation reads what the field actually
+/// shows: the controller's text when there is one — a paste or a clear never
+/// fires `onChanged` — and the tracked value otherwise.
+class AppTextForm extends StatelessWidget {
   const AppTextForm({
     super.key,
     this.controller,
@@ -14,6 +19,7 @@ class AppTextForm extends StatefulWidget {
     this.errorText,
     this.leading,
     this.trailing,
+    this.variant = M3ETextFieldVariant.outlined,
     this.obscureText = false,
     this.enabled = true,
     this.autofocus = false,
@@ -33,10 +39,17 @@ class AppTextForm extends StatefulWidget {
   final String? label;
   final String? hintText;
   final String? supportingText;
+
+  /// A failure raised by the caller (a rejected URL, for example), shown
+  /// alongside whatever the [validator] reports.
   final String? errorText;
 
   final Widget? leading;
   final Widget? trailing;
+
+  /// Outlined by default: the field sits on the home screen's dark surface,
+  /// where the filled variant's tint barely reads.
+  final M3ETextFieldVariant variant;
 
   final bool obscureText;
   final bool enabled;
@@ -55,127 +68,39 @@ class AppTextForm extends StatefulWidget {
   final int maxLines;
 
   @override
-  State<AppTextForm> createState() => _AppTextFormState();
-}
-
-class _AppTextFormState extends State<AppTextForm> {
-  bool _isFocused = false;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode = widget.focusNode ?? FocusNode();
-    _focusNode.addListener(_onFocusChange);
-  }
-
-  @override
-  void dispose() {
-    if (widget.focusNode == null) {
-      _focusNode.dispose();
-    }
-    _focusNode.removeListener(_onFocusChange);
-    super.dispose();
-  }
-
-  void _onFocusChange() {
-    setState(() {
-      _isFocused = _focusNode.hasFocus;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final textField = TextFormField(
-      controller: widget.controller,
-      focusNode: _focusNode,
-      obscureText: widget.obscureText,
-      enabled: widget.enabled,
-      autofocus: widget.autofocus,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
-      inputFormatters: widget.inputFormatters,
-      onChanged: widget.onChanged,
-      onFieldSubmitted: widget.onSubmitted,
-      validator: widget.validator,
-      maxLines: widget.obscureText ? 1 : widget.maxLines,
-      style: theme.textTheme.bodyLarge,
-      cursorColor: colorScheme.primary,
-      decoration: InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hintText,
-        helperText: widget.supportingText,
-        errorText: widget.errorText,
-        prefixIcon: widget.leading,
-        suffixIcon: widget.trailing,
-        filled: true,
-        fillColor: _isFocused
-            ? colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: colorScheme.primary, width: 2),
-        ),
-
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: colorScheme.error),
-        ),
-
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: colorScheme.error, width: 2),
-        ),
-
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        labelStyle: TextStyle(
-          color: _isFocused
-              ? colorScheme.primary
-              : colorScheme.onSurfaceVariant,
-        ),
-        floatingLabelStyle: TextStyle(
-          color: colorScheme.primary,
-          fontWeight: FontWeight.w600,
-        ),
-        hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-        prefixIconColor: _isFocused
-            ? colorScheme.primary
-            : colorScheme.onSurfaceVariant,
-        suffixIconColor: _isFocused
-            ? colorScheme.primary
-            : colorScheme.onSurfaceVariant,
-        errorStyle: TextStyle(
-          color: colorScheme.error,
-          fontSize: theme.textTheme.labelSmall?.fontSize,
-        ),
-      ),
+    return FormField<String>(
+      initialValue: controller?.text ?? '',
+      enabled: enabled,
+      validator: validator == null
+          ? null
+          : (value) => validator!(controller?.text ?? value),
+      builder: (field) {
+        return M3ETextField(
+          controller: controller,
+          focusNode: focusNode,
+          label: label,
+          placeholder: hintText,
+          supportingText: supportingText,
+          errorText: field.errorText ?? errorText,
+          leading: leading,
+          trailing: trailing,
+          variant: variant,
+          obscureText: obscureText,
+          enabled: enabled,
+          autofocus: autofocus,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          inputFormatters: inputFormatters,
+          maxLines: obscureText ? 1 : maxLines,
+          onChanged: (text) {
+            field.didChange(text);
+            onChanged?.call(text);
+          },
+          onSubmitted: onSubmitted,
+          onTapOutside: onTapOutside,
+        );
+      },
     );
-
-    if (widget.onTapOutside != null) {
-      return TapRegion(
-        behavior: HitTestBehavior.translucent,
-        onTapOutside: widget.onTapOutside,
-        child: Material(child: textField),
-      );
-    }
-
-    return Material(child: textField);
   }
 }

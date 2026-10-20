@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/constants/reader_theme.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -21,10 +21,15 @@ void showReaderAppearanceSheet(
   required Rx<ReaderSettings> settings,
   required ValueChanged<ReaderSettings> onChanged,
 }) {
-  final systemDark = Theme.of(context).brightness == Brightness.dark;
+  final systemDark = M3ETheme.brightnessOf(context) == Brightness.dark;
 
-  Get.bottomSheet(
-    AppBottomSheet(
+  M3EBottomSheet.show(
+    context,
+    // The editor is content-sized (preview, chips, slider, reset): opening
+    // expanded keeps the whole body on screen, where the default collapsed
+    // detent would show only half and leave the rest hanging below the fold.
+    initialValue: M3EBottomSheetValue.expanded,
+    builder: (context) => AppBottomSheet(
       title: 'Reader Appearance',
       child: Obx(() {
         final current = settings.value;
@@ -36,8 +41,6 @@ void showReaderAppearanceSheet(
         );
       }),
     ),
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
   );
 }
 
@@ -73,7 +76,7 @@ class _ReaderAppearanceSheet extends StatelessWidget {
           title: 'Theme',
           labels: ReaderThemeMode.values.map((m) => m.label).toList(),
           selected: settings.themeMode.label,
-          labelBuilder: (context, label) => _ThemeChipLabel(
+          leadingBuilder: (context, label) => _ThemeSwatch(
             mode: ReaderThemeMode.values.firstWhere((m) => m.label == label),
             systemDark: systemDark,
           ),
@@ -105,13 +108,14 @@ class _ReaderAppearanceSheet extends StatelessWidget {
         ),
 
         const SizedBox(height: AppSpacing.lg),
-        const Divider(height: 1),
+        const M3EDivider(),
         const SizedBox(height: AppSpacing.sm),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton.icon(
+          child: M3EButton.icon(
             // Nothing to restore until the user has moved away from defaults,
             // and a disabled button reads better than a no-op tap.
+            style: M3EButtonStyle.text,
             onPressed: _isDefault
                 ? null
                 : () => onChanged(const ReaderSettings()),
@@ -142,92 +146,95 @@ class _ReaderPreview extends StatelessWidget {
     final fontFamily = settings.isSystemFont ? null : settings.fontFamily;
     final size = settings.fontSize;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: _parseHex(preview.background),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: text.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Aa',
-                style: TextStyle(
-                  color: text,
-                  fontFamily: fontFamily,
-                  fontSize: size * 1.5,
-                  fontWeight: FontWeight.w600,
-                  height: 1,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: text.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  _resolvedModeLabel,
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: _parseHex(preview.background),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: text.withValues(alpha: 0.12)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Aa',
                   style: TextStyle(
                     color: text,
-                    fontSize: 12,
+                    fontFamily: fontFamily,
+                    fontSize: size * 1.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: text.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    _resolvedModeLabel,
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'The shape of readable text',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: text,
+                fontFamily: fontFamily,
+                fontSize: size,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Good reading keeps its rhythm in any light \u2014 '
+              'a comfortable line, the same words, a calmer surface.',
+              style: TextStyle(
+                color: secondary,
+                fontFamily: fontFamily,
+                fontSize: size,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Text(
+                  'Read the full story',
+                  style: TextStyle(
+                    color: link,
+                    fontFamily: fontFamily,
+                    fontSize: size * 0.9,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'The shape of readable text',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: text,
-              fontFamily: fontFamily,
-              fontSize: size,
-              fontWeight: FontWeight.w600,
-              height: 1.2,
+                const SizedBox(width: AppSpacing.xxs),
+                Icon(M3EIcons.arrow_forward_rounded, size: 16, color: link),
+              ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Good reading keeps its rhythm in any light \u2014 '
-            'a comfortable line, the same words, a calmer surface.',
-            style: TextStyle(
-              color: secondary,
-              fontFamily: fontFamily,
-              fontSize: size,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Text(
-                'Read the full story',
-                style: TextStyle(
-                  color: link,
-                  fontFamily: fontFamily,
-                  fontSize: size * 0.9,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xxs),
-              Icon(M3EIcons.arrow_forward_rounded, size: 16, color: link),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -243,9 +250,9 @@ class _ReaderPreview extends StatelessWidget {
   };
 }
 
-/// A theme chip label carrying a swatch of the palette it selects.
-class _ThemeChipLabel extends StatelessWidget {
-  const _ThemeChipLabel({required this.mode, required this.systemDark});
+/// A swatch of the palette a theme chip selects, shown as its leading.
+class _ThemeSwatch extends StatelessWidget {
+  const _ThemeSwatch({required this.mode, required this.systemDark});
 
   final ReaderThemeMode mode;
   final bool systemDark;
@@ -259,21 +266,14 @@ class _ThemeChipLabel extends StatelessWidget {
     final background = _parseHex(preview.background);
     final text = _parseHex(preview.text);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: background,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: text.withValues(alpha: 0.28)),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Text(mode.label),
-      ],
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: text.withValues(alpha: 0.28)),
+      ),
     );
   }
 }

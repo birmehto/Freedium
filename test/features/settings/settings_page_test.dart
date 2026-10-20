@@ -4,6 +4,7 @@ import 'package:freedium/features/settings/controllers/settings_controller.dart'
 import 'package:freedium/features/settings/models/reader_settings.dart';
 import 'package:freedium/features/settings/views/settings_page.dart';
 import 'package:get/get.dart';
+import 'package:material_3_expressive/material_3_expressive.dart';
 
 import '../../helpers/test_env.dart';
 
@@ -81,10 +82,10 @@ void main() {
     await tester.tap(find.text('Reader Appearance'));
     await tester.pumpAndSettle();
 
-    final reset = tester.widget<TextButton>(
+    final reset = tester.widget<M3EButton>(
       find.ancestor(
         of: find.text('Reset defaults'),
-        matching: find.bySubtype<TextButton>(),
+        matching: find.byType(M3EButton),
       ),
     );
     expect(reset.onPressed, isNull);

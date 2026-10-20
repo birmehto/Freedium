@@ -3,9 +3,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'app.dart';
 import 'core/network/article_resolver.dart';
-import 'core/services/ad_service.dart';
 import 'core/services/clipboard_service.dart';
-import 'core/services/google_mobile_ads_service.dart';
 import 'core/services/share_intent_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/theme_service.dart';
@@ -23,15 +21,5 @@ void main() async {
   // next article.
   Get.put(ArticleResolver());
 
-  // Ads are warmed up as soon as the app is up, so the support dialog finds a
-  // video already loaded instead of making the user wait. The service is
-  // registered here for the support flow to find; the request itself is
-  // fire-and-forget, and only a user who asks for an ad ever sees the result.
-  // On platforms without the SDK it degrades to "no ad available".
-  final ads = GoogleMobileAdsService();
-  Get.put<AdService>(ads);
-
   runApp(const Freedium());
-
-  ads.prepare();
 }
