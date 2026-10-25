@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/widgets/app_snackbar.dart';
 import 'package:get/get.dart';
-import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 

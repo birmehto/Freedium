@@ -36,7 +36,6 @@ NOTES_FILE="$REPO_ROOT/RELEASE_NOTES.md"
 command -v flutter >/dev/null 2>&1 || { echo "ERROR: flutter not found on PATH" >&2; exit 1; }
 command -v gh >/dev/null 2>&1 || { echo "ERROR: gh (GitHub CLI) not found on PATH" >&2; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "ERROR: gh is not authenticated" >&2; exit 1; }
-[[ -f "$REPO_ROOT/android/key.properties" ]] || { echo "ERROR: android/key.properties missing" >&2; exit 1; }
 [[ -d "$REPO_ROOT/android" ]] || { echo "ERROR: android/ directory missing" >&2; exit 1; }
 
 # ── Build stale branch guard ────────────────────────────────────────────────

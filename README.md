@@ -4,8 +4,8 @@
 
 **Read any Medium story — free, clean, and distraction-free.**
 
-[![Version](https://img.shields.io/badge/Release-v1.1.1-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Linux-blue?style=flat-square)]()
+[![Version](https://img.shields.io/badge/Release-v1.1.5-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Android-blue?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
 
@@ -13,9 +13,15 @@
 
 **Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no account.
 
-[![Download](https://img.shields.io/badge/⬇️_Download-APK-2E8B57?style=for-the-badge)](https://github.com/birmehto/Freedium/releases/latest)
-
-<a href="https://play.google.com/store/apps/details?id=com.bir.freedium"><img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="54"/></a>
+<p align="center">
+  <a href="https://github.com/birmehto/Freedium/releases/latest">
+    <img src="https://img.shields.io/badge/⬇️_Direct_Download-APK-2E8B57?style=for-the-badge&logo=android&logoColor=white" alt="Direct Download APK" height="52"/>
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://play.google.com/store/apps/details?id=com.bir.freedium">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="52"/>
+  </a>
+</p>
 
 </div>
 
@@ -53,7 +59,7 @@ cd Freedium
 # Install dependencies
 flutter pub get
 
-# Generate code (git-ignored env.g.dart, plus Drift)
+# Generate code (Drift tables)
 dart run build_runner build
 
 # Run on a connected device or emulator
@@ -62,14 +68,22 @@ flutter run
 
 > Regenerate with `dart run build_runner build` after changing a Drift table.
 
-### 📲 Download
+### 📲 Download & Install (Android)
 
-| Platform | Get it |
-|----------|--------|
-| 🤖 **Android** | [Get it on Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium) · [Download the latest APK](https://github.com/birmehto/Freedium/releases/latest) |
-| 🐧 **Linux** | Build from source — see [CONTRIBUTING.md](CONTRIBUTING.md) |
+Freedium is built for **Android**. You can install it directly from the Google Play Store or download the standalone APKs directly from GitHub Releases (no account or private key needed):
 
-> Prefer Google Play for automatic updates. To sideload the APK, enable "Install unknown apps" for your browser.
+| Platform / Source | Installation Method | Link |
+|---|---|---|
+| 🤖 **Google Play** | Recommended — automatic updates via Play Store | [Get it on Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium) |
+| 📦 **Direct APK (GitHub)** | Direct download — all APK variants (Universal + split per-ABI) | [Download latest APKs from Releases](https://github.com/birmehto/Freedium/releases/latest) |
+
+> **Direct APK Installation Note:** GitHub Releases provides all APK variants:
+> - `Freedium-v1.1.5-universal.apk` — works on all Android devices
+> - `Freedium-v1.1.5-arm64-v8a.apk` — optimized for modern 64-bit devices (smaller file size)
+> - `Freedium-v1.1.5-armeabi-v7a.apk` — for older 32-bit devices
+> - `Freedium-v1.1.5-x86_64.apk` — for emulators and Chromebooks
+>
+> If installing an APK directly, allow "Install unknown apps" when prompted by your browser or file manager.
 
 ---
 

@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 /// The whole app's one snackbar.
 ///
@@ -26,11 +26,7 @@ abstract final class AppSnackbar {
     if (ctx == null || !ctx.mounted) return;
 
     final messenger = ScaffoldMessenger.maybeOf(ctx);
-    if (messenger == null) {
-      // ignore: avoid_print
-      print('DEBUG: messenger is null for context: $ctx');
-      return;
-    }
+    if (messenger == null) return;
 
     try {
       messenger
@@ -38,9 +34,8 @@ abstract final class AppSnackbar {
         ..showSnackBar(
           SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
         );
-    } catch (e, st) {
-      // ignore: avoid_print
-      print('DEBUG: showSnackBar threw: $e\n$st');
+    } catch (_) {
+      // Silently degrade if no descendant Scaffold is present (e.g. headless tests)
     }
   }
 }

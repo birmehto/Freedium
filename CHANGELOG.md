@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.5] - 2026-10-26
+
+### Added
+- Direct APK download links in README alongside Google Play Store.
+- Clean release script supporting keystore-free APK generation.
+
+### Changed
+- Standardized transient messages on Flutter's official `SnackBar` and `ScaffoldMessenger`.
+- Upgraded package dependencies: `drift`, `material_3_expressive`, `material_ui`.
+- Moved `fake_async` to `dev_dependencies`.
+
+### Removed
+- Removed Google Mobile Ads integration and deprecated `.env` configurations.
+
 ## [1.1.2] - 2026-10-13
 
 ### Added
