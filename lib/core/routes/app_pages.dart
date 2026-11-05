@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 
 import '../../app_shell.dart';
+import '../../features/account/bindings/account_binding.dart';
+import '../../features/account/views/login_page.dart';
 import '../../features/article/views/article_page.dart';
 import '../../features/favorites/bindings/favorites_binding.dart';
 import '../../features/home/bindings/home_binding.dart';
@@ -27,6 +29,11 @@ abstract final class AppPages {
       // No binding: the page owns its own controller, so a second reader cannot
       // inherit — or lose — the first one's.
       page: () => const ArticlePage(),
+    ),
+    GetPage(
+      name: AppRoutes.login,
+      page: () => const LoginPage(),
+      binding: AccountBinding(),
     ),
   ];
 }

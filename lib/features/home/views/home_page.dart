@@ -6,6 +6,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
 import '../../../core/widgets/support_dialog.dart';
 import '../controllers/home_controller.dart';
+import '../widgets/home_account_button.dart';
+import '../widgets/home_account_section.dart';
 import '../widgets/home_hero.dart';
 import '../widgets/home_unlock_form.dart';
 
@@ -15,10 +17,21 @@ class HomePage extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const AppAppBar(title: Text('Freedium')),
+      appBar: const AppAppBar(
+        title: Text('Freedium'),
+        actions: [
+          HomeAccountButton(),
+          SizedBox(width: AppSpacing.xxs),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        children: const [HomeHero(), HomeUnlockForm()],
+        children: const [
+          HomeHero(),
+          HomeAccountSection(),
+          HomeUnlockForm(),
+          SizedBox(height: AppSpacing.scrollEnd),
+        ],
       ),
 
       floatingActionButton: M3EIconButton(

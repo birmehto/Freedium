@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../storage/account_store.dart';
 import '../storage/app_database.dart';
 import '../storage/article_cache_store.dart';
 import '../storage/key_value_store.dart';
@@ -9,7 +10,7 @@ import '../storage/preferences_store.dart';
 /// Owns the on-device SQLite database and exposes the focused stores.
 ///
 /// Registered as a permanent service during startup, so every feature binding
-/// resolves the same [preferences], [library] and [cache] instances.
+/// resolves the same [preferences], [library], [cache] and [account] instances.
 class StorageService extends GetxService {
   /// Production constructor: opens the SQLite database.
   StorageService();
@@ -30,6 +31,9 @@ class StorageService extends GetxService {
   /// The articles behind the reader's favorites, kept on the device so they can
   /// be read without a network.
   late final ArticleCacheStore cache;
+
+  /// The optional Medium account: session cookies and cached profile.
+  late final AccountStore account;
 
   KeyValueStore? _keyValueStore;
   AppDatabase? _database;
@@ -65,5 +69,6 @@ class StorageService extends GetxService {
     preferences = PreferencesStore(store);
     library = LibraryStore(store);
     cache = ArticleCacheStore(database);
+    account = AccountStore(store);
   }
 }

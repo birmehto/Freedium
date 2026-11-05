@@ -5,4 +5,7 @@
 abstract final class AppRoutes {
   static const String home = '/';
   static const String article = '/article';
+
+  /// Medium sign-in, opened as a full screen and closed with a profile.
+  static const String login = '/login';
 }

@@ -20,6 +20,7 @@ dependencies:
   drift: ^2.35.3
   drift_flutter: ^0.3.1
   webview_flutter: ^4.14.1
+  flutter_inappwebview: ^6.2.0-beta.3
 
 dev_dependencies:
   flutter_test:

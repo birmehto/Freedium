@@ -11,7 +11,7 @@
 
 <img src="screenshots/banner.png" width="640" alt="Freedium banner"/>
 
-**Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no account.
+**Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no ads, no tracking.
 
 <p align="center">
   <a href="https://github.com/birmehto/Freedium/releases/latest">
@@ -33,11 +33,12 @@
 - **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
 - **📖 Continue reading** — every article remembers how far you got, so the library offers the ones you left unfinished.
 - **📥 Offline reading** — favoriting an article also keeps it on the device, ready to open again without a connection.
-- **🔒 On-device library** — favorites, reading positions, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
+- **👤 Optional Medium sign-in** — see your name, bio, avatar and stats on Home. You type your password on Medium's own page; Freedium never sees it.
+- **🔒 On-device library** — favorites, reading positions, the articles kept for offline reading, settings, article metadata, and any saved Medium session are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
 - **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
 - **☕ Support the project** — keep Freedium free by buying a coffee, straight from the home screen.
-- **🔐 Truly private** — no account, no analytics, no background tracking, no ads.
+- **🔐 Truly private** — no ads, no analytics, no tracking, no server. Everything stays on your device. See [PRIVACY_POLICY.md](PRIVACY_POLICY.md).
 
 ---
 
