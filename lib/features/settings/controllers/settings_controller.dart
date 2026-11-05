@@ -1,11 +1,10 @@
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../../../core/errors/app_exception.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/utils/url_launcher.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../models/reader_settings.dart';
 
@@ -95,7 +94,7 @@ class SettingsController extends GetxController {
 
   // ──────────────────────────────── about ────────────────────────────
 
-  Future<void> sendFeedback() async {
+  Future<bool> sendFeedback() async {
     const address = 'birmehto@gmail.com';
 
     final uri = Uri(
@@ -106,28 +105,19 @@ class SettingsController extends GetxController {
 
     // `reportFailure: false`: the caller owns the message, so the user is not
     // told "could not open link" and "no email app" for one failed attempt.
-    if (!await _openExternal(uri, reportFailure: false)) {
+    final ok = await launchExternalUrl(
+      uri.toString(),
+      showFailureMessage: false,
+      logName: 'Settings',
+    );
+    if (!ok) {
       showMessage('No email app found. Email us at $address');
     }
+    return ok;
   }
 
-  Future<void> openGitHub() =>
-      _openExternal(Uri.parse('https://github.com/birmehto/Freedium'));
-
-  Future<bool> _openExternal(Uri uri, {bool reportFailure = true}) async {
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return true;
-      }
-    } catch (error) {
-      final exception = AppException.from(error, context: 'openExternal');
-      appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
-    }
-
-    if (reportFailure) showMessage('Could not open link');
-    return false;
-  }
+  Future<bool> openGitHub() =>
+      launchExternalUrl('https://github.com/birmehto/Freedium', logName: 'Settings');
 
   Future<void> _loadAppVersion() async {
     try {

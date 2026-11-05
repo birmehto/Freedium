@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -16,6 +15,7 @@ import '../../../core/services/storage_service.dart';
 import '../../../core/services/theme_service.dart';
 import '../../../core/storage/app_database.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/utils/url_launcher.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../favorites/models/favorite_article.dart';
 import '../../settings/models/reader_settings.dart';
@@ -690,13 +690,14 @@ ${copy.html}
       return;
     }
 
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (error) {
+    final ok = await launchExternalUrl(
+      originalUrl.value,
+      showFailureMessage: false,
+      logName: 'Reader',
+    );
+    if (!ok) {
       // No browser installed, or the platform refused the launch: without this
       // the tap does nothing at all and the reason is invisible.
-      final exception = AppException.from(error, context: 'openInBrowser');
-      appLog(exception.toString(), name: 'Reader', level: LogLevel.warning);
       showMessage('No app available to open this link');
     }
   }

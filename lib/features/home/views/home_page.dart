@@ -4,8 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
-import '../../support/controllers/support_controller.dart';
-import '../../support/widgets/support_dialog.dart';
+import '../../../core/widgets/support_dialog.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/home_hero.dart';
 import '../widgets/home_unlock_form.dart';
@@ -19,17 +18,14 @@ class HomePage extends GetView<HomeController> {
       appBar: const AppAppBar(title: Text('Freedium')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        children: const [HomeHero(), HomeUnlockForm(), SizedBox(height: 80)],
+        children: const [HomeHero(), HomeUnlockForm()],
       ),
-      // The way users keep Freedium running: a donation, one dialog away.
-      floatingActionButton: M3EFab(
+
+      floatingActionButton: M3EIconButton(
+        size: M3EIconButtonSize.md,
         icon: const Icon(M3EIcons.volunteer_activism_rounded),
         tooltip: 'Support Freedium',
-        size: M3EFabSize.regular,
-        onPressed: () => showSupportDialog(
-          context,
-          controller: Get.find<SupportController>(),
-        ),
+        onPressed: () => showSupportDialog(context),
       ),
     );
   }

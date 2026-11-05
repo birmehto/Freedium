@@ -15,11 +15,11 @@
 
 <p align="center">
   <a href="https://github.com/birmehto/Freedium/releases/latest">
-    <img src="https://img.shields.io/badge/⬇️_Direct_Download-APK-2E8B57?style=for-the-badge&logo=android&logoColor=white" alt="Direct Download APK" height="52"/>
+    <img src="https://img.shields.io/badge/_Direct_Download-APK-2E8B57?style=for-the-badge&logo=android&logoColor=white" alt="Direct Download APK" height="40"/>
   </a>
   &nbsp;&nbsp;
   <a href="https://play.google.com/store/apps/details?id=com.bir.freedium">
-    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="52"/>
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="40"/>
   </a>
 </p>
 
@@ -98,7 +98,25 @@ Freedium is built for **Android**. You can install it directly from the Google P
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 283 unit/widget tests |
+| Quality | `flutter_lints`, 281 unit/widget tests |
+
+## 🏗️ Architecture (at a glance)
+
+- **State management:** GetX controllers for each feature, bound through `app_pages.dart`.
+- **Storage:** `KeyValueStore` abstraction (`DriftKeyValueStore` in production, `MemoryKeyValueStore` in tests) persists settings, favorites, article progress, and metadata on-device.
+- **Networking:** `ArticleUrl` canonicalizes/validates Medium URLs; `ArticleResolver` manages mirror health and fallback.
+- **Rendering:** `webview_flutter` plus injected reader CSS/JS for the final article layout.
+
+## 📁 Project Structure
+
+```text
+lib/
+├── app.dart              # M3E theme + GetMaterialApp wiring
+├── app_shell.dart        # Bottom-tab shell (Home / Favorites / Settings)
+├── core/                 # Shared infrastructure (network, storage, utils, widgets)
+├── features/             # Feature modules: article, favorites, home, settings
+└── main.dart             # Service registration and bootstrap
+```
 
 ---
 

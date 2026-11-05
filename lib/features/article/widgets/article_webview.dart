@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/constants/reader_theme.dart';
 import '../../../core/utils/app_log.dart';
+import '../../../core/utils/url_launcher.dart';
 import '../controllers/article_controller.dart';
 
 /// Hosts the reader itself. Medium's desktop UA is used because the mirror
@@ -210,16 +210,15 @@ class _ArticleWebViewState extends State<ArticleWebView> {
 
   /// Opens [url] outside the reader, e.g. an off-site link the user tapped.
   Future<void> _openExternally(String url) async {
-    try {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } catch (error) {
+    final ok = await launchExternalUrl(
+      url,
+      showFailureMessage: false,
+      logName: 'Reader',
+    );
+    if (!ok) {
       // Nothing on the device can handle it (or the platform refused); there is
       // no reader-side fallback for that, so it is only logged.
-      appLog(
-        'Could not open $url: $error',
-        name: 'Reader',
-        level: LogLevel.warning,
-      );
+      appLog('Could not open $url', name: 'Reader', level: LogLevel.warning);
     }
   }
 
