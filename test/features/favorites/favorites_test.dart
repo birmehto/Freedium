@@ -243,8 +243,12 @@ void main() {
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
-      expect(find.text('Your library is empty'), findsOneWidget);
-      expect(find.text('Save articles to read them later'), findsOneWidget);
+      expect(find.text('No favorites yet'), findsOneWidget);
+      expect(
+        find.textContaining('Open any Medium link from Home'),
+        findsOneWidget,
+      );
+      expect(find.text('Go to Home'), findsOneWidget);
       expect(find.byType(FavoriteTile), findsNothing);
     });
 
@@ -265,7 +269,7 @@ void main() {
 
       expect(find.text('First Post'), findsOneWidget);
       expect(find.text('Second Post'), findsOneWidget);
-      expect(find.text('Your library is empty'), findsNothing);
+      expect(find.text('No favorites yet'), findsNothing);
       expect(find.byType(FavoriteTile), findsNWidgets(2));
     });
 
