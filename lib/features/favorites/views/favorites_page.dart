@@ -2,10 +2,12 @@ import 'package:get/get.dart';
 import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/controllers/app_shell_controller.dart';
 import '../../../core/network/article_url.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_app_bar.dart';
+import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_empty.dart';
 import '../../../core/widgets/app_textform.dart';
 import '../controllers/favorites_controller.dart';
@@ -50,16 +52,25 @@ class FavoritesPage extends GetView<FavoritesController> {
               final isSearching = controller.trimmedQuery.isNotEmpty;
 
               if (list.isEmpty) {
+                if (isSearching) {
+                  return AppEmpty(
+                    icon: M3EIcons.search_off_rounded,
+                    title: 'No results for\n"${controller.trimmedQuery}"',
+                    subtitle: 'Try a different keyword',
+                  );
+                }
                 return AppEmpty(
-                  icon: isSearching
-                      ? M3EIcons.search_off_rounded
-                      : M3EIcons.auto_awesome_rounded,
-                  title: isSearching
-                      ? 'No results for\n"${controller.trimmedQuery}"'
-                      : 'Your library is empty',
-                  subtitle: isSearching
-                      ? 'Try a different keyword'
-                      : 'Save articles to read them later',
+                  icon: M3EIcons.favorite_border_rounded,
+                  title: 'No favorites yet',
+                  subtitle:
+                      'Open any Medium link from Home, then tap the heart on the '
+                      'article to save it here for offline reading.',
+                  action: AppButton(
+                    onPressed: () => Get.find<AppShellController>().selectTab(
+                      AppShellTab.home,
+                    ),
+                    label: const Text('Go to Home'),
+                  ),
                 );
               }
 

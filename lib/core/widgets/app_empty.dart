@@ -3,18 +3,22 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/app_spacing.dart';
 
-/// Centered empty state with an icon, title and subtitle.
+/// Centered empty state with an icon, title, subtitle and an optional action.
 class AppEmpty extends StatelessWidget {
   const AppEmpty({
     required this.title,
     required this.subtitle,
     super.key,
     this.icon = M3EIcons.inbox_rounded,
+    this.action,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
+
+  /// Optional next step shown under the subtitle (e.g. a button).
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +76,10 @@ class AppEmpty extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            if (action != null) ...[
+              const SizedBox(height: AppSpacing.xl),
+              action!,
+            ],
           ],
         ),
       ),
