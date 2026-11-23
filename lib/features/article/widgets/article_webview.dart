@@ -68,7 +68,7 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     );
 
     final bgHex = ReaderTheme.previewColors(
-      _controller.readingSettings.value,
+      _controller.readerSettings,
       systemDark: _controller.isDarkMode,
     ).background;
     unawaited(

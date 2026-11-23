@@ -1,9 +1,10 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/network/article_url.dart';
+import 'package:freedium/core/providers/service_providers.dart';
 import 'package:freedium/core/services/clipboard_service.dart';
 import 'package:freedium/core/services/share_intent_service.dart';
 import 'package:freedium/features/home/controllers/home_controller.dart';
-import 'package:get/get.dart';
 
 import '../../helpers/test_env.dart';
 
@@ -14,28 +15,49 @@ class FakeClipboardService extends ClipboardService {
   Future<String?> getFromClipboard() async => clipboardText;
 }
 
+/// Test seam for seeding a failure message. The production controller only
+/// writes that field from its private navigation/error paths.
+class TestHomeController extends HomeController {
+  void seedError(String message) =>
+      state = state.copyWith(errorMessage: message);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeClipboardService clipboard;
-  late HomeController controller;
+  late ShareIntentService shareIntent;
+  late ProviderContainer container;
+  late TestHomeController controller;
 
   setUp(() {
-    registerServices();
+    final services = registerServices();
     clipboard = FakeClipboardService();
-    Get.put<ClipboardService>(clipboard);
-    controller = HomeController(clipboard, Get.find());
-    controller.onInit();
+    shareIntent = services.shareIntent;
+
+    // The fake clipboard is injected through the provider container so the
+    // controller reads it exactly as the app does.
+    container = ProviderContainer(
+      overrides: [
+        storageServiceProvider.overrideWithValue(services.storage),
+        shareIntentServiceProvider.overrideWithValue(shareIntent),
+        clipboardServiceProvider.overrideWithValue(clipboard),
+        homeControllerProvider.overrideWith(TestHomeController.new),
+      ],
+    );
+    controller =
+        container.read(homeControllerProvider.notifier) as TestHomeController;
   });
 
-  tearDown(() => controller.onClose());
+  tearDown(() => container.dispose());
 
   group('HomeController', () {
     test('starts with empty input', () {
+      final state = container.read(homeControllerProvider);
       expect(controller.urlController.text, '');
-      expect(controller.urlText.value, '');
-      expect(controller.errorMessage.value, '');
-      expect(controller.isLoading.value, isFalse);
+      expect(state.urlText, '');
+      expect(state.errorMessage, '');
+      expect(state.isLoading, isFalse);
       expect(controller.canOpenArticle, isFalse);
     });
 
@@ -43,7 +65,10 @@ void main() {
       controller.urlController.text =
           'https://medium.com/@user/my-awesome-post-abc123';
 
-      expect(controller.urlText.value, contains('my-awesome-post'));
+      expect(
+        container.read(homeControllerProvider).urlText,
+        contains('my-awesome-post'),
+      );
       expect(controller.canOpenArticle, isTrue);
     });
 
@@ -60,10 +85,10 @@ void main() {
     });
 
     test('editing clears a previous failure message', () {
-      controller.errorMessage.value = 'Something went wrong';
+      controller.seedError('Something went wrong');
       controller.onUrlChanged('https://medium.com/x');
 
-      expect(controller.errorMessage.value, '');
+      expect(container.read(homeControllerProvider).errorMessage, '');
     });
 
     test('pasteFromClipboard fills the field', () async {
@@ -85,43 +110,41 @@ void main() {
 
     test('clearUrl resets the field', () {
       controller.urlController.text = 'https://medium.com/x';
-      controller.errorMessage.value = 'stale failure';
+      controller.seedError('stale failure');
 
       controller.clearUrl();
 
+      final state = container.read(homeControllerProvider);
       expect(controller.urlController.text, '');
-      expect(controller.errorMessage.value, '');
+      expect(state.errorMessage, '');
       expect(controller.canOpenArticle, isFalse);
     });
 
     test('a shared URL is picked up and consumed', () {
-      Get.find<ShareIntentService>().incomingUrl.value =
-          'https://medium.com/@user/shared-post';
+      shareIntent.incomingUrl.value = 'https://medium.com/@user/shared-post';
 
       expect(
         controller.urlController.text,
         'https://medium.com/@user/shared-post',
       );
       expect(
-        Get.find<ShareIntentService>().incomingUrl.value,
+        shareIntent.incomingUrl.value,
         isNull,
         reason: 'the pending share should be consumed exactly once',
       );
     });
 
     test('a shared URL opens even after an earlier failure', () {
-      controller.errorMessage.value = 'stale failure';
+      controller.seedError('stale failure');
 
-      Get.find<ShareIntentService>().incomingUrl.value =
-          'https://medium.com/@user/shared-post';
+      shareIntent.incomingUrl.value = 'https://medium.com/@user/shared-post';
 
-      expect(controller.errorMessage.value, isEmpty);
+      expect(container.read(homeControllerProvider).errorMessage, isEmpty);
       expect(controller.canOpenArticle, isTrue);
     });
 
     test('a shared non-Medium URL is refused by the field', () {
-      Get.find<ShareIntentService>().incomingUrl.value =
-          'https://google.com/search?q=medium';
+      shareIntent.incomingUrl.value = 'https://google.com/search?q=medium';
 
       expect(
         ArticleUrl.validationError(controller.urlController.text),

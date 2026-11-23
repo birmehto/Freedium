@@ -22,12 +22,6 @@ class ArticleResolver {
 
   String? get lastSourceId => _lastSourceId;
 
-  String? get preferredSourceId => _preferredSourceId;
-
-  /// The mirror currently serving (or about to serve) the article.
-  MirrorSource? get activeSource =>
-      _sources.where((source) => source.id == _lastSourceId).firstOrNull;
-
   /// Backends in the order they will be attempted: the user's preferred mirror
   /// first, then the remaining catalog order.
   List<MirrorSource> get candidates {
@@ -127,8 +121,4 @@ class ArticleResolver {
 
   MirrorSource? _sourceById(String id) =>
       _sources.where((source) => source.id == id).firstOrNull;
-}
-
-extension<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
 }

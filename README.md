@@ -31,11 +31,11 @@
 
 - **🛡️ Unlock any Medium story** — paste a link or share one from any app and read the whole article.
 - **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
-- **📖 Continue reading** — every article remembers how far you got, so the library offers the ones you left unfinished.
 - **📥 Offline reading** — favoriting an article also keeps it on the device, ready to open again without a connection.
-- **🔒 On-device library** — favorites, reading positions, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
+- **🔒 On-device library** — favorites, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
 - **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
-- **🔄 Reliable loading** — automatic mirror fallback with health tracking keeps articles coming when one source is down.
+- **🔄 Reliable loading** — five sources (Freedium, Freedium Web, Freedium backup, Archive.ph and Archive.is) with automatic fallback and per-session health tracking.
+- **🎬 Quiet motion** — a single animator gives pages, tabs and toggles consistent, low-distraction transitions.
 - **☕ Support the project** — keep Freedium free by buying a coffee, straight from the home screen.
 - **🔐 Truly private** — no account, no analytics, no background tracking, no ads.
 
@@ -92,13 +92,14 @@ Freedium is built for **Android**. You can install it directly from the Google P
 | Layer | What we use |
 |-------|-------------|
 | Framework | Flutter / Dart |
-| State management | GetX (controllers, bindings, routing) |
-| UI | Material 3 Expressive (`material_3_expressive`) |
+| State management | Riverpod notifiers |
+| UI | Material widgets with Lucide icons (`lucide_icons_flutter`) |
+| Motion | One shared `AppAnimator` for routes, tabs and state changes |
 | Article rendering | `webview_flutter` with injected reader CSS/JS |
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 283 unit/widget tests |
+| Quality | `flutter_lints`, 334 unit/widget tests |
 
 ---
 
@@ -107,7 +108,7 @@ Freedium is built for **Android**. You can install it directly from the Google P
 Planned items are clearly marked below — nothing here is claimed to ship yet.
 
 ### ✅ Current
-Freedium today ships: unlock & read Medium articles, favorites, offline reading, reading progress, reader customization, automatic mirror fallback, and app themes.
+Freedium today ships: unlock & read Medium articles, favorites, offline reading, reader customization, automatic mirror fallback across five sources, and app themes.
 
 ### 🚧 Next
 - **Bookmarks** — additionally bookmark articles in the Library *(planned, not yet implemented)*.

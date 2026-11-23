@@ -1,17 +1,26 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/theme/app_theme.dart';
 import 'package:freedium/core/widgets/app_snackbar.dart';
-import 'package:get/get.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 
 void main() {
+  late ProviderContainer container;
+
+  setUp(() {
+    container = registerServices().container;
+  });
+
+  tearDown(() => container.dispose());
+
   group('AppSnackbar.show', () {
     testWidgets('shows the message on the nearest ScaffoldMessenger', (
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
       );
 
       final context = tester.element(find.byType(Scaffold));
@@ -28,14 +37,23 @@ void main() {
     testWidgets('shows from the navigator context a controller owns', (
       tester,
     ) async {
-      // The real callers are view-less controllers: they hold `Get.context`,
-      // which sits above the pages and inside the root ScaffoldMessenger.
+      // View-less controllers no longer hold a BuildContext; they call
+      // AppSnackbar.message, which uses the root messenger attached through
+      // MaterialApp.scaffoldMessengerKey.
       await tester.pumpWidget(
-        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            localizationsDelegates: const [DefaultMaterialLocalizations.delegate],
+            theme: AppTheme.light(),
+            scaffoldMessengerKey: rootScaffoldMessengerKey,
+            home: const Scaffold(body: SizedBox.shrink()),
+          ),
+        ),
       );
       await tester.pumpAndSettle();
 
-      AppSnackbar.show(Get.context, message: 'Saved');
+      AppSnackbar.message('Saved');
 
       await tester.pumpAndSettle();
 
@@ -95,7 +113,7 @@ void main() {
 
     testWidgets('is silent on a null context', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
       );
 
       expect(
@@ -110,14 +128,17 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
+        wrapTestApp(child: const Scaffold(body: SizedBox.shrink())),
       );
 
       final context = tester.element(find.byType(Scaffold));
       AppSnackbar.show(context, message: 'first');
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       AppSnackbar.show(context, message: 'second');
+      // The first bar must finish its timed run before the queued replacement
+      // is presented.
+      await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
 
       expect(find.byType(SnackBar), findsOneWidget);

@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -7,8 +7,10 @@ import '../../../core/utils/app_log.dart';
 import '../../../core/widgets/app_snackbar.dart';
 
 /// Drives the "support Freedium" option: opening the donation page.
-class SupportController extends GetxController {
-  /// Opens the donation page in the browser.
+final supportControllerProvider =
+    Provider<SupportController>((ref) => SupportController());
+
+class SupportController {
   Future<void> buyCoffee() async {
     final uri = Uri.parse(AppConstants.supportUrl);
 
@@ -22,6 +24,6 @@ class SupportController extends GetxController {
       appLog(exception.toString(), name: 'Support', level: LogLevel.warning);
     }
 
-    AppSnackbar.show(Get.context, message: 'Could not open the support page');
+    AppSnackbar.message('Could not open the support page');
   }
 }

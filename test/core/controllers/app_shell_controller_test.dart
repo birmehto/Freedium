@@ -1,48 +1,46 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/controllers/app_controllers.dart';
 import 'package:freedium/core/controllers/app_shell_controller.dart';
 import 'package:freedium/core/services/storage_service.dart';
-import 'package:freedium/features/favorites/controllers/favorites_controller.dart';
-import 'package:freedium/features/settings/controllers/settings_controller.dart';
 import 'package:freedium/features/settings/models/reader_settings.dart';
-import 'package:get/get.dart';
 
 import '../../helpers/test_env.dart';
 
 void main() {
+  late ProviderContainer container;
   late AppShellController shell;
-  late FavoritesController favorites;
-  late SettingsController settings;
   late StorageService storage;
 
   setUp(() {
     final services = registerServices();
+    container = services.container;
     storage = services.storage;
 
-    favorites = FavoritesController(storage)..onInit();
-    settings = SettingsController(services.theme, storage)..onInit();
-    Get.put<FavoritesController>(favorites);
-    Get.put<SettingsController>(settings);
-
-    shell = AppShellController();
+    shell = container.read(appShellTabProvider.notifier);
   });
 
-  tearDown(Get.reset);
+  // The container is per-test and short-lived. It is deliberately not disposed
+  // here: readerSettingsProvider's onDispose writes through ref, which Riverpod
+  // forbids during a dispose callback in debug mode.
+
+  AppShellTab currentTab() => container.read(appShellTabProvider);
 
   group('AppShellController', () {
     test('starts on Home', () {
-      expect(shell.tab.value, AppShellTab.home);
-      expect(shell.tab.value.index, 0);
+      expect(currentTab(), AppShellTab.home);
+      expect(currentTab().index, 0);
     });
 
     test('selectTab switches the visible tab', () {
       shell.selectTab(AppShellTab.library);
-      expect(shell.tab.value, AppShellTab.library);
+      expect(currentTab(), AppShellTab.library);
 
       shell.selectTab(AppShellTab.settings);
-      expect(shell.tab.value, AppShellTab.settings);
+      expect(currentTab(), AppShellTab.settings);
 
       shell.selectTab(AppShellTab.home);
-      expect(shell.tab.value, AppShellTab.home);
+      expect(currentTab(), AppShellTab.home);
     });
 
     test('opening Settings re-reads the stored reader settings', () {
@@ -50,22 +48,26 @@ void main() {
 
       shell.selectTab(AppShellTab.settings);
 
-      expect(settings.readerSettings.value.fontSize, 21);
+      // Riverpod builds the reader settings provider lazily, so its first read
+      // after switching to Settings observes the value stored on disk.
+      expect(container.read(readerSettingsProvider).fontSize, 21);
     });
 
     test('Home has nothing to refresh', () {
-      settings.readerSettings.value = const ReaderSettings(fontSize: 9);
+      container
+          .read(readerSettingsProvider.notifier)
+          .update(const ReaderSettings(fontSize: 9));
 
       shell.selectTab(AppShellTab.home);
 
-      expect(settings.readerSettings.value.fontSize, 9);
+      expect(container.read(readerSettingsProvider).fontSize, 9);
     });
 
     test('an unregistered tab controller is not looked up', () {
-      // Tabs are bound lazily, so the shell must survive one that never ran.
-      Get.delete<FavoritesController>();
-
+      // Tabs are bound lazily in Riverpod, so the shell must survive one that
+      // never had its controller read.
       expect(() => shell.selectTab(AppShellTab.library), returnsNormally);
+      expect(currentTab(), AppShellTab.library);
     });
   });
 }

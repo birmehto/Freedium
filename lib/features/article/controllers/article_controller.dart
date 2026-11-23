@@ -1,19 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/reader_theme.dart';
+import '../../../core/controllers/app_controllers.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/network/article_resolver.dart';
 import '../../../core/network/article_url.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/services/theme_service.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/storage/app_database.dart';
 import '../../../core/utils/app_log.dart';
 import '../../../core/widgets/app_snackbar.dart';
@@ -22,332 +21,327 @@ import '../../settings/models/reader_settings.dart';
 import '../models/article_meta.dart';
 import '../models/article_request.dart';
 
-/// Owns the state of one open article: the loaded URL, extracted metadata,
-/// reader typography, favorite status and the offline copy.
-class ArticleController extends GetxController {
-  ArticleController(this._storage, this._theme, this._resolver);
+/// Everything the reader screen displays about one article.
+class ArticleState {
+  const ArticleState({
+    this.currentUrl = '',
+    this.originalUrl = '',
+    this.errorMessage = '',
+    this.isLoading = true,
+    this.isInitialLoad = true,
+    this.loadingProgress = 0,
+    this.articleTitle = '',
+    this.articleAuthor = '',
+    this.articlePublication = '',
+    this.publishedAt,
+    this.wordCount = 0,
+    this.readingTime = 0,
+    this.isOffline = false,
+    this.hasOfflineCopy = false,
+    this.isStoringArticle = false,
+    this.isFavorite = false,
+    this.attemptedMirrors = const [],
+  });
 
-  final StorageService _storage;
-  final ThemeService _theme;
-  final ArticleResolver _resolver;
+  final String currentUrl;
+  final String originalUrl;
+  final String errorMessage;
+  final bool isLoading;
+  final bool isInitialLoad;
+  final double loadingProgress;
+  final String articleTitle;
+  final String articleAuthor;
+  final String articlePublication;
+  final DateTime? publishedAt;
+  final int wordCount;
+  final int readingTime;
+  final bool isOffline;
+  final bool hasOfflineCopy;
+  final bool isStoringArticle;
+  final bool isFavorite;
+  final List<String> attemptedMirrors;
 
-  // ─────────────────────────────── state ────────────────────────────────
+  ArticleState copyWith({
+    String? currentUrl,
+    String? originalUrl,
+    String? errorMessage,
+    bool? isLoading,
+    bool? isInitialLoad,
+    double? loadingProgress,
+    String? articleTitle,
+    String? articleAuthor,
+    String? articlePublication,
+    DateTime? publishedAt,
+    bool clearPublishedAt = false,
+    int? wordCount,
+    int? readingTime,
+    bool? isOffline,
+    bool? hasOfflineCopy,
+    bool? isStoringArticle,
+    bool? isFavorite,
+    List<String>? attemptedMirrors,
+  }) {
+    return ArticleState(
+      currentUrl: currentUrl ?? this.currentUrl,
+      originalUrl: originalUrl ?? this.originalUrl,
+      errorMessage: errorMessage ?? this.errorMessage,
+      isLoading: isLoading ?? this.isLoading,
+      isInitialLoad: isInitialLoad ?? this.isInitialLoad,
+      loadingProgress: loadingProgress ?? this.loadingProgress,
+      articleTitle: articleTitle ?? this.articleTitle,
+      articleAuthor: articleAuthor ?? this.articleAuthor,
+      articlePublication: articlePublication ?? this.articlePublication,
+      publishedAt: clearPublishedAt ? null : publishedAt ?? this.publishedAt,
+      wordCount: wordCount ?? this.wordCount,
+      readingTime: readingTime ?? this.readingTime,
+      isOffline: isOffline ?? this.isOffline,
+      hasOfflineCopy: hasOfflineCopy ?? this.hasOfflineCopy,
+      isStoringArticle: isStoringArticle ?? this.isStoringArticle,
+      isFavorite: isFavorite ?? this.isFavorite,
+      attemptedMirrors: attemptedMirrors ?? this.attemptedMirrors,
+    );
+  }
+}
 
-  /// URL currently loaded in the WebView (a mirror-proxied URL).
-  final currentUrl = ''.obs;
+final articleControllerProvider =
+    NotifierProvider<ArticleController, ArticleState>(ArticleController.new);
 
-  /// Canonical URL of the article on the publisher's site.
-  final originalUrl = ''.obs;
-
-  final errorMessage = ''.obs;
-
-  final isLoading = true.obs;
-  final isInitialLoad = true.obs;
-  final loadingProgress = 0.0.obs;
-
-  final articleTitle = ''.obs;
-  final articleAuthor = ''.obs;
-  final articlePublication = ''.obs;
-  final publishedAt = Rxn<DateTime>();
-  final wordCount = 0.obs;
-  final readingTime = 0.obs;
-
-  final readingSettings = const ReaderSettings().obs;
-
-  /// True while the article on screen came from the on-device cache rather than
-  /// from a mirror, so the reader can say so instead of quietly serving stale
-  /// content.
-  final isOffline = false.obs;
-
-  /// Whether a saved copy of this article exists.
-  final hasOfflineCopy = false.obs;
-
-  /// True while the article's local copy is being written or dropped, so a
-  /// second press cannot race the first.
-  final isStoringArticle = false.obs;
-
+/// Owns the state of one open article. The screen calls [open] with the request
+/// when it is created; typography and favorites are shared providers, not
+/// duplicated here.
+class ArticleController extends Notifier<ArticleState> {
   WebViewController? webViewController;
 
   Timer? _loadingTimer;
-
-  final List<Worker> _workers = [];
-
-  /// Mirrors tried for the current article, newest first. Backs the reader's
-  /// "switch source" affordance, so it holds source ids rather than the URLs
-  /// they were asked for.
-  final RxList<String> attemptedMirrors = <String>[].obs;
-
-  /// Metadata read out of the loaded document, kept so a save pressed later
-  /// does not have to extract it again.
   ArticleMeta? _meta;
-
-  /// Whether the failure of the current navigation has already been handled, so
-  /// a second error callback for the same request cannot start a second
-  /// failover. Reset when the next navigation starts.
   bool _errorHandled = false;
+  bool _disposed = false;
 
-  // ────────────────────────────── derived ────────────────────────────────
+  @override
+  ArticleState build() {
+    // Captured during build: calling ref.read inside onDispose is disallowed by
+    // Riverpod once the container is being torn down.
+    final readerSettingsNotifier = ref.read(readerSettingsProvider.notifier);
 
-  bool get isDarkMode => _theme.isDarkMode.value;
+    ref.listen(themeControllerProvider, (_, _) => injectCustomCSS());
+    ref.listen(readerSettingsProvider, (_, _) => injectCustomCSS());
+    ref.listen(libraryControllerProvider, (previous, next) {
+      if (previous == null) return;
+      final url = state.originalUrl;
+      state = state.copyWith(
+        isFavorite: next.any((article) => article.url.trim() == url.trim()),
+      );
+    });
 
-  double get fontSize => readingSettings.value.fontSize;
+    ref.onDispose(() {
+      _disposed = true;
+      _loadingTimer?.cancel();
+      readerSettingsNotifier.flush();
+    });
 
-  /// Derived from the library store, so there is only one favorites state.
-  bool get isFavorite => _storage.library.isFavorite(originalUrl.value);
+    return const ArticleState();
+  }
 
-  String get articleDomain => ArticleUrl.hostOf(originalUrl.value) ?? '';
+  ReaderSettings get readerSettings => ref.read(readerSettingsProvider);
+  bool get isDarkMode => ref.read(themeControllerProvider).isDarkMode;
+  double get fontSize => readerSettings.fontSize;
 
-  /// Hosts the reader may navigate to: every configured mirror plus the host
-  /// that is currently loaded. Anything else is treated as an off-site link and
-  /// handed to the browser instead of being silently cancelled.
+  String get articleDomain => ArticleUrl.hostOf(state.originalUrl) ?? '';
+
+  /// Hosts the reader may navigate to: every configured mirror, their redirect
+  /// aliases, and the one currently loaded. Anything else is handed to the
+  /// browser.
   Set<String> get allowedNavigationHosts => {
-    for (final source in _resolver.sources) source.host.toLowerCase(),
-    if (Uri.tryParse(currentUrl.value)?.host case final host?)
+    for (final source in ref.read(articleResolverProvider).sources)
+      ...source.allowedHosts,
+    if (Uri.tryParse(state.currentUrl)?.host case final host?)
       host.toLowerCase(),
   };
 
-  // ───────────────────────────── lifecycle ───────────────────────────────
-
-  @override
-  void onInit() {
-    super.onInit();
-
-    final request = ArticleRequest.fromArguments(Get.arguments);
-
+  /// Starts loading the article described by [request].
+  Future<void> open(ArticleRequest request) async {
     if (!request.isValid) {
-      errorMessage.value = AppException.invalidUrl().userMessage;
-      isLoading.value = false;
+      state = state.copyWith(
+        errorMessage: AppException.invalidUrl().userMessage,
+        isLoading: false,
+        isInitialLoad: false,
+      );
       return;
     }
 
     final url = request.sourceUrl;
-    originalUrl.value = url;
+    final favorite = ref
+        .read(libraryControllerProvider)
+        .any((article) => article.url.trim() == url.trim());
+
+    // The provider is app-scoped, so opening a second article must not inherit
+    // the previous article's metadata, error or offline state.
+    _errorHandled = false;
+    _meta = null;
+    webViewController = null;
+    _loadingTimer?.cancel();
+    state = ArticleState(originalUrl: url, isFavorite: favorite);
 
     _loadPreferences(url);
     _startLoading(request.url);
     unawaited(_checkOfflineCopy(url));
-
-    _setupReactions();
-  }
-
-  @override
-  void onClose() {
-    _loadingTimer?.cancel();
-
-    // A debounced settings write is still pending when the reader is closed, so
-    // the last change is written here rather than lost with the worker.
-    final stored = _storage.preferences.readerSettings;
-    if (stored.fontSize != readingSettings.value.fontSize ||
-        stored.themeMode != readingSettings.value.themeMode ||
-        stored.fontFamily != readingSettings.value.fontFamily) {
-      _storage.preferences.readerSettings = readingSettings.value;
-    }
-
-    for (final worker in _workers) {
-      worker.dispose();
-    }
-    _workers.clear();
-
-    super.onClose();
   }
 
   void _loadPreferences(String url) {
-    final preferences = _storage.preferences;
+    final preferences = ref.read(storageServiceProvider).preferences;
+    final resolver = ref.read(articleResolverProvider);
 
-    readingSettings.value = preferences.readerSettings;
+    resolver.setPreferred(preferences.preferredMirror);
+    resolver.autoFallback = preferences.autoFallback;
 
-    _resolver.setPreferred(preferences.preferredMirror);
-    _resolver.autoFallback = preferences.autoFallback;
-
-    final cached = _storage.library.metaFor(url);
-    if (cached != null) {
-      articleTitle.value = cached.title;
-      articleAuthor.value = cached.author ?? '';
-      articlePublication.value = cached.publication ?? '';
-      wordCount.value = cached.wordCount;
-      readingTime.value = cached.readingTimeMinutes;
-      publishedAt.value = cached.publishedAt;
-    } else {
-      articleTitle.value = _titleFromUrl(url);
+    final cached = ref.read(storageServiceProvider).library.metaFor(url);
+    if (cached == null) {
+      state = state.copyWith(articleTitle: _titleFromUrl(url));
+      return;
     }
-  }
 
-  void _setupReactions() {
-    // Worker-backed reactions must be disposed; an untracked `ever` would keep
-    // firing after the reader is closed.
-    _workers.add(ever(_theme.isDarkMode, (_) => injectCustomCSS()));
-
-    // The document is restyled immediately, so the reader sees the change as
-    // they make it. Only the write is debounced: dragging the font-size slider
-    // otherwise queues a JSON encode and a database write per pointer tick.
-    _workers.add(ever(readingSettings, (settings) => injectCustomCSS()));
-    _workers.add(
-      debounce(
-        readingSettings,
-        (settings) => _storage.preferences.readerSettings = settings,
-        time: const Duration(milliseconds: 300),
-      ),
+    state = state.copyWith(
+      articleTitle: cached.title,
+      articleAuthor: cached.author ?? '',
+      articlePublication: cached.publication ?? '',
+      wordCount: cached.wordCount,
+      readingTime: cached.readingTimeMinutes,
+      publishedAt: cached.publishedAt,
     );
   }
 
   void _startLoading(String url) {
-    final resolved = _resolver.resolve(url);
-    if (resolved != null) {
-      final sourceId = _resolver.lastSourceId;
-      if (sourceId != null) attemptedMirrors.add(sourceId);
+    final resolver = ref.read(articleResolverProvider);
+    final resolved = resolver.resolve(url);
+    if (resolved != null && resolver.lastSourceId != null) {
+      state = state.copyWith(
+        attemptedMirrors: [...state.attemptedMirrors, resolver.lastSourceId!],
+      );
     }
-
-    currentUrl.value = resolved ?? url;
+    state = state.copyWith(currentUrl: resolved ?? url);
     _startLoadingTimer();
   }
 
-  // ────────────────────────────── WebView ────────────────────────────────
+  // ─────────────────────────────── WebView ────────────────────────────────
 
-  /// A new navigation has begun.
-  ///
-  /// Arms the watchdog again: a mirror that redirects, or a second navigation
-  /// started by the page itself, would otherwise leave the reader loading
-  /// forever, because the previous load already cancelled the timer.
   void onPageStart(String? url) {
-    errorMessage.value = '';
-    isLoading.value = true;
-
-    // A new load starts from empty: leaving the previous run's 100% in place
-    // shows a full progress bar for the whole of the next load.
-    loadingProgress.value = 0;
-
-    // One error is reported per navigation. Both an HTTP error and a transport
-    // error can arrive for the same request, and the second one would retire a
-    // mirror that never served the article.
+    state = state.copyWith(
+      errorMessage: '',
+      isLoading: true,
+      loadingProgress: 0,
+    );
+    // Both an HTTP error and a transport error can arrive for one request;
+    // handle only the first so a dead mirror is retired once.
     _errorHandled = false;
-
     _startLoadingTimer();
-    if (url != null) currentUrl.value = url;
-    appLog('ArticleController.onPageStart: isLoading=true, url=$url');
+    if (url != null) state = state.copyWith(currentUrl: url);
   }
 
-  /// The new document is painted and visible to the reader.
-  ///
-  /// The loader is dismissed here rather than waiting for `onLoadStop`, which
-  /// some backends never send at all: the article is on screen, so there is
-  /// nothing left to wait for.
   void onPageCommitVisible() {
-    appLog(
-      'ArticleController.onPageCommitVisible: isLoading=${isLoading.value}, isInitialLoad=${isInitialLoad.value}',
-    );
-    if (isLoading.value || isInitialLoad.value) _stopLoading();
+    if (state.isLoading || state.isInitialLoad) _stopLoading();
   }
 
   void setWebViewController(WebViewController controller) {
     webViewController = controller;
+    injectCustomCSS();
   }
 
   void onPageLoaded() {
-    appLog('ArticleController.onPageLoaded: calling _stopLoading');
     _stopLoading();
 
-    // A saved copy and a WebView error page both finish loading too, and
-    // crediting a mirror for either would reset the failure count of the mirror
-    // that just failed — which is the one thing the health model is for.
-    if (!isOffline.value) {
-      final sourceId = _resolver.lastSourceId;
-      _resolver.reportSuccess(sourceId);
+    // An offline copy or an error page also finishes loading; crediting a mirror
+    // for either would reset the failure count of the mirror that just failed.
+    if (!state.isOffline) {
+      ref.read(articleResolverProvider).reportSuccess();
     }
-
     unawaited(_onContentReady());
   }
 
   Future<void> onPageError(String message) async {
-    // Both an HTTP error and a transport error can fire for the same request.
-    if (_errorHandled) return;
+    if (_errorHandled || _disposed) return;
     _errorHandled = true;
-
     _stopLoading();
 
-    final failedSourceId = _resolver.lastSourceId;
-    _resolver.reportFailure(failedSourceId);
+    final resolver = ref.read(articleResolverProvider);
+    resolver.reportFailure();
 
-    // Try the next mirror before surfacing the failure: a single dead backend
-    // should not end the reading session. Mirrors already tried for this
-    // article are excluded, so the reader walks the catalog instead of bouncing
-    // between the first two.
-    final fallback = _resolver.nextFallback(
-      attempted: attemptedMirrors.toSet(),
+    // Try the next mirror before showing a failure. Already tried mirrors are
+    // excluded so the reader walks the catalog instead of bouncing between two.
+    final fallback = resolver.nextFallback(
+      attempted: state.attemptedMirrors.toSet(),
     );
     if (fallback != null) {
-      final sourceId = _resolver.lastSourceId;
-      if (sourceId != null) attemptedMirrors.add(sourceId);
-
-      errorMessage.value = '';
-      isLoading.value = true;
-      loadingProgress.value = 0;
+      if (resolver.lastSourceId != null) {
+        state = state.copyWith(
+          attemptedMirrors: [...state.attemptedMirrors, resolver.lastSourceId!],
+        );
+      }
+      state = state.copyWith(
+        errorMessage: '',
+        isLoading: true,
+        loadingProgress: 0,
+      );
       _startLoadingTimer();
       await _loadUrl(fallback);
       return;
     }
 
-    // Every mirror is exhausted. A saved copy beats an error page, so the cache
-    // is consulted before the failure is shown.
+    // Every mirror is exhausted: a saved copy beats an error page.
     final copy = await _offlineCopy();
-    if (isClosed) return;
+    if (_disposed) return;
 
     if (copy != null) {
       await _showOfflineCopy(copy);
       return;
     }
 
-    errorMessage.value = message;
-    loadingProgress.value = 0;
-    isLoading.value = false;
-    isInitialLoad.value = false;
+    state = state.copyWith(
+      errorMessage: message,
+      loadingProgress: 0,
+      isLoading: false,
+      isInitialLoad: false,
+    );
   }
 
-  /// Reports WebView load progress as a 0..1 fraction.
-  ///
-  /// The load is finished at 100%, so the loading indicators are dismissed there
-  /// and then: waiting for `onLoadStop` alone is what left the reader spinning
-  /// on an article that had already finished loading.
   void updateProgress(double progress) {
     final value = (progress / 100).clamp(0.0, 1.0).toDouble();
-    loadingProgress.value = value;
+    state = state.copyWith(loadingProgress: value);
     if (value >= 1.0) _stopLoading();
   }
 
   Future<void> requestRefresh() async {
-    errorMessage.value = '';
-    isLoading.value = true;
-    loadingProgress.value = 0;
+    state = state.copyWith(
+      errorMessage: '',
+      isLoading: true,
+      loadingProgress: 0,
+    );
     _startLoadingTimer();
 
     final controller = webViewController;
 
-    // Refreshing an offline copy is a request to go back online, not a reload
-    // of the copy that is already on screen. Offline mode is only left once a
-    // mirror is actually available, so a refresh with no network leaves the
-    // banner and the saved copy alone instead of claiming to be online.
-    if (isOffline.value) {
-      final resolved = _resolver.resolve(originalUrl.value);
+    // Refreshing an offline copy means "go back online", not "reload the copy".
+    if (state.isOffline) {
+      final resolved = ref
+          .read(articleResolverProvider)
+          .resolve(state.originalUrl);
       if (resolved == null) {
-        isLoading.value = false;
+        state = state.copyWith(isLoading: false);
         return;
       }
-
-      isOffline.value = false;
+      state = state.copyWith(isOffline: false);
       await _loadUrl(resolved);
       return;
     }
 
-    // Nothing to refresh into: without a WebView the watchdog would run to its
-    // timeout and replace a working article with an error.
+    // Without a WebView the watchdog would replace a working article with an
+    // error when its timer fires.
     if (controller == null) {
-      isLoading.value = false;
+      state = state.copyWith(isLoading: false);
       return;
     }
-
     await controller.reload();
   }
 
-  /// Handles the HTTP status codes a mirror can answer with.
   Future<void> handleServerError(int statusCode) {
     return onPageError(switch (statusCode) {
       502 => 'Bad Gateway (502). Server unavailable.',
@@ -356,56 +350,30 @@ class ArticleController extends GetxController {
     });
   }
 
-  Future<void> switchToMirror(String mirrorId) async {
-    _resolver.setPreferred(mirrorId);
-    final original = ArticleUrl.canonicalize(originalUrl.value);
-    if (original.isEmpty) return;
-
-    final newUrl = _resolver.resolve(original);
-    if (newUrl == null || newUrl == currentUrl.value) return;
-
-    isOffline.value = false;
-    isLoading.value = true;
-    loadingProgress.value = 0;
-    _startLoadingTimer();
-
-    await _loadUrl(newUrl);
-  }
-
   Future<void> _loadUrl(String url) async {
     final controller = webViewController;
     if (controller == null) {
-      currentUrl.value = url;
+      state = state.copyWith(currentUrl: url);
       return;
     }
-
     await controller.loadRequest(Uri.parse(url));
   }
 
   // ─────────────────────────────── reader ────────────────────────────────
 
-  void updateReaderSettings(ReaderSettings settings) {
-    readingSettings.value = settings;
-  }
+  void updateReaderSettings(ReaderSettings settings) =>
+      ref.read(readerSettingsProvider.notifier).update(settings);
 
-  void setFontSize(double size) {
-    updateReaderSettings(
-      readingSettings.value.copyWith(
-        fontSize: size.clamp(
-          ReaderSettings.kMinFontSize,
-          ReaderSettings.kMaxFontSize,
-        ),
-      ),
-    );
-  }
+  void setFontSize(double size) =>
+      ref.read(readerSettingsProvider.notifier).setFontSize(size);
 
-  /// Re-applies typography and color scheme to the loaded document.
+  /// Re-applies typography and color to the loaded document.
   Future<void> injectCustomCSS() async {
     final controller = webViewController;
-    if (isClosed || controller == null) return;
+    if (_disposed || controller == null) return;
 
     final preview = ReaderTheme.previewColors(
-      readingSettings.value,
+      readerSettings,
       systemDark: isDarkMode,
     );
     unawaited(
@@ -413,10 +381,9 @@ class ArticleController extends GetxController {
     );
 
     final css = ReaderTheme.getCss(
-      settings: readingSettings.value,
+      settings: readerSettings,
       systemDark: isDarkMode,
     );
-
     try {
       await controller.runJavaScript(ReaderTheme.injectCssScript(css));
     } catch (error) {
@@ -428,48 +395,40 @@ class ArticleController extends GetxController {
     }
   }
 
-  // ─────────────────────────────── article ───────────────────────────────
+  // ─────────────────────────────── metadata ──────────────────────────────
 
-  /// Everything that happens once a document is fully loaded: its metadata.
-  ///
-  /// Nothing is written to the offline store here. An article is kept because
-  /// the reader favorited it, not because it happened to be read, so simply
-  /// opening a story costs no storage.
-  ///
-  /// The reader also always starts at the top. Reopening an article where it
-  /// was left off sounds helpful until the page has reflowed — a different
-  /// mirror, a resized image, a font change — and the stored offset now points
-  /// into the middle of a paragraph the reader has not read yet.
+  /// Extracts metadata once a document is visible. Nothing is written to the
+  /// offline store here: an article is kept because it was favorited, not
+  /// because it happened to be read.
   Future<void> _onContentReady() async {
-    // The saved copy is a bare article fragment: it has no metadata of its own,
-    // so extracting it would find nothing and overwrite what the store recorded
-    // with empty values.
-    if (!isOffline.value) {
-      _meta = await _extractMetadata();
-    }
+    if (!state.isOffline) _meta = await _extractMetadata();
   }
 
-  /// Reads metadata out of the loaded document and publishes it.
-  ///
-  /// Returns the extracted metadata, or `null` when the page carried none.
   Future<ArticleMeta?> _extractMetadata() async {
     final controller = webViewController;
-    if (isClosed || controller == null) return null;
+    if (_disposed || controller == null) return null;
 
     try {
       final result = await _readJsString(controller, ReaderTheme.extractMetaJs);
       if (result == null || result.isEmpty) return null;
+
       final meta = ArticleMeta.fromJson(
         jsonDecode(result) as Map<String, dynamic>?,
       );
       if (meta.title.isEmpty) return null;
-      articleTitle.value = meta.title;
-      articleAuthor.value = meta.author ?? '';
-      articlePublication.value = meta.publication ?? '';
-      wordCount.value = meta.wordCount;
-      readingTime.value = meta.readingTimeMinutes;
-      publishedAt.value = meta.publishedAt;
-      await _storage.library.cacheMeta(originalUrl.value, meta);
+
+      state = state.copyWith(
+        articleTitle: meta.title,
+        articleAuthor: meta.author ?? '',
+        articlePublication: meta.publication ?? '',
+        wordCount: meta.wordCount,
+        readingTime: meta.readingTimeMinutes,
+        publishedAt: meta.publishedAt,
+      );
+      await ref
+          .read(storageServiceProvider)
+          .library
+          .cacheMeta(state.originalUrl, meta);
       return meta;
     } catch (error) {
       appLog(
@@ -483,39 +442,32 @@ class ArticleController extends GetxController {
 
   // ─────────────────────────────── offline ───────────────────────────────
 
-  /// Writes the loaded article to the offline store, reporting whether it stuck.
-  ///
-  /// The store keeps the article on its own, not the page around it, so the body
-  /// has to be read back out of the document the reader is looking at.
   Future<bool> _saveArticleOffline() async {
-    final url = originalUrl.value;
+    final url = state.originalUrl;
     if (url.isEmpty) return false;
 
     final html = await readArticleHtml();
     if (html == null) return false;
 
-    return _storage.cache.saveWithMeta(
-      url: url,
-      html: html,
-      // A save can happen before the metadata has been read, so what the reader
-      // already has on screen stands in rather than losing the title.
-      meta: _meta ?? _metaFromReaderState(),
-      domain: articleDomain.isEmpty ? null : articleDomain,
-      // A favorite is the reader's own decision to keep something for good, so
-      // it survives eviction even when the store is full.
-      keep: [for (final item in _storage.library.favorites) item.url],
-    );
+    return ref
+        .read(storageServiceProvider)
+        .cache
+        .saveWithMeta(
+          url: url,
+          html: html,
+          // A save can precede metadata extraction; use what is on screen.
+          meta: _meta ?? _metaFromReaderState(),
+          domain: articleDomain.isEmpty ? null : articleDomain,
+          keep: [
+            for (final item in ref.read(libraryControllerProvider)) item.url,
+          ],
+        );
   }
 
-  /// The loaded article's own markup, or `null` when there is no document to
-  /// read it from.
-  ///
-  /// The WebView is the only place the body exists, so this is the seam a test
-  /// replaces: an article that is not on screen cannot be stored.
   @visibleForTesting
   Future<String?> readArticleHtml() async {
     final controller = webViewController;
-    if (isClosed || controller == null) return null;
+    if (_disposed || controller == null) return null;
 
     try {
       final result = await _readJsString(
@@ -530,11 +482,10 @@ class ArticleController extends GetxController {
 
       final html = payload['html'];
       if (html is! String || html.trim().isEmpty) return null;
-
       return html;
     } catch (error) {
       appLog(
-        'Could not read the article to save it: $error',
+        'Could not read article to save it: $error',
         name: 'Reader',
         level: LogLevel.warning,
       );
@@ -542,21 +493,22 @@ class ArticleController extends GetxController {
     }
   }
 
-  /// Metadata assembled from what is already on screen.
   ArticleMeta _metaFromReaderState() => ArticleMeta(
-    title: articleTitle.value,
-    author: articleAuthor.value.isEmpty ? null : articleAuthor.value,
-    publication: articlePublication.value.isEmpty
+    title: state.articleTitle,
+    author: state.articleAuthor.isEmpty ? null : state.articleAuthor,
+    publication: state.articlePublication.isEmpty
         ? null
-        : articlePublication.value,
-    publishedAt: publishedAt.value,
-    wordCount: wordCount.value,
+        : state.articlePublication,
+    publishedAt: state.publishedAt,
+    wordCount: state.wordCount,
   );
 
-  /// The saved copy of the current article, or `null`.
   Future<CachedArticle?> _offlineCopy() async {
     try {
-      return await _storage.cache.read(originalUrl.value);
+      return await ref
+          .read(storageServiceProvider)
+          .cache
+          .read(state.originalUrl);
     } catch (error) {
       appLog(
         'Could not read cached article: $error',
@@ -567,35 +519,36 @@ class ArticleController extends GetxController {
     }
   }
 
-  /// Replaces the failed page with the saved copy.
   Future<void> _showOfflineCopy(CachedArticle copy) async {
     final controller = webViewController;
 
-    errorMessage.value = '';
-    isOffline.value = true;
-    hasOfflineCopy.value = true;
+    state = state.copyWith(
+      errorMessage: '',
+      isOffline: true,
+      hasOfflineCopy: true,
+    );
 
-    // The metadata came from a page that never loaded, so whatever the cache
-    // recorded is all there is. It is better than the title guessed from the
-    // URL, so it wins outright.
-    if (copy.title.isNotEmpty) articleTitle.value = copy.title;
-    if (articleAuthor.value.isEmpty && copy.author != null) {
-      articleAuthor.value = copy.author!;
-    }
-    if (articlePublication.value.isEmpty && copy.publication != null) {
-      articlePublication.value = copy.publication!;
-    }
-    if (wordCount.value == 0) {
-      wordCount.value = copy.wordCount;
-      readingTime.value = (copy.wordCount / ArticleMeta.kWordsPerMinute).ceil();
-    }
+    // Metadata from the cache wins over the title guessed from the URL.
+    state = state.copyWith(
+      articleTitle: copy.title.isNotEmpty ? copy.title : state.articleTitle,
+      articleAuthor: state.articleAuthor.isEmpty && copy.author != null
+          ? copy.author
+          : state.articleAuthor,
+      articlePublication:
+          state.articlePublication.isEmpty && copy.publication != null
+          ? copy.publication
+          : state.articlePublication,
+      wordCount: state.wordCount == 0 ? copy.wordCount : state.wordCount,
+      readingTime: state.wordCount == 0
+          ? (copy.wordCount / ArticleMeta.kWordsPerMinute).ceil()
+          : state.readingTime,
+    );
 
     if (controller == null) return;
 
     _stopLoading();
     try {
-      // `baseUrl` lets the article's relative image paths resolve the same way
-      // they did on the page they came from.
+      // baseUrl keeps relative image paths resolving as they did originally.
       await controller.loadHtmlString(
         _offlineDocument(copy),
         baseUrl: copy.url,
@@ -606,20 +559,16 @@ class ArticleController extends GetxController {
         name: 'Reader',
         level: LogLevel.error,
       );
-      errorMessage.value = 'Could not open the saved copy of this article.';
+      state = state.copyWith(
+        errorMessage: 'Could not open the saved copy of this article.',
+      );
     }
   }
 
-  /// Wraps a cached body in the document the reader expects.
-  ///
-  /// The stored markup is the article element alone, so it needs a document
-  /// around it, a title for the app bar to fall back to, and the viewport meta
-  /// that keeps text sized in CSS pixels rather than scaled to the device.
   String _offlineDocument(CachedArticle copy) {
     final title = _escapeHtml(
       copy.title.isNotEmpty ? copy.title : 'Saved article',
     );
-
     return '''
 <!DOCTYPE html>
 <html>
@@ -642,11 +591,10 @@ ${copy.html}
       .replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;');
 
-  // ─────────────────────────────── offline ───────────────────────────────
-
   Future<void> _checkOfflineCopy(String url) async {
     try {
-      hasOfflineCopy.value = await _storage.cache.contains(url);
+      final exists = await ref.read(storageServiceProvider).cache.contains(url);
+      if (!_disposed) state = state.copyWith(hasOfflineCopy: exists);
     } catch (error) {
       appLog(
         'Could not check for a saved copy: $error',
@@ -656,12 +604,7 @@ ${copy.html}
     }
   }
 
-  /// Runs [script] and returns its string result, normalized across platforms.
-  ///
-  /// Android reports `evaluateJavascript` results as JSON, so a script that
-  /// returns a string comes back wrapped in quotes and escapes; the WebKit
-  /// implementation hands back the string itself. Unwrapping the JSON here
-  /// keeps every caller working with the plain string it expects.
+  /// Android returns JavaScript strings JSON-encoded, WebKit returns them raw.
   Future<String?> _readJsString(
     WebViewController controller,
     String script,
@@ -674,107 +617,91 @@ ${copy.html}
         final decoded = jsonDecode(result);
         if (decoded is String) return decoded;
       } on FormatException {
-        // Not JSON after all; the raw string is the best answer available.
+        // Not JSON after all; the raw string is the best available.
       }
     }
-
     return result;
   }
 
   // ─────────────────────────────── actions ──────────────────────────────
 
   Future<void> openInBrowser() async {
-    final uri = Uri.tryParse(originalUrl.value);
-    if (uri == null || originalUrl.value.isEmpty) {
-      errorMessage.value = AppException.invalidUrl().userMessage;
+    final uri = Uri.tryParse(state.originalUrl);
+    if (uri == null || state.originalUrl.isEmpty) {
+      state = state.copyWith(
+        errorMessage: AppException.invalidUrl().userMessage,
+      );
       return;
     }
-
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (error) {
-      // No browser installed, or the platform refused the launch: without this
-      // the tap does nothing at all and the reason is invisible.
       final exception = AppException.from(error, context: 'openInBrowser');
       appLog(exception.toString(), name: 'Reader', level: LogLevel.warning);
-      showMessage('No app available to open this link');
+      AppSnackbar.message('No app available to open this link');
     }
   }
 
   Future<void> shareArticle() async {
-    final url = originalUrl.value;
+    final url = state.originalUrl;
     if (url.isEmpty) return;
-
     try {
       await SharePlus.instance.share(
         ShareParams(
           title: 'Share from Freedium',
-          text: '${articleTitle.value}\n\n$url',
+          text: '${state.articleTitle}\n\n$url',
         ),
       );
     } catch (error) {
-      // Sharing throws when the device has nothing that can receive the text.
       final exception = AppException.from(error, context: 'shareArticle');
       appLog(exception.toString(), name: 'Reader', level: LogLevel.warning);
-      showMessage('Could not share this article');
+      AppSnackbar.message('Could not share this article');
     }
   }
 
-  /// Favourites an article, or removes it.
-  ///
-  /// A favorite is also kept on the device so it can be read without a network,
-  /// and taking the favorite away takes the copy with it — one decision, one
-  /// stored article, nothing left behind in Settings to clean up.
-  ///
-  /// The favorite itself is recorded first, so the heart responds straight away
-  /// and a body that cannot be read does not cost the reader their save.
+  /// Favoriting also saves the article offline; unfavoriting drops the copy.
   Future<void> toggleFavorite() async {
-    final url = originalUrl.value;
-    if (url.isEmpty) return;
-    if (isStoringArticle.value) return;
+    final url = state.originalUrl;
+    if (url.isEmpty || state.isStoringArticle) return;
 
     final article = FavoriteArticle(
-      title: articleTitle.value,
+      title: state.articleTitle,
       url: url,
       visitedAt: DateTime.now(),
-      author: articleAuthor.value.isEmpty ? null : articleAuthor.value,
+      author: state.articleAuthor.isEmpty ? null : state.articleAuthor,
       domain: articleDomain.isEmpty ? null : articleDomain,
     );
 
-    // Claimed before the first await, and the direction read before the write:
-    // two quick taps would otherwise both see the article as un-favorited, and
-    // the second would undo the first.
-    final favorited = !isFavorite;
-    isStoringArticle.value = true;
+    // Claim before the first await so two quick taps cannot undo each other.
+    final favorited = !state.isFavorite;
+    state = state.copyWith(isStoringArticle: true);
 
     try {
-      await _storage.library.toggleFavorite(article);
+      await ref.read(libraryControllerProvider.notifier).toggle(article);
 
       if (favorited) {
-        hasOfflineCopy.value = await _saveArticleOffline();
-        showMessage('Article saved to library');
+        final saved = await _saveArticleOffline();
+        if (!_disposed) state = state.copyWith(hasOfflineCopy: saved);
+        AppSnackbar.message('Article saved to library');
       } else {
-        await _storage.cache.remove(url);
-        hasOfflineCopy.value = false;
-        showMessage('Article removed from library');
+        await ref.read(storageServiceProvider).cache.remove(url);
+        if (!_disposed) state = state.copyWith(hasOfflineCopy: false);
+        AppSnackbar.message('Article removed from library');
       }
     } finally {
-      isStoringArticle.value = false;
+      if (!_disposed) state = state.copyWith(isStoringArticle: false);
     }
   }
 
-  /// Test-only hook: exposes [_titleFromUrl].
   @visibleForTesting
   void debugTitleFromUrl(String url) {
-    articleTitle.value = _titleFromUrl(url);
+    state = state.copyWith(articleTitle: _titleFromUrl(url));
   }
 
   String _titleFromUrl(String url) {
     final segments = Uri.tryParse(url)?.pathSegments;
     if (segments == null) return 'Article';
 
-    // A trailing slash leaves an empty final segment, and an empty title in the
-    // app bar is also what gets saved into the library.
     final slug = segments.lastWhere(
       (segment) => segment.isNotEmpty,
       orElse: () => '',
@@ -784,25 +711,20 @@ ${copy.html}
     return slug
         .replaceAll('-', ' ')
         .split(' ')
-        .map((word) {
-          if (word.isEmpty) return word;
-          return '${word[0].toUpperCase()}${word.substring(1)}';
-        })
+        .map(
+          (word) => word.isEmpty
+              ? word
+              : '${word[0].toUpperCase()}${word.substring(1)}',
+        )
         .join(' ');
-  }
-
-  /// Shows a short message to the reader, e.g. when a share has nowhere to go.
-  void showMessage(String message) {
-    AppSnackbar.show(Get.context, message: message);
   }
 
   // ──────────────────────────────── timer ────────────────────────────────
 
   void _startLoadingTimer() {
     _loadingTimer?.cancel();
-
     _loadingTimer = Timer(AppConstants.webViewTimeout, () {
-      if (isLoading.value) {
+      if (state.isLoading) {
         unawaited(
           onPageError(
             'Loading timeout. Please check your connection and try again.',
@@ -815,10 +737,10 @@ ${copy.html}
   void _stopLoading() {
     _loadingTimer?.cancel();
     _loadingTimer = null;
-
-    isLoading.value = false;
-    isInitialLoad.value = false;
-    loadingProgress.value = 1;
-    appLog('ArticleController._stopLoading: isLoading=${isLoading.value}');
+    state = state.copyWith(
+      isLoading: false,
+      isInitialLoad: false,
+      loadingProgress: 1,
+    );
   }
 }

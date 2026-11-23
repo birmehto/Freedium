@@ -28,6 +28,12 @@ class PreferencesStore {
 
   final KeyValueStore _store;
 
+  /// The reader settings are read on every CSS injection and slider tick, so
+  /// the decoded value is kept until the stored row actually changes. The raw
+  /// map is compared by identity because every write replaces it.
+  Object? _readerSettingsRaw;
+  ReaderSettings? _readerSettingsCache;
+
   // ─────────────────────────────── theme ───────────────────────────────
 
   /// One of [modeSystem], [modeLight] or [modeDark].
@@ -68,13 +74,21 @@ class PreferencesStore {
 
   ReaderSettings get readerSettings {
     final raw = _store.read(readerSettingsKey);
-    if (raw is Map) {
-      return ReaderSettings.fromJson(Map<String, dynamic>.from(raw));
+    if (identical(raw, _readerSettingsRaw) && _readerSettingsCache != null) {
+      return _readerSettingsCache!;
     }
-    return const ReaderSettings();
+
+    final parsed = raw is Map
+        ? ReaderSettings.fromJson(Map<String, dynamic>.from(raw))
+        : const ReaderSettings();
+    _readerSettingsRaw = raw;
+    _readerSettingsCache = parsed;
+    return parsed;
   }
 
   set readerSettings(ReaderSettings settings) {
+    _readerSettingsRaw = null;
+    _readerSettingsCache = null;
     _store.write(readerSettingsKey, settings.toJson());
   }
 

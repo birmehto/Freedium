@@ -25,27 +25,4 @@ class ArticleRequest {
 
   /// False when the URL could not be canonicalized.
   bool get isValid => url.isNotEmpty;
-
-  Map<String, dynamic> toArguments() => {
-    'url': url,
-    if (originalUrl != null) 'originalUrl': originalUrl,
-  };
-
-  static ArticleRequest fromArguments(Object? arguments) {
-    if (arguments is ArticleRequest) return arguments;
-
-    if (arguments is Map) {
-      // Route arguments arrive untyped, so the values are read defensively: a
-      // hard cast here would throw out of the reader's `onInit` and leave the
-      // page unable to build at all.
-      return ArticleRequest(
-        url: ArticleUrl.canonicalize(_stringOrNull(arguments['url'])),
-        originalUrl: _stringOrNull(arguments['originalUrl']),
-      );
-    }
-
-    return ArticleRequest.parse(arguments is String ? arguments : null);
-  }
-
-  static String? _stringOrNull(Object? value) => value is String ? value : null;
 }

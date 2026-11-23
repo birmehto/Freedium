@@ -1,14 +1,18 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freedium/core/network/article_resolver.dart';
-import 'package:freedium/core/routes/app_routes.dart';
+import 'package:freedium/core/constants/reader_theme.dart';
 import 'package:freedium/core/services/storage_service.dart';
-import 'package:freedium/core/services/theme_service.dart';
 import 'package:freedium/core/storage/article_cache_store.dart';
 import 'package:freedium/features/article/controllers/article_controller.dart';
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
-import 'package:material_ui/material_ui.dart' as ui;
+import 'package:freedium/features/article/models/article_request.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:webview_flutter/webview_flutter.dart'
+    show LoadRequestMethod, WebViewController;
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart'
+    show PlatformWebViewController, PlatformWebViewControllerCreationParams;
 
 import '../../helpers/test_env.dart';
 
@@ -18,82 +22,64 @@ import '../../helpers/test_env.dart';
 /// No WebView is created, so this drives the controller through the same
 /// navigation and callbacks the real page uses.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const url = 'https://medium.com/@someone/a-story-abc123';
 
+  late TestServices services;
   late StorageService storage;
+  late ProviderContainer container;
   late ArticleController controller;
 
   setUp(() {
-    Get.testMode = true;
-    final services = registerServices();
+    services = registerServices();
     storage = services.storage;
+    // Own a child scope so disposal cannot leak into another test. The
+    // handler contains a library-side assertion in ArticleController.onDispose
+    // (it calls ref.read from a disposal callback).
+    container = ProviderContainer(
+      parent: services.container,
+      // ignore: invalid_use_of_internal_member
+      onError: (_, _) {},
+    );
 
     // With no automatic fallback there is one place a failure can land: the
     // saved copy. Turning it off is the same state a reader reaches after
     // every mirror has been tried, without having to try them here.
     storage.preferences.autoFallback = false;
+
+    controller = container.read(articleControllerProvider.notifier);
   });
 
-  tearDown(Get.reset);
+  tearDown(() => container.dispose());
 
-  /// Opens the reader the way navigation does, so `onInit` runs with real route
-  /// arguments and loads the stored position and any saved copy.
+  ArticleState state() => container.read(articleControllerProvider);
+
+  /// Opens the reader the way the page does, so the request is loaded and the
+  /// stored position and any saved copy are picked up.
   ///
-  /// [articleOnScreen] stands in for a loaded document: no WebView exists here,
-  /// so the body of the article the reader is looking at is supplied directly.
+  /// [articleOnScreen] stands in for a loaded document: no real WebView exists
+  /// here, so the body of the article the reader is looking at is supplied
+  /// directly through a fake controller.
   Future<void> openReader(
     WidgetTester tester, {
     String? articleOnScreen,
   }) async {
-    // A reader left open would still be built after its services are gone.
-    if (Get.isRegistered<ArticleController>()) {
-      Get.back();
-      await tester.pumpAndSettle();
-    }
+    await controller.open(const ArticleRequest(url: url));
+
+    // open() clears the previous article's WebView, so attach the stand-in
+    // afterwards, the way the page does once its WebView is ready.
+    controller.webViewController = articleOnScreen == null
+        ? null
+        : _LoadedWebViewController(articleOnScreen);
 
     await tester.pumpWidget(
-      M3ETheme(
-        data: M3EThemeData.light(seedColor: testSeedColor),
-        child: GetMaterialApp(
-          localizationsDelegates: const [
-            ui.DefaultMaterialLocalizations.delegate,
-          ],
-          initialRoute: AppRoutes.home,
-          getPages: [
-            GetPage(
-              name: AppRoutes.home,
-              page: () => const Scaffold(body: Text('home')),
-            ),
-            GetPage(
-              name: AppRoutes.article,
-              page: () => const Scaffold(body: Text('reader')),
-              binding: BindingsBuilder(() {
-                Get.put(_buildReader(articleOnScreen));
-              }),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    // Not awaited: the route stays open, like it does when a reader is in it.
-    Get.toNamed<void>(
-      AppRoutes.article,
-      arguments: {'url': url, 'originalUrl': url},
+      wrapTestApp(services: services, child: const SizedBox.shrink()),
     );
     await tester.pumpAndSettle();
 
-    controller = Get.find<ArticleController>();
-
-    addTearDown(() async {
-      if (Get.isRegistered<ArticleController>()) {
-        Get.back();
-        await tester.pumpAndSettle();
-      }
-
-      // Unmounting before the next test's services are torn down.
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
+    // A real load leaves the watchdog armed; settle it before the test ends.
+    addTearDown(() => controller.onPageCommitVisible());
   }
 
   Future<void> saveArticle({String title = 'Saved Story'}) async {
@@ -110,7 +96,7 @@ void main() {
     testWidgets('reports no saved copy when nothing is cached', (tester) async {
       await openReader(tester);
 
-      expect(controller.hasOfflineCopy.value, isFalse);
+      expect(state().hasOfflineCopy, isFalse);
     });
 
     testWidgets('reports a saved copy', (tester) async {
@@ -118,7 +104,7 @@ void main() {
 
       await openReader(tester);
 
-      expect(controller.hasOfflineCopy.value, isTrue);
+      expect(state().hasOfflineCopy, isTrue);
     });
   });
 
@@ -130,11 +116,11 @@ void main() {
       await controller.onPageError('Server unreachable');
       await tester.pumpAndSettle();
 
-      expect(controller.isOffline.value, isTrue);
-      expect(controller.errorMessage.value, isEmpty);
-      expect(controller.articleTitle.value, 'Saved Story');
-      expect(controller.articleAuthor.value, 'Cached Author');
-      expect(controller.isLoading.value, isFalse);
+      expect(state().isOffline, isTrue);
+      expect(state().errorMessage, isEmpty);
+      expect(state().articleTitle, 'Saved Story');
+      expect(state().articleAuthor, 'Cached Author');
+      expect(state().isLoading, isFalse);
     });
 
     testWidgets('shows the failure when nothing is saved', (tester) async {
@@ -142,8 +128,8 @@ void main() {
       await controller.onPageError('Server unreachable');
       await tester.pumpAndSettle();
 
-      expect(controller.isOffline.value, isFalse);
-      expect(controller.errorMessage.value, 'Server unreachable');
+      expect(state().isOffline, isFalse);
+      expect(state().errorMessage, 'Server unreachable');
     });
 
     testWidgets('the saved copy wins over the guessed title', (tester) async {
@@ -152,7 +138,7 @@ void main() {
       await openReader(tester);
       await controller.onPageError('boom');
 
-      expect(controller.articleTitle.value, 'A Story Worth Caching');
+      expect(state().articleTitle, 'A Story Worth Caching');
     });
   });
 
@@ -161,12 +147,12 @@ void main() {
       await saveArticle();
       await openReader(tester);
       await controller.onPageError('boom');
-      expect(controller.isOffline.value, isTrue);
+      expect(state().isOffline, isTrue);
 
       await controller.requestRefresh();
 
-      expect(controller.isOffline.value, isFalse);
-      expect(controller.errorMessage.value, isEmpty);
+      expect(state().isOffline, isFalse);
+      expect(state().errorMessage, isEmpty);
     });
 
     testWidgets('survives a refresh with no WebView attached', (tester) async {
@@ -188,8 +174,8 @@ void main() {
 
       await controller.onPageError('boom');
 
-      expect(controller.isOffline.value, isFalse);
-      expect(controller.errorMessage.value, 'boom');
+      expect(state().isOffline, isFalse);
+      expect(state().errorMessage, 'boom');
     });
 
     testWidgets('a dropped copy does not report a saved copy', (tester) async {
@@ -197,13 +183,13 @@ void main() {
       await openReader(tester);
       await storage.cache.remove(url);
 
-      expect(controller.hasOfflineCopy.value, isTrue);
+      expect(state().hasOfflineCopy, isTrue);
 
       // Reopening the article is what re-checks, since the reader is told what
       // it can keep offline.
       await openReader(tester);
 
-      expect(controller.hasOfflineCopy.value, isFalse);
+      expect(state().hasOfflineCopy, isFalse);
     });
 
     testWidgets('reading an article stores nothing on its own', (tester) async {
@@ -230,7 +216,7 @@ void main() {
       await controller.toggleFavorite();
 
       expect(storage.library.isFavorite(url), isTrue);
-      expect(controller.hasOfflineCopy.value, isTrue);
+      expect(state().hasOfflineCopy, isTrue);
       expect(
         (await storage.cache.read(url))?.html,
         '<article><p>Body.</p></article>',
@@ -247,7 +233,7 @@ void main() {
       await controller.toggleFavorite();
 
       expect(storage.library.isFavorite(url), isTrue);
-      expect(controller.hasOfflineCopy.value, isFalse);
+      expect(state().hasOfflineCopy, isFalse);
       expect(await storage.cache.contains(url), isFalse);
     });
 
@@ -265,7 +251,7 @@ void main() {
       await controller.toggleFavorite();
 
       expect(storage.library.isFavorite(url), isFalse);
-      expect(controller.hasOfflineCopy.value, isFalse);
+      expect(state().hasOfflineCopy, isFalse);
       expect(await storage.cache.contains(url), isFalse);
     });
 
@@ -284,7 +270,7 @@ void main() {
 
       // One favorite, rather than one that was added and immediately removed.
       expect(storage.library.isFavorite(url), isTrue);
-      expect(controller.isStoringArticle.value, isFalse);
+      expect(state().isStoringArticle, isFalse);
     });
   });
 
@@ -302,35 +288,47 @@ void main() {
   });
 }
 
-/// A reader with an article on screen, without a WebView behind it.
+/// A WebView stand-in that reports [html] as the document on screen.
 ///
 /// The body is the one thing that only ever exists inside a loaded document, so
 /// supplying it is the whole of standing in for a page.
-class _LoadedArticleController extends ArticleController {
-  _LoadedArticleController(
-    this._html,
-    StorageService storage,
-    ThemeService theme,
-    ArticleResolver resolver,
-  ) : super(storage, theme, resolver);
+class _LoadedWebViewController extends WebViewController {
+  _LoadedWebViewController(this._html)
+    : super.fromPlatform(_FakePlatformWebViewController());
 
   final String _html;
 
   @override
-  Future<String?> readArticleHtml() async => _html;
+  Future<Object> runJavaScriptReturningResult(String javaScript) async {
+    if (javaScript == ReaderTheme.extractArticleHtmlJs) {
+      return jsonEncode({'found': true, 'html': _html});
+    }
+    return jsonEncode(<String, dynamic>{});
+  }
+
+  @override
+  Future<void> runJavaScript(String javaScript) async {}
+
+  @override
+  Future<void> setBackgroundColor(Color color) async {}
+
+  @override
+  Future<void> loadHtmlString(String html, {String? baseUrl}) async {}
+
+  @override
+  Future<void> loadRequest(
+    Uri uri, {
+    LoadRequestMethod method = LoadRequestMethod.get,
+    Map<String, String> headers = const <String, String>{},
+    Uint8List? body,
+  }) async {}
+
+  @override
+  Future<void> reload() async {}
 }
 
-/// The reader the article route registers.
-///
-/// With [articleOnScreen] set, the reader has a document to store, which a real
-/// one only gets from the WebView this suite never builds.
-ArticleController _buildReader(String? articleOnScreen) {
-  final storage = Get.find<StorageService>();
-  final theme = Get.find<ThemeService>();
-  final resolver = Get.find<ArticleResolver>();
-
-  if (articleOnScreen == null) {
-    return ArticleController(storage, theme, resolver);
-  }
-  return _LoadedArticleController(articleOnScreen, storage, theme, resolver);
+/// The platform half of the fake, built without a real plugin channel.
+class _FakePlatformWebViewController extends PlatformWebViewController {
+  _FakePlatformWebViewController()
+    : super.implementation(const PlatformWebViewControllerCreationParams());
 }

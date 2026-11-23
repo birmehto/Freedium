@@ -28,10 +28,21 @@ const Set<String> kTrackingParams = {
 /// Matches a bare URL inside a larger block of share text.
 final RegExp _urlInText = RegExp(r'''https?://[^\s<>"'()\[\]]+''');
 
+/// Matches a Markdown link whose target is an http(s) URL.
+final RegExp _markdownLink = RegExp(
+  r'\[[^\]]*\]\((https?://[^)\s]+)\)',
+  caseSensitive: false,
+);
+
 /// Domains Medium publishes on itself, subdomains included.
 const Set<String> _mediumDomains = {'medium.com', 'medium.co.uk'};
 
 final RegExp _whitespace = RegExp(r'\s');
+
+/// Control characters never belong in a URL a reader can open. They are what a
+/// copied chat message or a malicious share payload tends to smuggle in, and a
+/// browser is free to interpret them in ways the validator did not intend.
+final RegExp _controlChars = RegExp(r'[\u0000-\u001F\u007F]');
 
 /// A dotted hostname, e.g. `medium.com` or `blog.medium.co.uk`.
 final RegExp _hostname = RegExp(
@@ -41,6 +52,13 @@ final RegExp _hostname = RegExp(
 
 /// An explicit URI scheme, e.g. the `mailto` in `mailto:someone@example.com`.
 final RegExp _scheme = RegExp('^[a-z][a-z0-9+.-]*:', caseSensitive: false);
+
+/// Long enough for any real article link, short enough that a pathological
+/// payload cannot be persisted or handed to a WebView.
+const int _maxUrlLength = 4096;
+
+/// The largest port a URL can carry.
+const int _maxPort = 65535;
 
 /// The single source of truth for article URL handling.
 ///
@@ -59,10 +77,9 @@ abstract final class ArticleUrl {
     var value = raw.trim();
     if (value.isEmpty) return null;
 
-    final markdown = RegExp(r'\[([^\]]*)\]\((https?://[^)]+)\)')
-        .firstMatch(value);
+    final markdown = _markdownLink.firstMatch(value);
     if (markdown != null) {
-      value = markdown.group(2)!;
+      value = markdown.group(1)!;
     } else if (_scheme.hasMatch(value)) {
       // A scheme the reader cannot display is refused rather than promoted.
       //
@@ -77,18 +94,36 @@ abstract final class ArticleUrl {
       value = 'https://$value';
     }
 
+    // Checked after extraction so a long share message with one URL is not
+    // rejected because of the prose around it.
+    if (value.length > _maxUrlLength) return null;
+    if (_controlChars.hasMatch(value)) return null;
+
     final uri = Uri.tryParse(value);
     if (uri == null || !uri.hasScheme || !isSupported(uri)) return null;
 
     // A real hostname is required, so prose such as "hello world" or a bare
-    // word is never mistaken for an article URL.
-    if (!_hostname.hasMatch(uri.host)) return null;
+    // word is never mistaken for an article URL. A trailing root dot is legal
+    // in DNS (`medium.com.`), so it is normalized away before the check.
+    final host = _normalizedHost(uri.host);
+    if (!_hostname.hasMatch(host)) return null;
 
     // An article link never carries credentials. Left in, userinfo is what
     // turns an unopenable scheme into a URL that passes every test above.
     if (uri.userInfo.isNotEmpty) return null;
 
-    return value;
+    try {
+      // A port outside the 16-bit range, or port zero, is not something the
+      // platform can connect to. `Uri.tryParse` accepts it, so it is refused
+      // here rather than becoming a WebView load that can only fail.
+      if (uri.hasPort && (uri.port <= 0 || uri.port > _maxPort)) return null;
+
+      return uri
+          .replace(scheme: uri.scheme.toLowerCase(), host: host)
+          .toString();
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Strips tracking parameters and fragments and normalizes the host, so the
@@ -99,23 +134,27 @@ abstract final class ArticleUrl {
     final normalized = normalize(raw);
     if (normalized == null) return '';
 
-    final uri = Uri.parse(normalized);
-    if (uri.host.isEmpty || !uri.host.contains('.')) return '';
+    try {
+      final uri = Uri.parse(normalized);
+      if (uri.host.isEmpty || !uri.host.contains('.')) return '';
 
-    final query = <String, String>{};
-    uri.queryParameters.forEach((key, value) {
-      if (!kTrackingParams.contains(key.toLowerCase())) {
-        query[key] = value;
-      }
-    });
+      final query = <String, String>{};
+      uri.queryParameters.forEach((key, value) {
+        if (!kTrackingParams.contains(key.toLowerCase())) {
+          query[key] = value;
+        }
+      });
 
-    return Uri(
-      scheme: uri.scheme.toLowerCase(),
-      host: uri.host.toLowerCase(),
-      port: uri.hasPort ? uri.port : null,
-      path: uri.path,
-      queryParameters: query.isEmpty ? null : query,
-    ).toString();
+      return Uri(
+        scheme: uri.scheme.toLowerCase(),
+        host: _normalizedHost(uri.host),
+        port: uri.hasPort ? uri.port : null,
+        path: uri.path,
+        queryParameters: query.isEmpty ? null : query,
+      ).toString();
+    } catch (_) {
+      return '';
+    }
   }
 
   /// Form-validator message for [raw], or `null` when it is acceptable.
@@ -170,5 +209,11 @@ abstract final class ArticleUrl {
 
     final host = Uri.parse(canonical).host;
     return host.startsWith('www.') ? host.substring(4) : host;
+  }
+
+  /// Lowercases [host] and removes the single legal trailing root dot.
+  static String _normalizedHost(String host) {
+    final lower = host.toLowerCase();
+    return lower.endsWith('.') ? lower.substring(0, lower.length - 1) : lower;
   }
 }

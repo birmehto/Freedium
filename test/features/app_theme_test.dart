@@ -1,58 +1,66 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/app.dart';
-import 'package:freedium/core/services/clipboard_service.dart';
-import 'package:freedium/core/services/theme_service.dart';
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:freedium/core/controllers/app_controllers.dart';
+import 'package:freedium/core/storage/preferences_store.dart';
+import 'package:freedium/core/theme/app_theme.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../helpers/test_env.dart';
 
-/// Verifies the app's M3E theme actually follows [ThemeService], end to end.
+/// Verifies the app's theme actually follows [ThemeController], end to end.
 ///
-/// The service-level tests cover the stored preference; this one covers the
-/// wiring in [Freedium] — that flipping the theme rebuilds the tree to the new
-/// brightness instead of leaving it pinned to whatever it started with.
+/// The controller-level tests cover the stored preference and its state; this
+/// one covers the wiring in [Freedium] — that flipping the theme rebuilds the
+/// tree to the new brightness instead of leaving it pinned to whatever it
+/// started with.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    registerServices();
-    Get.put<ClipboardService>(ClipboardService());
-  });
-
   Brightness resolvedBrightness(WidgetTester tester) {
-    final context = tester.element(find.byType(GetMaterialApp).first);
-    return M3ETheme.brightnessOf(context);
+    final context = tester.element(find.byType(Scaffold).first);
+    return Theme.of(context).brightness;
   }
 
-  testWidgets('theme service toggle switches the resolved M3E theme', (
+  testWidgets('theme controller toggle switches the resolved theme', (
     tester,
   ) async {
-    final themeService = Get.find<ThemeService>();
+    final services = registerServices();
+    final theme = services.container.read(themeControllerProvider.notifier);
 
-    await tester.pumpWidget(const Freedium());
+    await tester.pumpWidget(wrapTestApp(child: const Freedium()));
     await tester.pumpAndSettle();
 
     expect(resolvedBrightness(tester), Brightness.light);
 
-    themeService.toggleTheme(true);
+    theme.toggleTheme(true);
     await tester.pumpAndSettle();
 
     expect(resolvedBrightness(tester), Brightness.dark);
+    expect(
+      services.container.read(themeControllerProvider).preferredMode,
+      PreferencesStore.modeDark,
+    );
 
-    themeService.toggleTheme(false);
+    theme.toggleTheme(false);
     await tester.pumpAndSettle();
 
     expect(resolvedBrightness(tester), Brightness.light);
   });
 
   testWidgets('a stored dark preference is applied on startup', (tester) async {
-    Get.find<ThemeService>().toggleTheme(true);
+    final services = registerServices(
+      seed: {PreferencesStore.themeModeKey: PreferencesStore.modeDark},
+    );
 
-    await tester.pumpWidget(const Freedium());
+    await tester.pumpWidget(wrapTestApp(child: const Freedium()));
     await tester.pumpAndSettle();
 
     expect(resolvedBrightness(tester), Brightness.dark);
+    expect(
+      AppTheme.themeMode(
+        services.container.read(themeControllerProvider).preferredMode,
+      ),
+      ThemeMode.dark,
+    );
   });
 }

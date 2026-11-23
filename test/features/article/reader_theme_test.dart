@@ -401,4 +401,20 @@ void main() {
       }
     });
   });
+
+  group('hexToColor', () {
+    test('parses a six-digit hex with a full alpha channel', () {
+      expect(ReaderTheme.hexToColor('#fbfaf7').toARGB32(), 0xFFFBFaf7);
+      expect(ReaderTheme.hexToColor('000000').toARGB32(), 0xFF000000);
+    });
+
+    test('honors an eight-digit value when one is supplied', () {
+      final color = ReaderTheme.hexToColor('80112233');
+      expect(color.toARGB32(), 0x80112233);
+    });
+
+    test('falls back to a visible color for garbage input', () {
+      expect(ReaderTheme.hexToColor('not-hex').toARGB32(), 0xFFFFFFFF);
+    });
+  });
 }

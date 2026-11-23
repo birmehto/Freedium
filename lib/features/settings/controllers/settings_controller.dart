@@ -1,113 +1,94 @@
-import 'package:get/get.dart';
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/controllers/app_controllers.dart';
 import '../../../core/errors/app_exception.dart';
-import '../../../core/services/storage_service.dart';
-import '../../../core/services/theme_service.dart';
+import '../../../core/providers/service_providers.dart';
+import '../../../core/storage/preferences_store.dart';
 import '../../../core/utils/app_log.dart';
 import '../../../core/widgets/app_snackbar.dart';
-import '../models/reader_settings.dart';
 
-class SettingsController extends GetxController {
-  SettingsController(this._themeService, this._storage);
+class SettingsState {
+  const SettingsState({
+    this.appVersion = '',
+    this.themeMode = PreferencesStore.modeSystem,
+    this.preferredMirror,
+    this.autoFallback = true,
+  });
 
-  final ThemeService _themeService;
-  final StorageService _storage;
+  final String appVersion;
+  final String themeMode;
+  final String? preferredMirror;
+  final bool autoFallback;
 
-  final appVersion = ''.obs;
+  SettingsState copyWith({
+    String? appVersion,
+    String? themeMode,
+    String? preferredMirror,
+    bool? autoFallback,
+    bool clearMirror = false,
+  }) {
+    return SettingsState(
+      appVersion: appVersion ?? this.appVersion,
+      themeMode: themeMode ?? this.themeMode,
+      preferredMirror: clearMirror ? null : preferredMirror ?? this.preferredMirror,
+      autoFallback: autoFallback ?? this.autoFallback,
+    );
+  }
+}
 
-  // Appearance
-  final themeMode = ''.obs;
+final settingsControllerProvider =
+    NotifierProvider<SettingsController, SettingsState>(SettingsController.new);
 
-  // Reader defaults
-  final readerSettings = const ReaderSettings().obs;
-
-  // Network & source
-  final preferredMirror = RxnString();
-  final autoFallback = true.obs;
-
-  bool get isDarkMode => _themeService.isDarkMode.value;
-
-  /// Font size is part of the reader settings, not a separate value.
-  double get fontSize => readerSettings.value.fontSize;
-
+class SettingsController extends Notifier<SettingsState> {
   @override
-  void onInit() {
-    super.onInit();
-    _loadAppVersion();
-    themeMode.value = _themeService.preferredMode;
-    readerSettings.value = _storage.preferences.readerSettings;
-    preferredMirror.value = _storage.preferences.preferredMirror;
-    autoFallback.value = _storage.preferences.autoFallback;
-  }
+  SettingsState build() {
+    final preferences = ref.watch(storageServiceProvider).preferences;
+    final theme = ref.watch(themeControllerProvider);
+    unawaited(_loadAppVersion());
 
-  /// Re-reads the reader defaults from storage.
-  ///
-  /// The reader writes the same settings the settings screen shows, so a font
-  /// size changed while reading is picked up when the tab is opened again
-  /// instead of showing the value this controller happened to start with.
-  void syncReaderSettings() {
-    readerSettings.value = _storage.preferences.readerSettings;
-  }
-
-  // ─────────────────────────────── appearance ─────────────────────────
-
-  void setThemeMode(String mode) {
-    themeMode.value = mode;
-    _themeService.setThemeMode(mode);
-  }
-
-  void toggleTheme(bool value) {
-    _themeService.toggleTheme(value);
-    themeMode.value = _themeService.preferredMode;
-  }
-
-  // ──────────────────────────────── reader ────────────────────────────
-
-  void setFontSize(double size) {
-    updateReaderSettings(
-      readerSettings.value.copyWith(
-        fontSize: size.clamp(
-          ReaderSettings.kMinFontSize,
-          ReaderSettings.kMaxFontSize,
-        ),
-      ),
+    return SettingsState(
+      themeMode: theme.preferredMode,
+      preferredMirror: preferences.preferredMirror,
+      autoFallback: preferences.autoFallback,
     );
   }
 
-  void updateReaderSettings(ReaderSettings settings) {
-    readerSettings.value = settings;
-    _storage.preferences.readerSettings = settings;
+  void setThemeMode(String mode) {
+    ref.read(themeControllerProvider.notifier).setThemeMode(mode);
+    state = state.copyWith(themeMode: mode);
   }
 
-  // ─────────────────────────────── source ─────────────────────────────
+  void toggleTheme(bool dark) {
+    ref.read(themeControllerProvider.notifier).toggleTheme(dark);
+    state = state.copyWith(themeMode: dark ? PreferencesStore.modeDark : PreferencesStore.modeLight);
+  }
 
   void setPreferredMirror(String? mirrorId) {
-    preferredMirror.value = mirrorId;
-    _storage.preferences.preferredMirror = mirrorId;
+    ref.read(storageServiceProvider).preferences.preferredMirror = mirrorId;
+    ref.read(articleResolverProvider).setPreferred(mirrorId);
+    state = state.copyWith(preferredMirror: mirrorId, clearMirror: mirrorId == null);
   }
 
   void setAutoFallback(bool value) {
-    autoFallback.value = value;
-    _storage.preferences.autoFallback = value;
+    ref.read(storageServiceProvider).preferences.autoFallback = value;
+    ref.read(articleResolverProvider).autoFallback = value;
+    state = state.copyWith(autoFallback: value);
   }
-
-  // ──────────────────────────────── about ────────────────────────────
 
   Future<void> sendFeedback() async {
     const address = 'birmehto@gmail.com';
-
     final uri = Uri(
       scheme: 'mailto',
       path: address,
       queryParameters: const {'subject': 'Freedium Feedback'},
     );
 
-    // `reportFailure: false`: the caller owns the message, so the user is not
-    // told "could not open link" and "no email app" for one failed attempt.
     if (!await _openExternal(uri, reportFailure: false)) {
-      showMessage('No email app found. Email us at $address');
+      AppSnackbar.message('No email app found. Email us at $address');
     }
   }
 
@@ -125,20 +106,17 @@ class SettingsController extends GetxController {
       appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
     }
 
-    if (reportFailure) showMessage('Could not open link');
+    if (reportFailure) AppSnackbar.message('Could not open link');
     return false;
   }
 
   Future<void> _loadAppVersion() async {
     try {
-      appVersion.value = (await PackageInfo.fromPlatform()).version;
+      final version = (await PackageInfo.fromPlatform()).version;
+      state = state.copyWith(appVersion: version);
     } catch (error) {
       final exception = AppException.from(error, context: 'loadAppVersion');
       appLog(exception.toString(), name: 'Settings', level: LogLevel.warning);
     }
-  }
-
-  void showMessage(String message) {
-    AppSnackbar.show(Get.context, message: message);
   }
 }

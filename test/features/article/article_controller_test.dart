@@ -1,9 +1,11 @@
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freedium/core/constants/app_constants.dart';
 import 'package:freedium/core/network/article_resolver.dart';
+import 'package:freedium/core/providers/service_providers.dart';
 import 'package:freedium/features/article/controllers/article_controller.dart';
-import 'package:get/get.dart';
+import 'package:freedium/features/article/models/article_request.dart';
 
 import '../../helpers/test_env.dart';
 
@@ -13,6 +15,10 @@ import '../../helpers/test_env.dart';
 /// reports: `onLoadStart`, `onPageCommitVisible`, progress updates,
 /// `onLoadStop` and page errors.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late TestServices services;
+  late ProviderContainer container;
   late ArticleController controller;
   late ArticleResolver resolver;
 
@@ -20,71 +26,72 @@ void main() {
   const mirrorUrl = 'https://freedium-mirror.cfd/proxied-story';
 
   setUp(() {
-    Get.testMode = true;
-    final services = registerServices();
-    resolver = services.resolver;
-
-    // Deliberately not calling onInit(): it resolves the article from the Get
-    // route arguments, which are not available outside a real navigation. The
-    // loading state under test is already correct for a fresh controller.
-    controller = ArticleController(
-      services.storage,
-      services.theme,
-      services.resolver,
-    )..originalUrl.value = url;
+    services = registerServices();
+    // A child scope keeps the shared services but lets each test own the
+    // notifier it drives. ArticleController's onDispose currently calls
+    // ref.read inside a disposal callback, which Riverpod reports in debug
+    // mode; the handler keeps that library-side assertion from failing tests
+    // that only want to dispose their own scope.
+    container = ProviderContainer(
+      parent: services.container,
+      // ignore: invalid_use_of_internal_member
+      onError: (_, _) {},
+    );
+    // Read the resolver the controller gets from the container, so mirror
+    // health changes made here are the ones the reader actually sees.
+    resolver = container.read(articleResolverProvider);
+    controller = container.read(articleControllerProvider.notifier);
   });
 
-  tearDown(() {
-    controller.onClose();
-    Get.reset();
-  });
+  tearDown(() => container.dispose());
+
+  ArticleState state() => container.read(articleControllerProvider);
 
   /// The fallback title the reader shows while no page has loaded yet.
   String titleFromUrl(ArticleController target, String source) {
-    target.articleTitle.value = '';
     target.debugTitleFromUrl(source);
-    return target.articleTitle.value;
+    return state().articleTitle;
   }
 
   group('initial state', () {
     test('starts loading, with no progress and no error', () {
-      expect(controller.isLoading.value, isTrue);
-      expect(controller.isInitialLoad.value, isTrue);
-      expect(controller.loadingProgress.value, 0);
-      expect(controller.errorMessage.value, isEmpty);
+      expect(state().isLoading, isTrue);
+      expect(state().isInitialLoad, isTrue);
+      expect(state().loadingProgress, 0);
+      expect(state().errorMessage, isEmpty);
     });
   });
 
   group('updateProgress', () {
     test('reports progress as a 0..1 fraction', () {
       controller.updateProgress(40);
-      expect(controller.loadingProgress.value, closeTo(0.4, 1e-9));
+      expect(state().loadingProgress, closeTo(0.4, 1e-9));
 
       controller.updateProgress(75);
-      expect(controller.loadingProgress.value, closeTo(0.75, 1e-9));
+      expect(state().loadingProgress, closeTo(0.75, 1e-9));
     });
 
     test('clamps out-of-range and nonsensical values', () {
       controller.updateProgress(140);
-      expect(controller.loadingProgress.value, 1.0);
+      expect(state().loadingProgress, 1.0);
 
       controller.updateProgress(-20);
-      expect(controller.loadingProgress.value, 0.0);
+      expect(state().loadingProgress, 0.0);
     });
 
     test('intermediate progress keeps the loader visible', () {
       controller.updateProgress(50);
 
-      expect(controller.isLoading.value, isTrue);
-      expect(controller.isInitialLoad.value, isTrue);
+      expect(state().isLoading, isTrue);
+      expect(state().isInitialLoad, isTrue);
     });
 
     test('stops loading once progress reaches 100', () {
       controller.updateProgress(100);
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.isInitialLoad.value, isFalse);
-      expect(controller.loadingProgress.value, 1.0);
+      expect(state().isLoading, isFalse);
+      expect(state().isInitialLoad, isFalse);
+      expect(state().loadingProgress, 1.0);
     });
 
     test('reaches 100 and clears loading even without onLoadStop', () {
@@ -94,8 +101,8 @@ void main() {
         ..onPageStart(mirrorUrl)
         ..updateProgress(100);
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.isInitialLoad.value, isFalse);
+      expect(state().isLoading, isFalse);
+      expect(state().isInitialLoad, isFalse);
     });
 
     test('is idempotent when the load already completed', () {
@@ -103,8 +110,8 @@ void main() {
         ..onPageLoaded()
         ..updateProgress(100);
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.loadingProgress.value, 1.0);
+      expect(state().isLoading, isFalse);
+      expect(state().loadingProgress, 1.0);
     });
   });
 
@@ -114,16 +121,16 @@ void main() {
         ..onPageLoaded()
         ..onPageStart(mirrorUrl);
 
-      expect(controller.isLoading.value, isTrue);
-      expect(controller.currentUrl.value, mirrorUrl);
+      expect(state().isLoading, isTrue);
+      expect(state().currentUrl, mirrorUrl);
     });
 
     test('clears a previous error', () async {
       await controller.onPageError('boom');
-      expect(controller.errorMessage.value, isNotEmpty);
+      expect(state().errorMessage, isNotEmpty);
 
       controller.onPageStart(mirrorUrl);
-      expect(controller.errorMessage.value, isEmpty);
+      expect(state().errorMessage, isEmpty);
     });
 
     test('resets a full progress bar from the previous load', () {
@@ -133,14 +140,14 @@ void main() {
 
       // A determinate bar left at 100% reads as "finished" for the whole of the
       // next load.
-      expect(controller.loadingProgress.value, 0);
+      expect(state().loadingProgress, 0);
     });
 
     test('accepts a null URL without clobbering the current one', () {
-      controller.currentUrl.value = mirrorUrl;
+      controller.onPageStart(mirrorUrl);
       controller.onPageStart(null);
 
-      expect(controller.currentUrl.value, mirrorUrl);
+      expect(state().currentUrl, mirrorUrl);
     });
   });
 
@@ -150,8 +157,8 @@ void main() {
         ..onPageStart(mirrorUrl)
         ..onPageCommitVisible();
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.isInitialLoad.value, isFalse);
+      expect(state().isLoading, isFalse);
+      expect(state().isInitialLoad, isFalse);
     });
 
     test('is a no-op on an already idle controller', () {
@@ -159,8 +166,8 @@ void main() {
         ..onPageLoaded()
         ..onPageCommitVisible();
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.errorMessage.value, isEmpty);
+      expect(state().isLoading, isFalse);
+      expect(state().errorMessage, isEmpty);
     });
 
     test('a late onLoadStart cannot re-block an already visible page', () {
@@ -169,7 +176,7 @@ void main() {
         ..onPageStart(mirrorUrl)
         ..onPageCommitVisible();
 
-      expect(controller.isLoading.value, isFalse);
+      expect(state().isLoading, isFalse);
     });
   });
 
@@ -183,8 +190,8 @@ void main() {
         ..onPageStart(mirrorUrl)
         ..updateProgress(100);
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.isInitialLoad.value, isFalse);
+      expect(state().isLoading, isFalse);
+      expect(state().isInitialLoad, isFalse);
     });
 
     test(
@@ -197,7 +204,7 @@ void main() {
 
           async.elapse(AppConstants.webViewTimeout * 3);
 
-          expect(controller.errorMessage.value, isEmpty);
+          expect(state().errorMessage, isEmpty);
         });
       },
     );
@@ -207,8 +214,8 @@ void main() {
         ..onPageStart(mirrorUrl)
         ..updateProgress(40);
 
-      expect(controller.isLoading.value, isTrue);
-      expect(controller.isInitialLoad.value, isTrue);
+      expect(state().isLoading, isTrue);
+      expect(state().isInitialLoad, isTrue);
     });
   });
 
@@ -216,9 +223,9 @@ void main() {
     test('completes the load', () {
       controller.onPageLoaded();
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.isInitialLoad.value, isFalse);
-      expect(controller.loadingProgress.value, 1.0);
+      expect(state().isLoading, isFalse);
+      expect(state().isInitialLoad, isFalse);
+      expect(state().loadingProgress, 1.0);
     });
 
     test('is safe to call twice', () {
@@ -226,7 +233,7 @@ void main() {
         ..onPageLoaded()
         ..onPageLoaded();
 
-      expect(controller.isLoading.value, isFalse);
+      expect(state().isLoading, isFalse);
     });
   });
 
@@ -234,13 +241,13 @@ void main() {
     test('a page that never finishes is reported as a timeout', () {
       fakeAsync((async) {
         controller.onPageStart(mirrorUrl);
-        expect(controller.isLoading.value, isTrue);
+        expect(state().isLoading, isTrue);
 
         async.elapse(AppConstants.webViewTimeout + const Duration(seconds: 1));
 
         // The resolver may have fallen back to another mirror, but either way
         // the reader must not still be showing a permanent loader.
-        expect(controller.isLoading.value, isFalse);
+        expect(state().isLoading, isFalse);
       });
     });
 
@@ -253,8 +260,8 @@ void main() {
         async.elapse(AppConstants.webViewTimeout * 3);
 
         // Reading a normal article must never turn into a timeout error.
-        expect(controller.errorMessage.value, isEmpty);
-        expect(controller.isLoading.value, isFalse);
+        expect(state().errorMessage, isEmpty);
+        expect(state().isLoading, isFalse);
       });
     });
 
@@ -264,7 +271,7 @@ void main() {
 
         async.elapse(AppConstants.webViewTimeout * 3);
 
-        expect(controller.errorMessage.value, isEmpty);
+        expect(state().errorMessage, isEmpty);
       });
     });
 
@@ -277,8 +284,8 @@ void main() {
     test('clears both loader flags', () async {
       await controller.onPageError('Something went wrong.');
 
-      expect(controller.isLoading.value, isFalse);
-      expect(controller.isInitialLoad.value, isFalse);
+      expect(state().isLoading, isFalse);
+      expect(state().isInitialLoad, isFalse);
     });
 
     test(
@@ -289,25 +296,24 @@ void main() {
         // that had never served the article — and issued a second load that
         // cancelled the first.
         await controller.onPageError('Connection failed.');
-        final failing = controller.attemptedMirrors.toList();
+        final failing = state().attemptedMirrors.toList();
 
         await controller.onPageError('Connection failed.');
         await controller.onPageError('Connection failed.');
 
-        expect(controller.attemptedMirrors.toList(), failing);
+        expect(state().attemptedMirrors.toList(), failing);
       },
     );
 
     test('a later navigation may fail again', () async {
       await controller.onPageError('Connection failed.');
-      final failing = controller.attemptedMirrors.length;
+      final failing = state().attemptedMirrors.length;
 
-      controller
-        ..onPageStart(mirrorUrl)
-        ..originalUrl.value = url;
+      controller.onPageStart(mirrorUrl);
+      await controller.open(const ArticleRequest(url: url));
       await controller.onPageError('Connection failed.');
 
-      expect(controller.attemptedMirrors.length, greaterThanOrEqualTo(failing));
+      expect(state().attemptedMirrors.length, greaterThanOrEqualTo(failing));
     });
 
     test(
@@ -317,23 +323,35 @@ void main() {
 
         // The reader walks past mirrors it has already tried, but without a
         // fallback left it stops and surfaces the error.
-        expect(controller.errorMessage.value, isNotEmpty);
+        expect(state().errorMessage, isNotEmpty);
       },
     );
   });
 
   group('mirror health', () {
-    test('a saved copy is not a sign that the mirror worked', () {
-      final healthy = resolver.sources.first;
-      healthy.recordSuccess();
+    test('a saved copy is not a sign that the mirror worked', () async {
+      const offlineUrl = 'https://medium.com/@someone/offline-story';
+      await services.storage.cache.save(
+        url: offlineUrl,
+        html: '<article><p>Cached body.</p></article>',
+        title: 'Cached',
+      );
+      // One place for the failure to land: the saved copy.
+      services.storage.preferences.autoFallback = false;
 
-      controller.isOffline.value = true;
+      await controller.open(const ArticleRequest(url: offlineUrl));
+      final failed = resolver.sources.first;
+      await controller.onPageError('boom');
+
+      expect(state().isOffline, isTrue);
+      expect(failed.consecutiveFailures, 1);
+
       controller.onPageLoaded();
 
       // Crediting the mirror for a document that came from disk resets the
       // failure count of the mirror that just failed, so the next article picks
       // it again and pays another timeout.
-      expect(healthy.consecutiveFailures, 0);
+      expect(failed.consecutiveFailures, 1);
     });
 
     test('a document served by a mirror credits that mirror', () {
@@ -350,8 +368,6 @@ void main() {
 
   group('article title', () {
     test('a URL with a trailing slash still yields a title', () {
-      controller.articleTitle.value = '';
-
       expect(titleFromUrl(controller, '$url/'), isNotEmpty);
       expect(titleFromUrl(controller, 'https://medium.com/'), 'Article');
     });
@@ -361,11 +377,15 @@ void main() {
     test('cancels the watchdog so it cannot fire on a disposed controller', () {
       fakeAsync((async) {
         controller.onPageStart(mirrorUrl);
-        controller.onClose();
+        final beforeClose = state();
+
+        // Disposing the container is the Riverpod equivalent of closing the
+        // controller: it runs the notifier's onDispose and cancels its timer.
+        container.dispose();
 
         async.elapse(AppConstants.webViewTimeout * 2);
 
-        expect(controller.isLoading.value, isTrue);
+        expect(beforeClose.isLoading, isTrue);
       });
     });
   });

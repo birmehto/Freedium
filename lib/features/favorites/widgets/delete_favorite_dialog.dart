@@ -1,42 +1,53 @@
-import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/extensions/context_ext.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_dialog.dart';
-import '../models/favorite_article.dart';
+import '../../../core/theme/app_theme.dart';
+import '../controllers/favorites_controller.dart';
 
-/// Asks before an article leaves the library.
+/// Asks before an article leaves the library, then removes it.
 ///
 /// Removing a favorite is a swipe away by design, which is exactly why it is
 /// worth one confirmation: a saved article is the only copy the user controls,
 /// and there is no undo. Returns true only when the user chose to remove it.
 Future<bool> showDeleteFavoriteDialog(
-  BuildContext context,
-  FavoriteArticle article,
-) async {
-  final colors = context.colors;
-  final name = article.title.trim().isEmpty
-      ? article.domain ?? 'this article'
-      : article.title.trim();
+  BuildContext context, {
+  required String url,
+  required String title,
+}) async {
+  final name = title.trim().isEmpty ? url : title.trim();
+  final notifier = ProviderScope.containerOf(context)
+      .read(favoritesControllerProvider.notifier);
 
-  final confirmed = await AppDialog.show<bool>(
-    context,
-    title: 'Remove from library?',
-    icon: Icon(M3EIcons.delete_outline_rounded, color: colors.error),
-    content: Text('"$name" will be removed from your library.'),
-    actions: [
-      AppButton(
-        variant: AppButtonVariant.text,
-        onPressed: () => AppDialog.close(context, false),
-        label: const Text('Keep'),
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppTheme.paper(dialogContext),
+      surfaceTintColor: Colors.transparent,
+      title: Text(
+        'Remove from library?',
+        style: Theme.of(dialogContext).textTheme.titleLarge
+            ?.copyWith(color: AppTheme.ink(dialogContext)),
       ),
-      AppButton(
-        onPressed: () => AppDialog.close(context, true),
-        label: const Text('Remove'),
+      content: Text(
+        '“$name” will be removed from your library.',
+        style: Theme.of(dialogContext).textTheme.bodyMedium
+            ?.copyWith(color: AppTheme.muted(dialogContext)),
       ),
-    ],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Keep'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Remove'),
+        ),
+      ],
+    ),
   );
 
-  return confirmed ?? false;
+  if (confirmed != true) return false;
+
+  await notifier.removeFavorite(url);
+  return true;
 }

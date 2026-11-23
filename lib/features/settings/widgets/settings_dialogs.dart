@@ -1,54 +1,54 @@
-import 'dart:math' as math;
-
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/config/mirror_source.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_dialog.dart';
+import '../../../core/theme/app_theme.dart';
 import '../controllers/settings_controller.dart';
 
 void showThemeDialog(BuildContext context) {
-  final controller = Get.find<SettingsController>();
+  final container = ProviderScope.containerOf(context);
+  final controller = container.read(settingsControllerProvider.notifier);
+  final current = container.read(settingsControllerProvider).themeMode;
 
   const modes = [
-    (label: 'System', value: 'system'),
-    (label: 'Light', value: 'light'),
-    (label: 'Dark', value: 'dark'),
+    ('System', 'system'),
+    ('Light', 'light'),
+    ('Dark', 'dark'),
   ];
 
-  AppDialog.show<void>(
-    context,
-    title: 'Theme',
-    // Three short modes fit one row, so the body needs no scrollbar.
-    isContentScrollable: false,
-    contentBuilder: (context) => Center(
-      child: M3ESegmentedButton<String>(
-        semanticLabel: 'Theme',
-        segments: [
-          for (final mode in modes)
-            M3ESegment<String>(value: mode.value, label: mode.label),
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppTheme.paper(dialogContext),
+      surfaceTintColor: Colors.transparent,
+      title: _dialogTitle(dialogContext, 'Theme'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < modes.length; i++) ...[
+            _DialogOption(
+              label: modes[i].$1,
+              selected: current == modes[i].$2,
+              onTap: () {
+                controller.setThemeMode(modes[i].$2);
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            if (i < modes.length - 1)
+              Divider(height: 1, color: AppTheme.rule(dialogContext)),
+          ],
         ],
-        selected: {controller.themeMode.value},
-        onSelectionChanged: (selected) {
-          controller.setThemeMode(selected.first);
-          AppDialog.close(context);
-        },
       ),
     ),
-    actions: [
-      AppButton(
-        variant: AppButtonVariant.text,
-        onPressed: () => AppDialog.close(context),
-        label: const Text('Close'),
-      ),
-    ],
   );
 }
 
 void showMirrorDialog(BuildContext context) {
-  final controller = Get.find<SettingsController>();
+  final container = ProviderScope.containerOf(context);
+  final controller = container.read(settingsControllerProvider.notifier);
+  final selected = container.read(settingsControllerProvider).preferredMirror ?? '';
 
   final options = <(String, String, String?)>[
     ('Auto', '', 'Let Freedium choose'),
@@ -56,99 +56,125 @@ void showMirrorDialog(BuildContext context) {
       (mirror.name, mirror.id, mirror.url),
   ];
 
-  AppDialog.show<void>(
-    context,
-    title: 'Preferred Mirror',
-    contentBuilder: (context) {
-      final theme = Theme.of(context);
-      final selected = controller.preferredMirror.value ?? '';
-
-      // Taps land on the radio; arrow keys on the group — one shared handler
-      // so both paths pin the mirror and dismiss.
-      void select(String id) {
-        controller.setPreferredMirror(id.isEmpty ? null : id);
-        AppDialog.close(context);
-      }
-
-      // M3ERadio lays its label out in a non-flexible row, so a long mirror
-      // URL would size the row past the dialog. Give the label the width the
-      // dialog actually has left for it.
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final radioTheme = M3ETheme.of(context).radioTheme;
-          final slot = math.max(radioTheme.targetSize, radioTheme.hitSize);
-          final labelWidth = math.max(
-            0.0,
-            constraints.maxWidth - slot - radioTheme.labelGap,
-          );
-
-          return M3ERadioGroup<String>(
-            groupLabel: 'Preferred Mirror',
-            groupValue: selected,
-            onChanged: select,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final (label, id, subtitle) in options)
-                  M3ERadio<String>(
-                    value: id,
-                    groupValue: selected,
-                    onChanged: select,
-                    label: SizedBox(
-                      width: labelWidth,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(label, style: theme.textTheme.bodyLarge),
-                            if (subtitle != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                subtitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-    actions: [
-      AppButton(
-        variant: AppButtonVariant.text,
-        onPressed: () => AppDialog.close(context),
-        label: const Text('Close'),
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppTheme.paper(dialogContext),
+      surfaceTintColor: Colors.transparent,
+      title: _dialogTitle(dialogContext, 'Preferred Mirror'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < options.length; i++) ...[
+              _DialogOption(
+                label: options[i].$1,
+                subtitle: options[i].$3,
+                selected: selected == options[i].$2,
+                onTap: () {
+                  final id = options[i].$2;
+                  controller.setPreferredMirror(id.isEmpty ? null : id);
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              if (i < options.length - 1)
+                Divider(height: 1, color: AppTheme.rule(dialogContext)),
+            ],
+          ],
+        ),
       ),
-    ],
+    ),
   );
 }
 
 void showCreditsDialog(BuildContext context) {
-  AppDialog.show<void>(
-    context,
-    title: 'Licenses & Credits',
-    content: const Text(
-      'Freedium is not affiliated with Medium.\n\n'
-      'All article content belongs to their respective authors.',
-    ),
-    actions: [
-      AppButton(
-        variant: AppButtonVariant.text,
-        onPressed: () => AppDialog.close(context),
-        label: const Text('Close'),
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppTheme.paper(dialogContext),
+      surfaceTintColor: Colors.transparent,
+      title: _dialogTitle(dialogContext, 'Licenses & Credits'),
+      content: Text(
+        'Freedium is not affiliated with Medium.\n\n'
+        'All article content belongs to their respective authors.',
+        style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.muted(dialogContext),
+              height: 1.5,
+            ),
       ),
-    ],
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
   );
+}
+
+Widget _dialogTitle(BuildContext context, String text) => Text(
+      text,
+      style: GoogleFonts.sourceSerif4(
+        fontSize: 21,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.ink(context),
+      ),
+    );
+
+class _DialogOption extends StatelessWidget {
+  const _DialogOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = AppTheme.ink(context);
+    final muted = AppTheme.muted(context);
+
+    return InkResponse(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: ink,
+                        ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: muted,
+                          ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(LucideIcons.check, size: 18, color: AppTheme.accent(context)),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -17,21 +17,21 @@ class _SpySupportController extends SupportController {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late _SpySupportController controller;
+  late _SpySupportController spy;
 
   setUp(() {
     registerServices();
-    controller = _SpySupportController();
+    spy = _SpySupportController();
   });
 
   Future<void> openDialog(WidgetTester tester) async {
     await tester.pumpWidget(
       wrapTestApp(
+        overrides: [supportControllerProvider.overrideWithValue(spy)],
         child: Scaffold(
           body: Builder(
             builder: (context) => TextButton(
-              onPressed: () =>
-                  showSupportDialog(context, controller: controller),
+              onPressed: () => showSupportDialog(context),
               child: const Text('open'),
             ),
           ),
@@ -59,7 +59,7 @@ void main() {
       await tester.tap(find.text('Buy me a coffee'));
       await tester.pumpAndSettle();
 
-      expect(controller.coffeeCalls, 1);
+      expect(spy.coffeeCalls, 1);
       expect(find.text('Buy me a coffee'), findsNothing);
     });
 
@@ -69,7 +69,7 @@ void main() {
       await tester.tap(find.text('Maybe later'));
       await tester.pumpAndSettle();
 
-      expect(controller.coffeeCalls, 0);
+      expect(spy.coffeeCalls, 0);
       expect(find.text('Buy me a coffee'), findsNothing);
     });
   });

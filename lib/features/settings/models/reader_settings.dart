@@ -69,4 +69,14 @@ class ReaderSettings {
       fontSize: fontSize ?? this.fontSize,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is ReaderSettings &&
+      other.themeMode == themeMode &&
+      other.fontFamily == fontFamily &&
+      other.fontSize == fontSize;
+
+  @override
+  int get hashCode => Object.hash(themeMode, fontFamily, fontSize);
 }

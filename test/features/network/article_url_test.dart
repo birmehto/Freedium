@@ -130,6 +130,7 @@ void main() {
         reason: 'a bare host is promoted to https before it is read',
       );
       expect(ArticleUrl.isMedium('https://blog.medium.co.uk/a-post'), isTrue);
+      expect(ArticleUrl.isMedium('https://medium.com./a-post'), isTrue);
     });
 
     test('refuses other hosts, lookalikes and unusable input', () {
@@ -211,6 +212,74 @@ void main() {
         ArticleUrl.normalize('medium.com/@user/a-post'),
         'https://medium.com/@user/a-post',
       );
+    });
+
+    test('lowercases the scheme and host but preserves the path', () {
+      expect(
+        ArticleUrl.normalize('HTTPS://Medium.COM/Story/CaseSensitive'),
+        'https://medium.com/Story/CaseSensitive',
+      );
+    });
+
+    test('removes a default port and a trailing root dot', () {
+      expect(
+        ArticleUrl.normalize('https://medium.com:443/@user/a'),
+        'https://medium.com/@user/a',
+      );
+      expect(
+        ArticleUrl.normalize('http://medium.com:80/@user/a'),
+        'http://medium.com/@user/a',
+      );
+      expect(
+        ArticleUrl.normalize('https://medium.com./@user/a'),
+        'https://medium.com/@user/a',
+      );
+    });
+
+    test('refuses a port the platform cannot use', () {
+      expect(ArticleUrl.normalize('https://medium.com:0/x'), isNull);
+      expect(ArticleUrl.normalize('https://medium.com:65536/x'), isNull);
+      expect(ArticleUrl.normalize('https://medium.com:99999/x'), isNull);
+      expect(
+        ArticleUrl.normalize('https://medium.com:65535/x'),
+        'https://medium.com:65535/x',
+      );
+    });
+
+    test('refuses control characters', () {
+      expect(ArticleUrl.normalize('https://medium.com/a\nb'), isNull);
+      expect(ArticleUrl.normalize('https://medium.com/a\tb'), isNull);
+    });
+
+    test('refuses an unreasonably long URL', () {
+      expect(
+        ArticleUrl.normalize('https://medium.com/${'a' * 5000}'),
+        isNull,
+      );
+    });
+
+    test('keeps query and fragment in the normalized form', () {
+      expect(
+        ArticleUrl.normalize('https://medium.com/a?b=1#part'),
+        'https://medium.com/a?b=1#part',
+      );
+    });
+  });
+
+  group('ArticleUrl.canonicalize edge cases', () {
+    test('a default port or trailing root dot does not split an article', () {
+      expect(
+        ArticleUrl.canonicalize('https://medium.com:443/@user/a'),
+        ArticleUrl.canonicalize('https://medium.com/@user/a'),
+      );
+      expect(
+        ArticleUrl.canonicalize('https://medium.com./@user/a'),
+        ArticleUrl.canonicalize('https://medium.com/@user/a'),
+      );
+    });
+
+    test('an out-of-range port is not canonicalized', () {
+      expect(ArticleUrl.canonicalize('https://medium.com:99999/x'), '');
     });
   });
 

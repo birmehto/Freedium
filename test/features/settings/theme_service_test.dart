@@ -1,69 +1,85 @@
-import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freedium/core/services/theme_service.dart';
+import 'package:freedium/core/controllers/app_controllers.dart';
+import 'package:freedium/core/services/storage_service.dart';
 import 'package:freedium/core/storage/preferences_store.dart';
-import 'package:get/get.dart';
+import 'package:freedium/core/theme/app_theme.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
 
 void main() {
-  setUp(Get.reset);
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late ProviderContainer container;
+  late StorageService storage;
+
+  setUp(() {
+    final services = registerServices();
+    container = services.container;
+    storage = services.storage;
+  });
+
+  tearDown(() => container.dispose());
+
+  ThemeMode resolvedThemeMode() => AppTheme.themeMode(
+    container.read(themeControllerProvider).preferredMode,
+  );
 
   test('starts in the stored theme mode', () {
-    final storage = createTestStorage();
-    final theme = ThemeService(storage.preferences);
-    theme.onInit();
+    final theme = container.read(themeControllerProvider);
 
     expect(theme.preferredMode, PreferencesStore.modeSystem);
-    expect(theme.themeMode, ThemeMode.system);
+    expect(resolvedThemeMode(), ThemeMode.system);
   });
 
   test('reads a persisted dark preference', () {
-    final storage = createTestStorage(
+    final services = registerServices(
       seed: {PreferencesStore.themeModeKey: PreferencesStore.modeDark},
     );
-    final theme = ThemeService(storage.preferences);
-    theme.onInit();
+    addTearDown(services.container.dispose);
 
-    expect(theme.isDarkMode.value, isTrue);
-    expect(theme.themeMode, ThemeMode.dark);
+    final theme = services.container.read(themeControllerProvider);
+    expect(theme.isDarkMode, isTrue);
+    expect(
+      AppTheme.themeMode(theme.preferredMode),
+      ThemeMode.dark,
+    );
   });
 
   test('migrates a pre-1.0 boolean theme value', () {
-    final storage = createTestStorage(
+    final services = registerServices(
       seed: {PreferencesStore.themeModeKey: true},
     );
-    final theme = ThemeService(storage.preferences);
-    theme.onInit();
+    addTearDown(services.container.dispose);
 
-    expect(theme.preferredMode, PreferencesStore.modeDark);
+    expect(
+      services.container.read(themeControllerProvider).preferredMode,
+      PreferencesStore.modeDark,
+    );
   });
 
   test('toggleTheme flips the mode and persists it', () {
-    final storage = createTestStorage();
-    final theme = ThemeService(storage.preferences);
-    theme.onInit();
+    final theme = container.read(themeControllerProvider.notifier);
 
     theme.toggleTheme(true);
-    expect(theme.isDarkMode.value, isTrue);
-    expect(theme.themeMode, ThemeMode.dark);
+    expect(container.read(themeControllerProvider).isDarkMode, isTrue);
+    expect(resolvedThemeMode(), ThemeMode.dark);
     expect(storage.preferences.themeMode, PreferencesStore.modeDark);
 
     theme.toggleDarkMode();
-    expect(theme.isDarkMode.value, isFalse);
-    expect(theme.themeMode, ThemeMode.light);
+    expect(container.read(themeControllerProvider).isDarkMode, isFalse);
+    expect(resolvedThemeMode(), ThemeMode.light);
     expect(storage.preferences.themeMode, PreferencesStore.modeLight);
   });
 
   test('setThemeMode keeps light and dark explicit', () {
-    final storage = createTestStorage();
-    final theme = ThemeService(storage.preferences);
-    theme.onInit();
+    final theme = container.read(themeControllerProvider.notifier);
 
     theme.setThemeMode(PreferencesStore.modeSystem);
-    expect(theme.themeMode, ThemeMode.system);
+    expect(resolvedThemeMode(), ThemeMode.system);
 
     theme.setThemeMode(PreferencesStore.modeLight);
-    expect(theme.themeMode, ThemeMode.light);
+    expect(resolvedThemeMode(), ThemeMode.light);
   });
 }

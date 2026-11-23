@@ -1,65 +1,124 @@
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/animation/app_animator.dart';
 import '../../../core/network/article_url.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_textform.dart';
+import '../../../core/theme/app_theme.dart';
 import '../controllers/home_controller.dart';
 
-class HomeUnlockForm extends GetView<HomeController> {
+/// A wide URL field with a single bottom rule and a solid ink button.
+class HomeUnlockForm extends ConsumerWidget {
   const HomeUnlockForm({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(homeControllerProvider);
+    final controller = ref.read(homeControllerProvider.notifier);
+    final ink = AppTheme.ink(context);
+    final muted = AppTheme.muted(context);
+
     return Form(
       key: controller.formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Obx(() {
-            final failure = controller.errorMessage.value;
-
-            return AppTextForm(
-              controller: controller.urlController,
-              focusNode: controller.urlFocusNode,
-              label: 'Paste Medium URL here...',
-              validator: ArticleUrl.validationError,
-              errorText: failure.isEmpty ? null : failure,
-              onChanged: controller.onUrlChanged,
-              onSubmitted: (_) => controller.submit(),
-              trailing: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: controller.urlController,
-                builder: (context, value, _) {
-                  final isEmpty = value.text.isEmpty;
-
-                  return M3EIconButton(
-                    variant: M3EIconButtonVariant.standard,
-                    size: M3EIconButtonSize.xs,
-                    tooltip: isEmpty ? 'Paste from clipboard' : 'Clear',
-                    onPressed: isEmpty
-                        ? controller.pasteFromClipboard
-                        : controller.clearUrl,
-                    icon: Icon(
-                      isEmpty
-                          ? M3EIcons.content_paste_rounded
-                          : M3EIcons.clear_rounded,
+          Text(
+            'ARTICLE URL',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: muted,
+                  letterSpacing: 1.6,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: ink)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: controller.urlController,
+                    focusNode: controller.urlFocusNode,
+                    validator: ArticleUrl.validationError,
+                    onChanged: (_) => controller.onUrlChanged(''),
+                    onFieldSubmitted: (_) => controller.submit(),
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: ink,
+                        ),
+                    decoration: InputDecoration(
+                      hintText: 'https://medium.com/…',
+                      hintStyle: Theme.of(context).textTheme.bodyLarge
+                          ?.copyWith(color: muted),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                  );
-                },
+                  ),
+                ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller.urlController,
+                  builder: (context, value, _) {
+                    final empty = value.text.isEmpty;
+                    return IconButton(
+                      icon: AppAnimator.switcher(
+                        key: empty ? 'paste' : 'clear',
+                        child: Icon(
+                          empty ? LucideIcons.clipboardPaste : LucideIcons.x,
+                          size: 18,
+                          color: muted,
+                        ),
+                      ),
+                      tooltip: empty ? 'Paste from clipboard' : 'Clear',
+                      onPressed: empty
+                          ? controller.pasteFromClipboard
+                          : controller.clearUrl,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          if (state.errorMessage.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            AppAnimator.entrance(
+              child: Text(
+                state.errorMessage,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
               ),
-            );
-          }),
-          const SizedBox(height: AppSpacing.xl),
-          Obx(
-            () => AppButton(
-              label: const Text('Unlock Article'),
-              size: M3EButtonSize.md,
-              icon: const Icon(M3EIcons.bolt_rounded),
-              isFullWidth: true,
-              isLoading: controller.isLoading.value,
-              onPressed: controller.submit,
+            ),
+          ],
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 50,
+            child: ElevatedButton(
+              onPressed: state.isLoading ? null : controller.submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ink,
+                foregroundColor: AppTheme.paper(context),
+                elevation: 0,
+                shape: const RoundedRectangleBorder(),
+              ),
+              child: state.isLoading
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.paper(context),
+                      ),
+                    )
+                  : const Text(
+                      'Unlock story',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
             ),
           ),
         ],

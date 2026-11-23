@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show OrderingTerm, Value;
-import 'package:get/get.dart' hide Value;
+import 'package:flutter/foundation.dart' show ValueNotifier;
 
 import '../../features/article/models/article_meta.dart';
 import '../utils/app_log.dart';
@@ -42,8 +42,8 @@ class ArticleCacheStore {
 
   final AppDatabase _database;
 
-  final cachedCount = 0.obs;
-  final cachedBytes = 0.obs;
+  final cachedCount = ValueNotifier<int>(0);
+  final cachedBytes = ValueNotifier<int>(0);
 
   /// The saved copy of [url], or `null` when nothing is cached for it.
   Future<CachedArticle?> read(String url) async {

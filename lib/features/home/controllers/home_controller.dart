@@ -1,162 +1,154 @@
-import 'package:flutter/widgets.dart';
-import 'package:get/get.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart'
+    show FocusNode, FormState, GlobalKey, TextEditingController, WidgetsBinding;
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/navigation/app_navigation.dart';
 import '../../../core/network/article_url.dart';
-import '../../../core/routes/app_routes.dart';
-import '../../../core/services/clipboard_service.dart';
-import '../../../core/services/share_intent_service.dart';
+import '../../../core/providers/service_providers.dart';
 import '../../../core/utils/app_log.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../article/models/article_request.dart';
+import '../../article/views/article_page.dart';
 
-class HomeController extends GetxController {
-  HomeController(this._clipboardService, this._shareIntentService);
+/// The URL field's observable state. Text editing itself stays in the
+/// [TextEditingController] so the platform keeps its native behavior.
+class HomeState {
+  const HomeState({
+    this.urlText = '',
+    this.errorMessage = '',
+    this.isLoading = false,
+  });
 
-  final ClipboardService _clipboardService;
-  final ShareIntentService _shareIntentService;
+  final String urlText;
+  final String errorMessage;
+  final bool isLoading;
 
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  HomeState copyWith({String? urlText, String? errorMessage, bool? isLoading}) {
+    return HomeState(
+      urlText: urlText ?? this.urlText,
+      errorMessage: errorMessage ?? this.errorMessage,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
 
-  final TextEditingController urlController = TextEditingController();
-  final FocusNode urlFocusNode = FocusNode();
+final homeControllerProvider = NotifierProvider<HomeController, HomeState>(
+  HomeController.new,
+);
 
-  /// Reactive view of [urlController] text, for enabling the submit button.
-  final RxString urlText = ''.obs;
-
-  /// Non-empty when an action failed; the field validator handles bad input.
-  final RxString errorMessage = ''.obs;
-
-  final RxBool isLoading = false.obs;
-
-  late final Worker _shareWorker;
+class HomeController extends Notifier<HomeState> {
+  final formKey = GlobalKey<FormState>();
+  final urlController = TextEditingController();
+  final urlFocusNode = FocusNode();
 
   @override
-  void onInit() {
-    super.onInit();
+  HomeState build() {
+    final share = ref.watch(shareIntentServiceProvider);
+    final listener = share.incomingUrl;
 
     urlController.addListener(_onUrlTextChanged);
+    listener.addListener(_onShareChanged);
+    ref.onDispose(() {
+      listener.removeListener(_onShareChanged);
+      urlController.removeListener(_onUrlTextChanged);
+      urlController.dispose();
+      urlFocusNode.dispose();
+    });
 
-    _shareWorker = ever(_shareIntentService.incomingUrl, _openSharedUrl);
-
-    // A share received before Home existed is still waiting in the service.
-    final pending = _shareIntentService.incomingUrl.value;
-
+    final pending = listener.value;
     if (pending != null) {
-      _openSharedUrl(pending);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _openSharedUrl(pending),
+      );
     }
-  }
 
-  @override
-  void onClose() {
-    _shareWorker.dispose();
-    urlController.removeListener(_onUrlTextChanged);
-    urlController.dispose();
-    urlFocusNode.dispose();
-
-    super.onClose();
+    return const HomeState();
   }
 
   bool get canOpenArticle {
-    final url = urlText.value.trim();
-
+    final url = state.urlText.trim();
     return url.isNotEmpty &&
         ArticleUrl.isValid(url) &&
         ArticleUrl.isMedium(url) &&
-        errorMessage.isEmpty &&
-        !isLoading.value;
+        state.errorMessage.isEmpty &&
+        !state.isLoading;
   }
 
   void _onUrlTextChanged() {
-    urlText.value = urlController.text;
+    state = state.copyWith(urlText: urlController.text);
   }
 
-  void onUrlChanged(String value) {
-    errorMessage.value = '';
+  void _onShareChanged() {
+    final url = ref.read(shareIntentServiceProvider).incomingUrl.value;
+    if (url != null) _openSharedUrl(url);
+  }
+
+  void onUrlChanged(String _) {
+    state = state.copyWith(errorMessage: '');
   }
 
   void submit() {
     urlFocusNode.unfocus();
-
-    final isValid = formKey.currentState?.validate() ?? false;
-
-    if (!isValid) return;
-
-    openArticle();
+    if (formKey.currentState?.validate() ?? false) openArticle();
   }
 
   Future<void> pasteFromClipboard() async {
     try {
-      final clipboardText = await _clipboardService.getFromClipboard();
-
-      if (clipboardText == null || clipboardText.isEmpty) {
-        _showMessage('Clipboard is empty');
+      final text = await ref.read(clipboardServiceProvider).getFromClipboard();
+      if (text == null || text.isEmpty) {
+        AppSnackbar.message('Clipboard is empty');
         return;
       }
 
-      urlController.text = clipboardText.trim();
-      onUrlChanged(clipboardText);
-      _showMessage('URL pasted from clipboard');
+      urlController.text = text.trim();
+      onUrlChanged(text);
+      AppSnackbar.message('URL pasted from clipboard');
     } catch (error) {
       final exception = AppException.from(error, context: 'pasteFromClipboard');
-
       appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
-
-      _showMessage('Failed to paste from clipboard: ${exception.userMessage}');
+      AppSnackbar.message(
+        'Failed to paste from clipboard: ${exception.userMessage}',
+      );
     }
   }
 
   void clearUrl() {
     urlController.clear();
-    errorMessage.value = '';
+    state = const HomeState();
   }
 
   Future<void> openArticle() async {
     if (!canOpenArticle) return;
 
     final request = ArticleRequest.parse(urlController.text);
-
     if (!request.isValid) {
-      errorMessage.value = AppException.invalidUrl().userMessage;
+      state = state.copyWith(
+        errorMessage: AppException.invalidUrl().userMessage,
+      );
       return;
     }
 
-    isLoading.value = true;
-
+    state = state.copyWith(isLoading: true);
     try {
-      await Get.toNamed(AppRoutes.article, arguments: request);
-      // Clear the form after successful navigation
-      if (Get.context?.mounted ?? false) {
-        urlController.clear();
-        errorMessage.value = '';
-      }
+      await pushPage(ArticlePage(request: request));
+      urlController.clear();
+      state = const HomeState();
     } catch (error, stackTrace) {
       final exception = AppException.from(error, context: 'openArticle');
-
       appLog('$exception\n$stackTrace', name: 'Home', level: LogLevel.error);
-
-      errorMessage.value = exception.userMessage;
+      state = state.copyWith(errorMessage: exception.userMessage);
     } finally {
-      isLoading.value = false;
+      state = state.copyWith(isLoading: false);
     }
   }
 
-  void _openSharedUrl(String? url) {
-    if (url == null) return;
-
-    // A share is an explicit request to read this article, so the field is
-    // filled and opened directly. A failure left over from earlier input would
-    // otherwise block the request that is being made right now.
-    errorMessage.value = '';
+  /// A share is an explicit request to read the article: fill the field and open
+  /// it, clearing any error left over from earlier input.
+  void _openSharedUrl(String url) {
+    state = state.copyWith(urlText: url, errorMessage: '');
     urlController.text = url;
-    _shareIntentService.consume();
-
+    ref.read(shareIntentServiceProvider).consume();
     WidgetsBinding.instance.addPostFrameCallback((_) => submit());
-  }
-
-  /// Shows a transient message, if a context is available at that moment.
-  void _showMessage(String message) {
-    AppSnackbar.show(Get.context, message: message);
   }
 }

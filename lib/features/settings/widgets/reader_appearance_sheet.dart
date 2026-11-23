@@ -1,136 +1,269 @@
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/animation/app_animator.dart';
 import '../../../core/constants/reader_theme.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/app_bottom_sheet.dart';
-import '../../../core/widgets/app_choice_chips.dart';
-import '../../../core/widgets/app_slider_row.dart';
+import '../../../core/controllers/app_controllers.dart';
+import '../../../core/theme/app_theme.dart';
 import '../models/reader_settings.dart';
 import '../models/reader_theme_mode.dart';
 
-/// Opens the reader-appearance editor.
+/// Opens the one appearance editor shared by Settings and the reader.
 ///
-/// One sheet for both Settings and the reader, so the two cannot offer
-/// different options or drift out of sync. The caller supplies the state and how
-/// to change it, because the reader edits its own copy while Settings edits the
-/// stored default.
-void showReaderAppearanceSheet(
-  BuildContext context, {
-  required Rx<ReaderSettings> settings,
-  required ValueChanged<ReaderSettings> onChanged,
-}) {
-  final systemDark = M3ETheme.brightnessOf(context) == Brightness.dark;
+/// The sheet watches and writes [readerSettingsProvider] itself, so callers do
+/// not have to thread state or callbacks through the route.
+Future<T?> showReaderAppearanceSheet<T>(BuildContext context) {
+  final systemDark = Theme.of(context).brightness == Brightness.dark;
 
-  M3EBottomSheet.show(
-    context,
-    // The editor is content-sized (preview, chips, slider, reset): opening
-    // expanded keeps the whole body on screen, where the default collapsed
-    // detent would show only half and leave the rest hanging below the fold.
-    initialValue: M3EBottomSheetValue.expanded,
-    builder: (context) => AppBottomSheet(
-      title: 'Reader Appearance',
-      child: Obx(() {
-        final current = settings.value;
-
-        return _ReaderAppearanceSheet(
-          settings: current,
-          systemDark: systemDark,
-          onChanged: onChanged,
-        );
-      }),
+  return showModalBottomSheet<T>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: AppTheme.paper(context),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
+    builder: (_) => _ReaderAppearanceSheet(systemDark: systemDark),
   );
 }
 
-/// The appearance editor's body: a live preview of the current settings,
-/// followed by the theme, font-family and font-size controls.
-class _ReaderAppearanceSheet extends StatelessWidget {
-  const _ReaderAppearanceSheet({
-    required this.settings,
-    required this.systemDark,
-    required this.onChanged,
-  });
+class _ReaderAppearanceSheet extends ConsumerWidget {
+  const _ReaderAppearanceSheet({required this.systemDark});
 
-  final ReaderSettings settings;
   final bool systemDark;
-  final ValueChanged<ReaderSettings> onChanged;
 
-  bool get _isDefault =>
-      settings.themeMode == ReaderThemeMode.system &&
-      settings.fontFamily == ReaderSettings.kDefaultFontFamily &&
-      settings.fontSize == ReaderSettings.kDefaultFontSize;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(readerSettingsProvider);
+    final controller = ref.read(readerSettingsProvider.notifier);
+    final ink = AppTheme.ink(context);
+    final muted = AppTheme.muted(context);
+    final rule = AppTheme.rule(context);
+
+    final isDefault =
+        settings.themeMode == ReaderThemeMode.system &&
+        settings.fontFamily == ReaderSettings.kDefaultFontFamily &&
+        settings.fontSize == ReaderSettings.kDefaultFontSize;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        12,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: SizedBox(
+              width: 36,
+              height: 4,
+              child: ColoredBox(color: rule),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Reader Appearance',
+            style: GoogleFonts.sourceSerif4(
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: ink,
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // A miniature of the reader, repainted from the same palette the
+          // stylesheet uses, so every change is visible before it is applied.
+          AppAnimator.switcher(
+            // Font size is applied live; only theme and family swap the preview.
+            key: Object.hash(settings.themeMode, settings.fontFamily),
+            child: _ReaderPreview(settings: settings, systemDark: systemDark),
+          ),
+
+          const SizedBox(height: 28),
+          _ChoiceGroup(
+            title: 'Theme',
+            children: [
+              for (final mode in ReaderThemeMode.values)
+                _Choice(
+                  label: mode.label,
+                  selected: settings.themeMode == mode,
+                  leading: _ThemeSwatch(
+                    mode: mode,
+                    systemDark: systemDark,
+                  ),
+                  onTap: () => controller.update(
+                    settings.copyWith(themeMode: mode),
+                  ),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+          _ChoiceGroup(
+            title: 'Font family',
+            children: [
+              for (final family in const [
+                'System',
+                'Georgia',
+                'Inter',
+                'Merriweather',
+              ])
+                _Choice(
+                  label: family,
+                  selected: settings.fontFamily == family,
+                  onTap: () =>
+                      controller.update(settings.copyWith(fontFamily: family)),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'FONT SIZE',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: muted,
+                          letterSpacing: 1.6,
+                        ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${settings.fontSize.toStringAsFixed(0)} px',
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: ink,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'A',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: muted,
+                        ),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: settings.fontSize,
+                      min: ReaderSettings.kMinFontSize,
+                      max: ReaderSettings.kMaxFontSize,
+                      divisions: ReaderSettings.kFontSizeDivisions,
+                      onChanged: (size) => controller.update(
+                        settings.copyWith(fontSize: size),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'A',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: ink,
+                        ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+          Divider(height: 1, color: rule),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: isDefault
+                  ? null
+                  : () => controller.update(const ReaderSettings()),
+              icon: const Icon(LucideIcons.rotateCcw, size: 18),
+              label: const Text('Reset defaults'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChoiceGroup extends StatelessWidget {
+  const _ChoiceGroup({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ReaderPreview(settings: settings, systemDark: systemDark),
-        const SizedBox(height: AppSpacing.xl),
-        AppChoiceChips(
-          title: 'Theme',
-          labels: ReaderThemeMode.values.map((m) => m.label).toList(),
-          selected: settings.themeMode.label,
-          leadingBuilder: (context, label) => _ThemeSwatch(
-            mode: ReaderThemeMode.values.firstWhere((m) => m.label == label),
-            systemDark: systemDark,
-          ),
-          onSelected: (label) => onChanged(
-            settings.copyWith(
-              themeMode: ReaderThemeMode.values.firstWhere(
-                (m) => m.label == label,
+        Text(
+          title.toUpperCase(),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: AppTheme.muted(context),
+                letterSpacing: 1.6,
               ),
-            ),
-          ),
         ),
-        AppChoiceChips(
-          title: 'Font family',
-          labels: const ['System', 'Georgia', 'Inter', 'Merriweather'],
-          selected: settings.fontFamily,
-          onSelected: (label) =>
-              onChanged(settings.copyWith(fontFamily: label)),
-        ),
-        AppSliderRow(
-          title: 'Font size',
-          value: settings.fontSize,
-          min: ReaderSettings.kMinFontSize,
-          max: ReaderSettings.kMaxFontSize,
-          divisions: ReaderSettings.kFontSizeDivisions,
-          label: '${settings.fontSize.toStringAsFixed(0)} px',
-          leading: Text('A', style: theme.textTheme.bodySmall),
-          trailing: Text('A', style: theme.textTheme.headlineSmall),
-          onChanged: (size) => onChanged(settings.copyWith(fontSize: size)),
-        ),
-
-        const SizedBox(height: AppSpacing.lg),
-        const M3EDivider(),
-        const SizedBox(height: AppSpacing.sm),
-        Align(
-          alignment: Alignment.centerRight,
-          child: M3EButton.icon(
-            // Nothing to restore until the user has moved away from defaults,
-            // and a disabled button reads better than a no-op tap.
-            style: M3EButtonStyle.text,
-            onPressed: _isDefault
-                ? null
-                : () => onChanged(const ReaderSettings()),
-            icon: const Icon(M3EIcons.restart_alt_rounded, size: 18),
-            label: const Text('Reset defaults'),
-          ),
-        ),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: children),
       ],
     );
   }
 }
 
-/// A miniature of the reader, painted with the exact palette, family and size
-/// the current settings resolve to, so every change is visible before it is
-/// committed anywhere.
+class _Choice extends StatelessWidget {
+  const _Choice({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.leading,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = AppTheme.ink(context);
+    final muted = AppTheme.muted(context);
+    final rule = AppTheme.rule(context);
+
+    return InkResponse(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          border: Border.all(color: selected ? ink : rule),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (leading != null) ...[leading!, const SizedBox(width: 8)],
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: selected ? ink : muted,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A live miniature of the reader, painted from exactly the colors the
+/// stylesheet applies.
 class _ReaderPreview extends StatelessWidget {
   const _ReaderPreview({required this.settings, required this.systemDark});
 
@@ -139,10 +272,13 @@ class _ReaderPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = ReaderTheme.previewColors(settings, systemDark: systemDark);
-    final text = _parseHex(preview.text);
-    final secondary = _parseHex(preview.secondaryText);
-    final link = _parseHex(preview.link);
+    final preview = ReaderTheme.previewColors(
+      settings,
+      systemDark: systemDark,
+    );
+    final text = ReaderTheme.hexToColor(preview.text);
+    final secondary = ReaderTheme.hexToColor(preview.secondaryText);
+    final link = ReaderTheme.hexToColor(preview.link);
     final fontFamily = settings.isSystemFont ? null : settings.fontFamily;
     final size = settings.fontSize;
 
@@ -150,10 +286,10 @@ class _ReaderPreview extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: _parseHex(preview.background),
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: ReaderTheme.hexToColor(preview.background),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: text.withValues(alpha: 0.12)),
         ),
         child: Column(
@@ -175,12 +311,12 @@ class _ReaderPreview extends StatelessWidget {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
+                    horizontal: 10,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
                     color: text.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     _resolvedModeLabel,
@@ -193,7 +329,7 @@ class _ReaderPreview extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: 16),
             Text(
               'The shape of readable text',
               maxLines: 2,
@@ -206,9 +342,9 @@ class _ReaderPreview extends StatelessWidget {
                 height: 1.2,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: 8),
             Text(
-              'Good reading keeps its rhythm in any light \u2014 '
+              'Good reading keeps its rhythm in any light — '
               'a comfortable line, the same words, a calmer surface.',
               style: TextStyle(
                 color: secondary,
@@ -217,7 +353,7 @@ class _ReaderPreview extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Text(
@@ -229,8 +365,8 @@ class _ReaderPreview extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xxs),
-                Icon(M3EIcons.arrow_forward_rounded, size: 16, color: link),
+                const SizedBox(width: 4),
+                Icon(LucideIcons.arrowRight, size: 16, color: link),
               ],
             ),
           ],
@@ -239,18 +375,16 @@ class _ReaderPreview extends StatelessWidget {
     );
   }
 
-  /// The palette that is actually in use, resolving `System` against the
-  /// platform so the badge names the colors it is showing.
   String get _resolvedModeLabel => switch (settings.themeMode) {
-    ReaderThemeMode.system => systemDark ? 'Dark' : 'Light',
-    ReaderThemeMode.light => 'Light',
-    ReaderThemeMode.dark => 'Dark',
-    ReaderThemeMode.sepia => 'Sepia',
-    ReaderThemeMode.oled => 'OLED',
-  };
+        ReaderThemeMode.system => systemDark ? 'Dark' : 'Light',
+        ReaderThemeMode.light => 'Light',
+        ReaderThemeMode.dark => 'Dark',
+        ReaderThemeMode.sepia => 'Sepia',
+        ReaderThemeMode.oled => 'OLED',
+      };
 }
 
-/// A swatch of the palette a theme chip selects, shown as its leading.
+/// A swatch of the palette a theme chip selects.
 class _ThemeSwatch extends StatelessWidget {
   const _ThemeSwatch({required this.mode, required this.systemDark});
 
@@ -263,23 +397,17 @@ class _ThemeSwatch extends StatelessWidget {
       ReaderSettings(themeMode: mode),
       systemDark: systemDark,
     );
-    final background = _parseHex(preview.background);
-    final text = _parseHex(preview.text);
+    final background = ReaderTheme.hexToColor(preview.background);
+    final text = ReaderTheme.hexToColor(preview.text);
 
     return Container(
       width: 14,
       height: 14,
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: text.withValues(alpha: 0.28)),
       ),
     );
   }
-}
-
-/// Parses the reader palette's `#rrggbb` strings into a [Color].
-Color _parseHex(String hex) {
-  final value = int.parse(hex.replaceFirst('#', ''), radix: 16);
-  return Color(0xFF000000 | value);
 }

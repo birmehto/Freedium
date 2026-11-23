@@ -1,9 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freedium/features/settings/controllers/settings_controller.dart';
 import 'package:freedium/features/settings/models/reader_settings.dart';
 import 'package:freedium/features/settings/views/settings_page.dart';
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
@@ -11,9 +8,10 @@ import '../../helpers/test_env.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late TestServices services;
+
   setUp(() {
-    final services = registerServices();
-    Get.put(SettingsController(services.theme, services.storage));
+    services = registerServices();
   });
 
   testWidgets('renders without layout errors', (tester) async {
@@ -41,11 +39,10 @@ void main() {
   testWidgets('shows the stored font size in the reader appearance sheet', (
     tester,
   ) async {
-    final services = registerServices();
-    services.storage.preferences.readerSettings = const ReaderSettings(
-      fontSize: 21,
+    seedReaderSettings(
+      services.storage,
+      const ReaderSettings(fontSize: 21),
     );
-    Get.put(SettingsController(services.theme, services.storage));
 
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
@@ -82,21 +79,20 @@ void main() {
     await tester.tap(find.text('Reader Appearance'));
     await tester.pumpAndSettle();
 
-    final reset = tester.widget<M3EButton>(
+    final reset = tester.widget<TextButton>(
       find.ancestor(
         of: find.text('Reset defaults'),
-        matching: find.byType(M3EButton),
+        matching: find.byType(TextButton),
       ),
     );
     expect(reset.onPressed, isNull);
   });
 
   testWidgets('reset returns the appearance to defaults', (tester) async {
-    final services = registerServices();
-    services.storage.preferences.readerSettings = const ReaderSettings(
-      fontSize: 21,
+    seedReaderSettings(
+      services.storage,
+      const ReaderSettings(fontSize: 21),
     );
-    Get.put(SettingsController(services.theme, services.storage));
 
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();

@@ -1,154 +1,250 @@
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/animation/app_animator.dart';
+import '../../../core/controllers/app_controllers.dart';
 import '../../../core/controllers/app_shell_controller.dart';
-import '../../../core/network/article_url.dart';
-import '../../../core/routes/app_routes.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/app_app_bar.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_empty.dart';
-import '../../../core/widgets/app_textform.dart';
+import '../../../core/navigation/app_navigation.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../article/models/article_request.dart';
+import '../../article/views/article_page.dart';
 import '../controllers/favorites_controller.dart';
 import '../models/favorite_article.dart';
 import '../widgets/delete_favorite_dialog.dart';
 import '../widgets/favorite_tile.dart';
 
-class FavoritesPage extends GetView<FavoritesController> {
+/// The saved-story shelf: a masthead, a hairline search field and a list of
+/// titles separated by rules rather than cards.
+class FavoritesPage extends ConsumerWidget {
   const FavoritesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // The confirm dialog and its buttons close through the page's own context:
-    // a tile's context dies with the row once a full swipe removes it, while
-    // the dialog is still asking, and a defunct context cannot navigate.
-    final pageContext = context;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final library = ref.watch(libraryControllerProvider);
+    final favoritesState = ref.watch(favoritesControllerProvider);
+    final controller = ref.read(favoritesControllerProvider.notifier);
+    final list = controller.filteredFavorites;
+    final query = controller.trimmedQuery;
+    final isSearching = query.isNotEmpty;
+
+    final ink = AppTheme.ink(context);
+    final muted = AppTheme.muted(context);
+    final rule = AppTheme.rule(context);
 
     return Scaffold(
-      appBar: const AppAppBar(title: Text('Favorites')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: AppTextForm(
-              showClearButton: true,
-              label: 'Search your library...',
-              onChanged: controller.onSearchChanged,
-              leading: const Icon(M3EIcons.search_rounded),
-            ),
-          ),
-
-          Expanded(
-            child: Obx(() {
-              final list = controller.filteredFavorites;
-              final isSearching = controller.trimmedQuery.isNotEmpty;
-
-              if (list.isEmpty) {
-                if (isSearching) {
-                  return AppEmpty(
-                    icon: M3EIcons.search_off_rounded,
-                    title: 'No results for\n"${controller.trimmedQuery}"',
-                    subtitle: 'Try a different keyword',
-                  );
-                }
-                return AppEmpty(
-                  icon: M3EIcons.favorite_border_rounded,
-                  title: 'No favorites yet',
-                  subtitle:
-                      'Open any Medium link from Home, then tap the heart on the '
-                      'article to save it here for offline reading.',
-                  action: AppButton(
-                    onPressed: () => Get.find<AppShellController>().selectTab(
-                      AppShellTab.home,
-                    ),
-                    label: const Text('Go to Home'),
+      backgroundColor: AppTheme.paper(context),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 40, 24, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SAVED STORIES',
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: muted, letterSpacing: 1.6),
                   ),
-                );
-              }
-
-              return M3EList.scrollable(
-                // Rebuilt when a swipe is cancelled, so the row that flew out
-                // comes back instead of leaving a hole in the list.
-                key: ValueKey(controller.dismissEpoch.value),
-                itemCount: list.length,
-                listPadding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  0,
-                  AppSpacing.lg,
-                  AppSpacing.lg,
-                ),
-                dismissStyle: const M3EDismissibleListStyle(gap: 8),
-                onTap: (index) async {
-                  final item = list[index];
-                  final url = ArticleUrl.canonicalize(item.url);
-
-                  await Get.toNamed(
-                    AppRoutes.article,
-                    arguments: {'url': url, 'originalUrl': url},
-                  );
-                },
-                itemBuilder: (context, index) {
-                  if (index < 0 || index >= list.length) {
-                    return const SizedBox.shrink();
-                  }
-                  // Swipe lives on the item: the list reads it off the row it
-                  // builds, so it has to be handed over here.
-                  return FavoriteTile(
-                    item: list[index],
-                    swipe: M3EListItemSwipe(
-                      onDismiss: (_) => _remove(pageContext, list[index]),
-                      trailing: [
-                        M3EListSwipeAction(
-                          icon: const Icon(M3EIcons.delete_rounded),
-                          isPrimary: true,
-                          backgroundColor: theme.colorScheme.errorContainer,
-                          foregroundColor: theme.colorScheme.onErrorContainer,
-                          onPressed: () => _remove(pageContext, list[index]),
-                        ),
-                      ],
+                  const SizedBox(height: 10),
+                  Text(
+                    'Your library',
+                    style: GoogleFonts.sourceSerif4(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w700,
+                      color: ink,
+                      letterSpacing: -1.2,
                     ),
-                  );
-                },
-              );
-            }),
-          ),
-        ],
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: ink)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.search, size: 18, color: muted),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        onChanged: controller.onSearchChanged,
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(color: ink),
+                        decoration: InputDecoration(
+                          hintText: 'Search your library',
+                          hintStyle: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: muted),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: list.isEmpty
+                  ? AppAnimator.entrance(
+                      child: _EmptyState(
+                      isSearching: isSearching,
+                      query: query,
+                      isLibraryEmpty: library.isEmpty,
+                        onStart: () => ref
+                            .read(appShellTabProvider.notifier)
+                            .selectTab(AppShellTab.home),
+                      ),
+                    )
+                  : ListView.separated(
+                      // Bumped when a swipe is cancelled so every row is rebuilt
+                      // in place instead of leaving a hole in the list.
+                      key: ValueKey(favoritesState.dismissEpoch),
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                      itemCount: list.length,
+                      separatorBuilder: (_, _) =>
+                          Divider(height: 1, color: rule),
+                      itemBuilder: (context, index) {
+                        final item = list[index];
+                        return Dismissible(
+                          key: ValueKey(item.url),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            color: const Color(0xFFB3261E),
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            child: const Icon(
+                              LucideIcons.trash2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          confirmDismiss: (_) =>
+                              _confirmRemove(context, ref, item),
+                          onDismissed: (_) {},
+                          child: FavoriteTile(
+                            item: item,
+                            onTap: () => pushPage(
+                              ArticlePage(
+                                request: ArticleRequest(url: item.url),
+                              ),
+                            ),
+                            onDelete: () =>
+                                unawaited(_confirmRemove(context, ref, item)),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Confirms, then removes, [article] from the library.
+  /// Confirms, then removes, [item] from the library via the dialog.
   ///
-  /// Reports back whether the article really left, so a cancelled swipe can
-  /// put its row back instead of silently losing it.
-  Future<bool> _remove(BuildContext context, FavoriteArticle article) async {
-    // A full swipe reports both the auto-run of the primary delete action and
-    // the list's own onDismiss as separate calls; one confirm dialog is enough.
-    if (!controller.startRemovalConfirm(article.url)) return false;
+  /// A full swipe reports both the auto-run delete action and the list's own
+  /// dismiss; the controller's guard makes sure only one dialog is pushed.
+  Future<bool> _confirmRemove(
+    BuildContext context,
+    WidgetRef ref,
+    FavoriteArticle item,
+  ) async {
+    final controller = ref.read(favoritesControllerProvider.notifier);
+    if (!controller.startRemovalConfirm(item.url)) return false;
 
     bool confirmed;
     try {
-      confirmed = await showDeleteFavoriteDialog(context, article);
+      confirmed = await showDeleteFavoriteDialog(
+        context,
+        url: item.url,
+        title: item.title,
+      );
     } finally {
-      controller.endRemovalConfirm(article.url);
+      controller.endRemovalConfirm(item.url);
     }
 
     if (!confirmed) {
-      // The tile that started this is gone by now (its swipe is over), so the
-      // row can only come back by rebuilding the list from the store.
-      controller.dismissEpoch.value++;
-      return false;
+      // The swiped row is still mounted; rebuild the list so it snaps back.
+      controller.bumpDismissEpoch();
     }
+    return confirmed;
+  }
+}
 
-    await controller.removeFavorite(article.url);
-    return true;
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.isSearching,
+    required this.query,
+    required this.isLibraryEmpty,
+    required this.onStart,
+  });
+
+  final bool isSearching;
+  final String query;
+  final bool isLibraryEmpty;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = AppTheme.ink(context);
+    final muted = AppTheme.muted(context);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 28, height: 2, child: ColoredBox(color: ink)),
+              const SizedBox(height: 24),
+              Text(
+                isSearching ? 'No matches' : 'No favorites yet',
+                style: Theme.of(context).textTheme.headlineMedium
+                    ?.copyWith(color: ink),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isSearching
+                    ? 'Nothing in your library matches “$query”.'
+                    : 'Open any Medium link from Home, then tap the heart on '
+                          'the article to save it here for offline reading.',
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: muted, height: 1.5),
+              ),
+              if (isSearching) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Try a different keyword',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: muted),
+                ),
+              ] else if (isLibraryEmpty) ...[
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: onStart,
+                  child: const Text('Start reading'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

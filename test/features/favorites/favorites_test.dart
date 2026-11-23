@@ -1,14 +1,16 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:freedium/core/routes/app_routes.dart';
+import 'package:freedium/core/navigation/app_navigation.dart';
 import 'package:freedium/core/services/storage_service.dart';
+import 'package:freedium/core/theme/app_theme.dart';
+import 'package:freedium/features/article/controllers/article_controller.dart';
 import 'package:freedium/features/article/models/article_meta.dart';
+import 'package:freedium/features/article/models/article_request.dart';
+import 'package:freedium/features/article/views/article_page.dart';
 import 'package:freedium/features/favorites/controllers/favorites_controller.dart';
 import 'package:freedium/features/favorites/models/favorite_article.dart';
 import 'package:freedium/features/favorites/views/favorites_page.dart';
 import 'package:freedium/features/favorites/widgets/favorite_tile.dart';
-import 'package:get/get.dart';
-import 'package:material_3_expressive/material_3_expressive.dart';
-import 'package:material_ui/material_ui.dart' as ui;
 import 'package:material_ui/material_ui.dart';
 
 import '../../helpers/test_env.dart';
@@ -26,37 +28,49 @@ FavoriteArticle article(
   domain: domain,
 );
 
-class _ArticleStub extends StatelessWidget {
-  const _ArticleStub();
-
+/// The pushed reader only has to build for the navigation test. Its real
+/// `open()` starts a WebView load, which needs a plugin this suite never sets
+/// up; leaving the page in its initial state is enough to observe the push.
+class _NoLoadArticleController extends ArticleController {
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('article stub')));
-  }
+  Future<void> open(ArticleRequest request) async {}
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late TestServices services;
   late StorageService storage;
-  late FavoritesController controller;
 
   setUp(() {
-    final services = registerServices();
+    services = registerServices();
     storage = services.storage;
-    controller = FavoritesController(storage);
-    Get.put<FavoritesController>(controller);
   });
 
-  Widget buildTestApp() => M3ETheme(
-    data: M3EThemeData.light(seedColor: testSeedColor),
-    child: GetMaterialApp(
-      localizationsDelegates: const [ui.DefaultMaterialLocalizations.delegate],
-      initialRoute: AppRoutes.home,
-      getPages: [
-        GetPage(name: AppRoutes.home, page: () => const FavoritesPage()),
-        GetPage(name: AppRoutes.article, page: () => const _ArticleStub()),
+  /// Read lazily: the library provider snapshots the store when it is first
+  /// built, so seeding a test's favorites must happen before this is read.
+  FavoritesController controller() =>
+      services.container.read(favoritesControllerProvider.notifier);
+
+  Widget buildTestApp() =>
+      wrapTestApp(services: services, child: const FavoritesPage());
+
+  /// The page pushes with [pushPage], which needs the root navigator's key.
+  Widget buildNavigatingTestApp() => UncontrolledProviderScope(
+    container: ProviderContainer(
+      parent: services.container,
+      overrides: [
+        articleControllerProvider.overrideWith(_NoLoadArticleController.new),
       ],
+      // ignore: invalid_use_of_internal_member
+      onError: (_, _) {},
+    ),
+    child: MaterialApp(
+      navigatorKey: appNavigatorKey,
+      localizationsDelegates: const [DefaultMaterialLocalizations.delegate],
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      home: const FavoritesPage(),
     ),
   );
 
@@ -135,21 +149,21 @@ void main() {
         article('https://medium.com/hello', title: 'Hello'),
       );
 
-      expect(controller.favorites, hasLength(1));
-      expect(controller.favorites.first.title, 'Hello');
+      expect(controller().favorites, hasLength(1));
+      expect(controller().favorites.first.title, 'Hello');
     });
 
     test('is empty when nothing is saved', () {
-      expect(controller.favorites, isEmpty);
+      expect(controller().favorites, isEmpty);
     });
 
     test('removeFavorite updates the store and the list', () async {
       const url = 'https://medium.com/hello';
       await storage.library.addToFavorites(article(url));
 
-      await controller.removeFavorite(url);
+      await controller().removeFavorite(url);
 
-      expect(controller.favorites, isEmpty);
+      expect(controller().favorites, isEmpty);
       expect(storage.library.favorites, isEmpty);
     });
 
@@ -164,9 +178,9 @@ void main() {
         );
         await storage.cache.save(url: url, html: '<article>hello</article>');
 
-        await controller.removeFavorite(url);
+        await controller().removeFavorite(url);
 
-        expect(controller.favorites, isEmpty);
+        expect(controller().favorites, isEmpty);
         expect(storage.library.metaFor(url), isNull);
         expect(await storage.cache.contains(url), isFalse);
       },
@@ -177,17 +191,17 @@ void main() {
       await storage.library.addToFavorites(article(url));
 
       await Future.wait([
-        controller.removeFavorite(url),
-        controller.removeFavorite(url),
+        controller().removeFavorite(url),
+        controller().removeFavorite(url),
       ]);
 
-      expect(controller.favorites, isEmpty);
+      expect(controller().favorites, isEmpty);
     });
 
     test('a whitespace-only query is not a search', () {
-      controller.onSearchChanged('   ');
+      controller().onSearchChanged('   ');
 
-      expect(controller.trimmedQuery, isEmpty);
+      expect(controller().trimmedQuery, isEmpty);
     });
 
     test(
@@ -197,9 +211,9 @@ void main() {
           article('https://medium.com/keep', title: 'Keep'),
         );
 
-        await controller.removeFavorite('https://medium.com/missing');
+        await controller().removeFavorite('https://medium.com/missing');
 
-        expect(controller.favorites, hasLength(1));
+        expect(controller().favorites, hasLength(1));
       },
     );
 
@@ -218,23 +232,23 @@ void main() {
         article('https://dev.to/post', title: 'On Another', domain: 'dev.to'),
       );
 
-      controller.onSearchChanged('dart');
-      expect(controller.filteredFavorites, hasLength(2));
+      controller().onSearchChanged('dart');
+      expect(controller().filteredFavorites, hasLength(2));
 
-      controller.onSearchChanged('alice');
-      expect(controller.filteredFavorites.single.author, 'Alice');
+      controller().onSearchChanged('alice');
+      expect(controller().filteredFavorites.single.author, 'Alice');
 
-      controller.onSearchChanged('dev.to');
-      expect(controller.filteredFavorites.single.domain, 'dev.to');
+      controller().onSearchChanged('dev.to');
+      expect(controller().filteredFavorites.single.domain, 'dev.to');
     });
 
     test('an empty query returns everything', () async {
       await storage.library.addToFavorites(article('https://medium.com/a'));
       await storage.library.addToFavorites(article('https://medium.com/b'));
 
-      controller.onSearchChanged('   ');
+      controller().onSearchChanged('   ');
 
-      expect(controller.filteredFavorites, hasLength(2));
+      expect(controller().filteredFavorites, hasLength(2));
     });
   });
 
@@ -248,7 +262,7 @@ void main() {
         find.textContaining('Open any Medium link from Home'),
         findsOneWidget,
       );
-      expect(find.text('Go to Home'), findsOneWidget);
+      expect(find.text('Start reading'), findsOneWidget);
       expect(find.byType(FavoriteTile), findsNothing);
     });
 
@@ -297,7 +311,11 @@ void main() {
       await tester.enterText(find.byType(EditableText), 'xyz');
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('No results for'), findsOneWidget);
+      expect(find.text('No matches'), findsOneWidget);
+      expect(
+        find.text('Nothing in your library matches “xyz”.'),
+        findsOneWidget,
+      );
       expect(find.text('Try a different keyword'), findsOneWidget);
       expect(find.byType(FavoriteTile), findsNothing);
     });
@@ -309,39 +327,40 @@ void main() {
         article('https://medium.com/tap', title: 'Tap Me'),
       );
 
-      await tester.pumpWidget(buildTestApp());
+      await tester.pumpWidget(buildNavigatingTestApp());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Tap Me'));
-      await tester.pumpAndSettle();
+      // The reader shows a looping progress indicator, so settle by frames
+      // rather than waiting for an idle frame that never comes.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('article stub'), findsOneWidget);
-      expect(Get.currentRoute, AppRoutes.article);
+      expect(appNavigatorKey.currentState?.canPop(), isTrue);
+      expect(find.byType(ArticlePage), findsOneWidget);
     });
 
     /// Shows the library page and guarantees it is unmounted afterwards.
     ///
     /// Unmounting matters between these tests: a swipe leaves a spring
-    /// animation running, and an app left mounted rebuilds on the next test's
-    /// frame, after `Get.reset` has already taken its controller away.
+    /// animation running, so a page left mounted can rebuild on the next test's
+    /// frame.
     Future<void> mountPage(WidgetTester tester) async {
-      Get.put<FavoritesController>(FavoritesController(storage));
       await tester.pumpWidget(buildTestApp());
       await tester.pumpAndSettle();
 
       addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
     }
 
-    /// Swipes a tile far enough to reveal its delete button, then taps it.
-    ///
-    /// The swipe is left to settle frame by frame: a spring animation pumped to
-    /// completion by `pumpAndSettle` can keep scheduling frames indefinitely
-    /// here, and the button is only laid out once the card has snapped open.
+    /// Taps the delete control of the tile showing [title].
     Future<void> tapDeleteAction(WidgetTester tester, String title) async {
-      await tester.drag(find.text(title), const Offset(-600, 0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.byIcon(M3EIcons.delete_rounded));
+      final tile = find.ancestor(
+        of: find.text(title),
+        matching: find.byType(FavoriteTile),
+      );
+      await tester.tap(
+        find.descendant(of: tile, matching: find.byTooltip('Remove from library')),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -354,7 +373,7 @@ void main() {
 
       expect(find.text('Remove from library?'), findsOneWidget);
       expect(
-        find.text('"Confirm Me" will be removed from your library.'),
+        find.text('“Confirm Me” will be removed from your library.'),
         findsOneWidget,
       );
       expect(storage.library.isFavorite(url), isTrue);
@@ -426,7 +445,7 @@ void main() {
 
       expect(find.text('Remove from library?'), findsNothing);
       expect(find.text('Remove It'), findsNothing);
-      expect(controller.favorites, isEmpty);
+      expect(controller().favorites, isEmpty);
     });
 
     testWidgets('dismissing the dialog by tapping outside keeps the article', (

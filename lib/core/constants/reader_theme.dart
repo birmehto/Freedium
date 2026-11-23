@@ -113,10 +113,18 @@ abstract final class ReaderTheme {
   }
 
   /// Converts a hex color string like `#fbfaf7` or `#1b1915` to a [Color].
+  ///
+  /// Only six- and eight-digit values are accepted. A malformed palette value
+  /// falls back to opaque white rather than to a transparent color, which
+  /// would leave the WebView showing whatever was behind it.
   static Color hexToColor(String hex) {
     final clean = hex.replaceAll('#', '');
-    final val = int.tryParse(clean, radix: 16) ?? 0xFFFFFF;
-    return clean.length == 6 ? Color(0xFF000000 | val) : Color(val);
+    if (clean.length != 6 && clean.length != 8) return const Color(0xFFFFFFFF);
+
+    final value = int.tryParse(clean, radix: 16);
+    if (value == null) return const Color(0xFFFFFFFF);
+
+    return clean.length == 6 ? Color(0xFF000000 | value) : Color(value);
   }
 
   // ---------------------------------------------------------------------------

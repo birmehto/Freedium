@@ -98,15 +98,15 @@ void main() {
     });
 
     test('notifies observers on add and on remove', () async {
-      var notifications = 0;
-      store.favorites.listen((_) => notifications++);
-
+      // favorites is a plain list now: Riverpod's library controller re-reads
+      // this state after each write, so assert the observed state directly.
       await store.addToFavorites(article('https://medium.com/a'));
-      final afterAdd = notifications;
-      expect(afterAdd, greaterThan(0));
+      expect(store.favorites, hasLength(1));
+      expect(store.isFavorite('https://medium.com/a'), isTrue);
 
       await store.removeFromFavorites('https://medium.com/a');
-      expect(notifications, greaterThan(afterAdd));
+      expect(store.favorites, isEmpty);
+      expect(store.isFavorite('https://medium.com/a'), isFalse);
     });
   });
 

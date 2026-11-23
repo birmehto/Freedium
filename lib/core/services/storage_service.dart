@@ -1,5 +1,3 @@
-import 'package:get/get.dart';
-
 import '../storage/app_database.dart';
 import '../storage/article_cache_store.dart';
 import '../storage/key_value_store.dart';
@@ -8,10 +6,9 @@ import '../storage/preferences_store.dart';
 
 /// Owns the on-device SQLite database and exposes the focused stores.
 ///
-/// Registered as a permanent service during startup, so every feature binding
-/// resolves the same [preferences], [library] and [cache] instances.
-class StorageService extends GetxService {
-  /// Production constructor: opens the SQLite database.
+/// Created once during startup and shared through `storageServiceProvider`.
+class StorageService {
+  /// Production constructor: call [init] before use.
   StorageService();
 
   /// Test constructor: uses an already-prepared [KeyValueStore] and [database].
@@ -27,8 +24,7 @@ class StorageService extends GetxService {
   late final PreferencesStore preferences;
   late final LibraryStore library;
 
-  /// The articles behind the reader's favorites, kept on the device so they can
-  /// be read without a network.
+  /// Saved article bodies so favorites stay readable without a network.
   late final ArticleCacheStore cache;
 
   KeyValueStore? _keyValueStore;
@@ -44,19 +40,27 @@ class StorageService extends GetxService {
     _database = database;
     _attachStores();
 
-    // Counted up front so eviction knows what the store already holds, rather
-    // than treating a reopened database as empty and letting it grow unchecked.
+    // A reopened database is not empty; count what it holds so eviction cannot
+    // treat it as fresh and let it grow without bound.
     await cache.refreshTotals();
     return this;
   }
 
-  @override
-  void onClose() {
-    // Only close what this service opened; an injected store belongs to the
-    // caller that created it.
+  /// Waits for queued preference writes to reach SQLite.
+  ///
+  /// Called when the app leaves the foreground so a font-size change made just
+  /// before backgrounding is not still sitting in the write queue when the
+  /// process is killed.
+  Future<void> flush() async {
+    final store = _keyValueStore;
+    if (store is DriftKeyValueStore) await store.flush();
+  }
+
+  /// Closes only the database this service opened. An injected store belongs to
+  /// the caller that created it.
+  void dispose() {
     final store = _keyValueStore;
     if (store is DriftKeyValueStore) store.close();
-    super.onClose();
   }
 
   void _attachStores() {
