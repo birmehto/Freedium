@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/controllers/app_controllers.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/providers/service_providers.dart';
@@ -101,6 +102,20 @@ class SettingsController extends Notifier<SettingsState> {
 
   Future<void> openGitHub() =>
       _openExternal(Uri.parse('https://github.com/birmehto/Freedium'));
+
+  /// Opens this app's Play Store page so the reader can leave a rating.
+  ///
+  /// The `market://` intent goes straight to the Play Store app on Android;
+  /// everywhere else (or when no store app is installed) the https URL opens
+  /// in a browser instead.
+  Future<void> rateApp() async {
+    final market = Uri.parse(
+      'market://details?id=${AppConstants.playStoreId}',
+    );
+    if (await _openExternal(market, reportFailure: false)) return;
+
+    await _openExternal(Uri.parse(AppConstants.playStoreUrl));
+  }
 
   Future<bool> _openExternal(Uri uri, {bool reportFailure = true}) async {
     try {

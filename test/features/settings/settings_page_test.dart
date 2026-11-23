@@ -139,4 +139,19 @@ void main() {
     expect(find.text('Freedium Web'), findsOneWidget);
     expect(find.text('mirror'), findsNothing);
   });
+
+  testWidgets('offers a Rate us action in About', (tester) async {
+    await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Rate us'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rate us'), findsOneWidget);
+    expect(find.text('Rate Freedium on Google Play'), findsOneWidget);
+  });
 }

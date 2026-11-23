@@ -9,88 +9,79 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
 
-<img src="screenshots/banner.png" width="640" alt="Freedium banner"/>
+<img src="screenshots/icon.png" width="120" alt="Freedium app icon"/>
 
 **Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no account.
 
+⭐ **[Star the repo](https://github.com/birmehto/Freedium/stargazers)** — it is the single best way to help new readers discover Freedium.
+
 <p align="center">
-  <a href="https://github.com/birmehto/Freedium/releases/latest">
-    <img src="https://img.shields.io/badge/⬇️_Direct_Download-APK-2E8B57?style=for-the-badge&logo=android&logoColor=white" alt="Direct Download APK" height="52"/>
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://play.google.com/store/apps/details?id=com.bir.freedium">
-    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="52"/>
-  </a>
+  <a href="https://github.com/birmehto/Freedium/releases/latest"><img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F_Download_APK-2E8B57?style=for-the-badge&logo=android&logoColor=white" alt="Download APK"/></a>
+  &nbsp;
+  <a href="https://play.google.com/store/apps/details?id=com.bir.freedium"><img src="https://img.shields.io/badge/Google_Play-Get_it-414141?style=for-the-badge&logo=googleplay&logoColor=white" alt="Get it on Google Play"/></a>
 </p>
 
 </div>
 
 ---
 
+## 🎯 What matters
+
+- **Your reading stays yours.** No account, no analytics, no ads. Favorites, settings and saved stories stay on your device — no cloud sync. Opening a story only sends its link to the mirror that fetches it.
+- **A story, not a webpage.** The reader strips the paywall and the clutter, then gives you five themes, font families and text size so long-form writing stays easy to read.
+- **It keeps working.** Five sources with automatic fallback and health tracking. Favorited stories are saved on-device, so a story you care about is still readable when every mirror is down.
+- **Free and open source.** MIT licensed, built in spare time. A coffee is appreciated, never required.
+
+---
+
 ## ✨ Features
 
-- **🛡️ Unlock any Medium story** — paste a link or share one from any app and read the whole article.
-- **⭐ Favorites** — keep the stories you care about in a searchable on-device list.
-- **📥 Offline reading** — favoriting an article also keeps it on the device, ready to open again without a connection.
-- **🔒 On-device library** — favorites, the articles kept for offline reading, settings, and article metadata are stored locally; nothing is uploaded.
-- **🎨 Make it yours** — five reader themes (System, Light, Dark, Sepia, OLED) plus font family and font size.
-- **🔄 Reliable loading** — five sources (Freedium, Freedium Web, Freedium backup, Archive.ph and Archive.is) with automatic fallback and per-session health tracking.
-- **🎬 Quiet motion** — a single animator gives pages, tabs and toggles consistent, low-distraction transitions.
-- **☕ Support the project** — keep Freedium free by buying a coffee, straight from the home screen.
-- **🔐 Truly private** — no account, no analytics, no background tracking, no ads.
+- **🛡️ Unlock any Medium story** — paste a link or share one from any app.
+- **⭐ Favorites** — a searchable on-device library of the stories you keep.
+- **📥 Offline reading** — favoriting a story keeps a copy for offline use; removing the favorite removes the copy.
+- **🎨 Make it yours** — System, Light, Dark, Sepia and OLED reader themes, plus font family and size.
+- **🔄 Reliable loading** — Freedium Mirror, Freedium Web, Freedium backup, Archive.ph and Archive.is, with automatic fallback.
+- **🎬 Quiet motion** — one shared animator keeps page transitions, tab swaps and toggles consistent.
+- **⭐ Rate us** — leave a rating on Google Play from Settings.
+- **☕ Support the project** — an optional "buy me a coffee" from the home screen.
 
 ---
 
 ## 📱 Screenshots
 
-<img src="screenshots/home.png" width="165" alt="Home"/> <img src="screenshots/article.png" width="165" alt="Reader"/> <img src="screenshots/favorites.png" width="165" alt="Favorites"/> <img src="screenshots/settings.png" width="165" alt="Settings"/> <img src="screenshots/share.png" width="165" alt="Share"/>
+The images currently in `screenshots/` show the previous design and are being regenerated for v1.3.0. Until then, the most accurate view of the new UI is the [Google Play listing](https://play.google.com/store/apps/details?id=com.bir.freedium). The AI prompts used to produce the new set live in [PLAY_STORE.md](PLAY_STORE.md).
 
 ---
 
-## 🚀 Getting Started
+## 📲 Download & Install (Android)
 
-**Prerequisites:** Flutter `>= 3.44.0` and Dart `>= 3.13.0` on the stable channel.
+[Get it on Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium) · [Download APKs from GitHub Releases](https://github.com/birmehto/Freedium/releases/latest)
+
+Direct APKs come as `universal` (all devices), `arm64-v8a` (modern 64-bit), `armeabi-v7a` (older 32-bit) and `x86_64` (emulators). Allow "Install unknown apps" when prompted.
+
+---
+
+## 🛠 Build from source
+
+**Prerequisites:** Flutter `>= 3.50` and Dart `>= 3.14` on the stable channel.
 
 ```bash
-# Clone the repository
 git clone https://github.com/birmehto/Freedium.git
 cd Freedium
 
-# Install dependencies
 flutter pub get
-
-# Generate code (Drift tables)
-dart run build_runner build
-
-# Run on a connected device or emulator
+dart run build_runner build   # generate Drift database code
 flutter run
 ```
 
-> Regenerate with `dart run build_runner build` after changing a Drift table.
-
-### 📲 Download & Install (Android)
-
-Freedium is built for **Android**. You can install it directly from the Google Play Store or download the standalone APKs directly from GitHub Releases (no account or private key needed):
-
-| Platform / Source | Installation Method | Link |
-|---|---|---|
-| 🤖 **Google Play** | Recommended — automatic updates via Play Store | [Get it on Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium) |
-| 📦 **Direct APK (GitHub)** | Direct download — all APK variants (Universal + split per-ABI) | [Download latest APKs from Releases](https://github.com/birmehto/Freedium/releases/latest) |
-
-> **Direct APK Installation Note:** GitHub Releases provides all APK variants:
-> - `Freedium-v1.3.0-universal.apk` — works on all Android devices
-> - `Freedium-v1.3.0-arm64-v8a.apk` — optimized for modern 64-bit devices (smaller file size)
-> - `Freedium-v1.3.0-armeabi-v7a.apk` — for older 32-bit devices
-> - `Freedium-v1.3.0-x86_64.apk` — for emulators and Chromebooks
->
-> If installing an APK directly, allow "Install unknown apps" when prompted by your browser or file manager.
+> Re-run `dart run build_runner build` after changing a Drift table.
 
 ---
 
 ## 🛠 Tech Stack
 
 | Layer | What we use |
-|-------|-------------|
+|---|---|
 | Framework | Flutter / Dart |
 | State management | Riverpod notifiers |
 | UI | Material widgets with Lucide icons (`lucide_icons_flutter`) |
@@ -105,28 +96,21 @@ Freedium is built for **Android**. You can install it directly from the Google P
 
 ## 🗺️ Roadmap
 
-Planned items are clearly marked below — nothing here is claimed to ship yet.
+Shipped already: unlock & read, favorites, offline copies, reader customization, five-source fallback, app themes and consistent motion.
 
-### ✅ Current
-Freedium today ships: unlock & read Medium articles, favorites, offline reading, reader customization, automatic mirror fallback across five sources, and app themes.
+Next up:
 
-### 🚧 Next
-- **Bookmarks** — additionally bookmark articles in the Library *(planned, not yet implemented)*.
-- **Animations** — subtle transitions for favorite, loading, and library updates *(planned)*.
-- **Window-size handling & desktop testing** for Linux/macOS/Windows *(planned)*.
+- **Bookmarks** alongside favorites in the Library *(planned)*.
+- **Window-size handling and desktop testing** for Linux/macOS/Windows *(planned)*.
+- **Deeper search** across saved content *(planned)*.
 
-### 🔭 Future
-- Better cross-platform desktop experience.
-- Deeper search and discovery across saved content.
-- See the full plan in [ROADMAP.md](ROADMAP.md).
+Track progress in the repository issues and pull requests.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Whether it's a bug fix, a UI polish, or a documentation improvement — please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-Quick start for contributors:
+Contributions are welcome — bug fixes, UI polish and documentation all help. Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 1. Fork the repo and create a branch (`feat/...` or `fix/...`).
 2. Make focused changes that follow the existing architecture.
@@ -138,24 +122,24 @@ Quick start for contributors:
    ```
 4. Open a pull request against `main` and describe what you changed.
 
-Looking for something to work on? Check the issues labeled [`good first issue`](https://github.com/birmehto/Freedium/contribute).
+Looking for a starting point? Check the [`good first issue`](https://github.com/birmehto/Freedium/contribute) label.
 
 ---
 
 ## 🐛 Issues
 
 - **🐞 Report a bug** — use the [Bug report](https://github.com/birmehto/Freedium/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml) template. Include steps to reproduce, expected vs. actual behavior, and your device/Flutter version.
-- **💡 Request a feature** — use the [Feature request](https://github.com/birmehto/Freedium/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml) template and describe the problem you're trying to solve.
+- **💡 Request a feature** — use the [Feature request](https://github.com/birmehto/Freedium/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml) template and describe the problem you're solving.
 
-Before opening a new issue, please search existing issues to avoid duplicates.
+Please search existing issues first to avoid duplicates.
 
 ---
 
 ## ⭐ Support
 
-Freedium is free and open-source, built and maintained in spare time. If you find it useful:
+Freedium is free and open source, built and maintained in spare time. If it's useful to you:
 
-- ⭐ **[Star the repo](https://github.com/birmehto/Freedium/stargazers)** — it helps others discover the project.
+- ⭐ **[Star the repo](https://github.com/birmehto/Freedium/stargazers)** — it helps others find it.
 - ☕ **[Buy me a coffee](https://buymeacoffee.com/birmehto)** — helps keep the mirrors running.
 
 ---
@@ -163,8 +147,9 @@ Freedium is free and open-source, built and maintained in spare time. If you fin
 ## 📚 Learn more
 
 - 🤝 [Contributing](CONTRIBUTING.md) — build instructions and guidelines
-- 🗺️ [Roadmap](ROADMAP.md) — what's next
 - 📝 [Changelog](CHANGELOG.md) — release history
+- 📋 [Release notes](RELEASE_NOTES.md) — highlights for the current release
+- 🖼️ [Play Store assets & ASO copy](PLAY_STORE.md) — screenshots prompts and store listing text
 - 🔒 [Privacy](PRIVACY_POLICY.md) — what stays on your device
 
 ---
@@ -173,4 +158,4 @@ Freedium is free and open-source, built and maintained in spare time. If you fin
 
 Freedium is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It wraps publicly available reader endpoints; all article content remains the property of its original authors.
 
-Open-source under the [MIT License](LICENSE). © Bir Mehto.
+Open source under the [MIT License](LICENSE). © Bir Mehto.

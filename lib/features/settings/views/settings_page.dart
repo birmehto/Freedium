@@ -97,6 +97,13 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: 32),
             const _SectionLabel('ABOUT'),
             _SettingsRow(
+              title: 'Rate us',
+              subtitle: 'Rate Freedium on Google Play',
+              onTap: controller.rateApp,
+              trailing: Icon(LucideIcons.star, size: 18, color: muted),
+            ),
+            const _Hairline(),
+            _SettingsRow(
               title: 'Send Feedback',
               onTap: controller.sendFeedback,
             ),
