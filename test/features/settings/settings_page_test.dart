@@ -140,18 +140,19 @@ void main() {
     expect(find.text('mirror'), findsNothing);
   });
 
-  testWidgets('offers a Rate us action in About', (tester) async {
+  testWidgets('offers support and credits in About', (tester) async {
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('Rate us'),
+      find.text('Support Freedium'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Rate us'), findsOneWidget);
-    expect(find.text('Rate Freedium on Google Play'), findsOneWidget);
+    expect(find.text('Support Freedium'), findsOneWidget);
+    expect(find.text('Licenses & Credits'), findsOneWidget);
+    expect(find.text('Rate us'), findsNothing);
   });
 }

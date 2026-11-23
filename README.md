@@ -42,7 +42,7 @@
 - **🎨 Make it yours** — System, Light, Dark, Sepia and OLED reader themes, plus font family and size.
 - **🔄 Reliable loading** — Freedium Mirror, Freedium Web, Freedium backup, Archive.ph and Archive.is, with automatic fallback.
 - **🎬 Quiet motion** — one shared animator keeps page transitions, tab swaps and toggles consistent.
-- **⭐ Rate us** — leave a rating on Google Play from Settings.
+- **⭐ Rate us** — rate the app or buy a coffee from the support dialog on Home or in Settings.
 - **☕ Support the project** — an optional "buy me a coffee" from the home screen.
 
 ---
@@ -90,7 +90,7 @@ flutter run
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 335 unit/widget tests |
+| Quality | `flutter_lints`, 338 unit/widget tests |
 
 ---
 

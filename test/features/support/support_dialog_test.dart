@@ -48,7 +48,8 @@ void main() {
       await openDialog(tester);
 
       expect(find.text('Buy me a coffee'), findsOneWidget);
-      expect(find.text('Maybe later'), findsOneWidget);
+      expect(find.text('Rate us'), findsOneWidget);
+      expect(find.text('Not now, I’m reading'), findsOneWidget);
     });
 
     testWidgets('the coffee option closes the dialog and opens the page', (
@@ -66,7 +67,7 @@ void main() {
     testWidgets('Maybe later dismisses without choosing', (tester) async {
       await openDialog(tester);
 
-      await tester.tap(find.text('Maybe later'));
+      await tester.tap(find.text('Not now, I’m reading'));
       await tester.pumpAndSettle();
 
       expect(spy.coffeeCalls, 0);

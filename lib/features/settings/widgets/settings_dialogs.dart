@@ -93,8 +93,10 @@ void showCreditsDialog(BuildContext context) {
       surfaceTintColor: Colors.transparent,
       title: _dialogTitle(dialogContext, 'Licenses & Credits'),
       content: Text(
-        'Freedium is not affiliated with Medium.\n\n'
-        'All article content belongs to their respective authors.',
+        'Freedium is an independent reader built by Bir.\n\n'
+        'It is not affiliated with Medium. Stories belong to their authors — '
+        'we just help you read them.\n\n'
+        'Thanks for reading.',
         style: Theme.of(dialogContext).textTheme.bodyMedium
             ?.copyWith(color: AppTheme.muted(dialogContext), height: 1.5),
       ),

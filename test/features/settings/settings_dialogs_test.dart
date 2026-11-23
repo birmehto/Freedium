@@ -88,4 +88,15 @@ void main() {
       expect(services.storage.preferences.themeMode, PreferencesStore.modeDark);
     });
   });
+
+  group('showCreditsDialog', () {
+    testWidgets('states the licensing facts plainly', (tester) async {
+      await openDialog(tester, showCreditsDialog);
+
+      expect(find.text('Licenses & Credits'), findsOneWidget);
+      expect(find.textContaining('not affiliated with Medium'), findsOneWidget);
+      expect(find.textContaining('independent reader'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+    });
+  });
 }

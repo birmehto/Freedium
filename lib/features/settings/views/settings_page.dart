@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/config/mirror_source.dart';
 import '../../../core/controllers/app_controllers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../support/widgets/support_dialog.dart';
 import '../controllers/settings_controller.dart';
 import '../widgets/reader_appearance_sheet.dart';
 import '../widgets/settings_dialogs.dart';
@@ -97,10 +98,10 @@ class SettingsPage extends ConsumerWidget {
             const SizedBox(height: 32),
             const _SectionLabel('ABOUT'),
             _SettingsRow(
-              title: 'Rate us',
-              subtitle: 'Rate Freedium on Google Play',
-              onTap: controller.rateApp,
-              trailing: Icon(LucideIcons.star, size: 18, color: muted),
+              title: 'Support Freedium',
+              subtitle: 'Keep the app free and ad-free',
+              onTap: () => showSupportDialog(context),
+              trailing: Icon(LucideIcons.coffee, size: 18, color: muted),
             ),
             const _Hairline(),
             _SettingsRow(
