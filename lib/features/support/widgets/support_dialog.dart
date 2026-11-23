@@ -29,10 +29,8 @@ void showSupportDialog(BuildContext context) {
         'Freedium is free, open source, and ad-free. If you enjoy reading '
         'clutter-free articles, consider buying a coffee to support '
         'development and keep the app running!',
-        style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.muted(dialogContext),
-              height: 1.5,
-            ),
+        style: Theme.of(dialogContext).textTheme.bodyMedium
+            ?.copyWith(color: AppTheme.muted(dialogContext), height: 1.5),
       ),
       actions: [
         TextButton(

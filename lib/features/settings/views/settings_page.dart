@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/config/mirror_source.dart';
 import '../../../core/controllers/app_controllers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../controllers/settings_controller.dart';
@@ -19,6 +20,20 @@ class SettingsPage extends ConsumerWidget {
     final theme = ref.watch(themeControllerProvider);
     final controller = ref.read(settingsControllerProvider.notifier);
     final muted = AppTheme.muted(context);
+
+    final mirrorId = settings.preferredMirror;
+    final mirrorName = mirrorId == null
+        ? 'Auto'
+        : MirrorCatalog.createDefaults()
+              .where((mirror) => mirror.id == mirrorId)
+              .map((mirror) => mirror.name)
+              .firstWhere((_) => true, orElse: () => mirrorId);
+    final themeLabel = switch (settings.themeMode) {
+      'system' => 'System',
+      'light' => 'Light',
+      'dark' => 'Dark',
+      final other => other,
+    };
 
     return Scaffold(
       backgroundColor: AppTheme.paper(context),
@@ -49,7 +64,7 @@ class SettingsPage extends ConsumerWidget {
             const _Hairline(),
             _SettingsRow(
               title: 'Theme',
-              subtitle: settings.themeMode,
+              subtitle: themeLabel,
               onTap: () => showThemeDialog(context),
               trailing: Icon(LucideIcons.chevronRight, size: 18, color: muted),
             ),
@@ -65,7 +80,7 @@ class SettingsPage extends ConsumerWidget {
             const _SectionLabel('SOURCE'),
             _SettingsRow(
               title: 'Preferred Mirror',
-              subtitle: settings.preferredMirror ?? 'Auto',
+              subtitle: mirrorName,
               onTap: () => showMirrorDialog(context),
               trailing: Icon(LucideIcons.chevronRight, size: 18, color: muted),
             ),
@@ -124,7 +139,7 @@ class _SectionLabel extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelSmall
-            ?.copyWith(color: AppTheme.muted(context), letterSpacing: 1.8),
+            ?.copyWith(color: AppTheme.muted(context), letterSpacing: 1.6),
       ),
     );
   }

@@ -76,6 +76,22 @@ abstract final class AppTheme {
       cardColor: paper,
       dividerColor: rule,
       primaryColor: ink,
+
+      // Switches are the only controls that use the green accent as their
+      // selected state, matching the tab indicator and the saved heart.
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) return muted;
+          return states.contains(WidgetState.selected) ? accent : paper;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accent.withValues(alpha: 0.45);
+          }
+          return rule;
+        }),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+      ),
       fontFamily: GoogleFonts.inter().fontFamily,
       platform: TargetPlatform.android,
       textTheme: TextTheme(

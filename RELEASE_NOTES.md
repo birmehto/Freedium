@@ -1,5 +1,19 @@
 ![Freedium banner](https://raw.githubusercontent.com/birmehto/Freedium/main/screenshots/banner.png)
 
+## ✨ What's New in v1.3.0
+
+- **🎬 Quiet motion** — one animator drives page transitions, tab swaps, entrances and the save pulse, so every screen moves the same way.
+- **🧭 More ways to read** — five sources with automatic fallback: Freedium Mirror, Freedium Web, Freedium backup, Archive.ph and Archive.is.
+- **🎨 Refreshed icons** — Lucide throughout, plus a filled heart when an article is saved and a new full-bleed launcher icon with a proper themed layer.
+- **🔗 Safer links** — stricter validation rejects bad ports, control characters and oversized input, and normalizes trailing dots and default ports.
+- **⚡ Faster & steadier** — cached themes, settings and formats; queued writes are flushed when the app backgrounds; a corrupt database now shows a clear message instead of a blank screen.
+- **✨ Cleaner UI** — consistent spacing, labels, icon sizes and readable Settings subtitles.
+
+## 📥 Installation
+
+- **Google Play:** Install and receive automatic updates from [Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium).
+- **Direct APK:** Download `Freedium-v1.3.0-universal.apk` (or your device's architecture APK such as `arm64-v8a`) directly from the release assets below.
+
 ## ✨ What's New in v1.1.5
 
 - **🚫 Pure ad-free experience** — all Google Mobile Ads and tracking dependencies have been completely removed.

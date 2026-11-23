@@ -23,9 +23,8 @@ class _FakeClipboard extends ClipboardService {
   }
 }
 
-({ProviderContainer container, _FakeClipboard clipboard}) containerWithClipboard(
-  String? text,
-) {
+({ProviderContainer container, _FakeClipboard clipboard})
+containerWithClipboard(String? text) {
   final storage = createTestStorage();
   final clipboard = _FakeClipboard(text);
   final container = ProviderContainer(

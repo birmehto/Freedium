@@ -55,9 +55,7 @@ void main() {
     testWidgets('opens the article when tapped', (tester) async {
       var taps = 0;
 
-      await tester.pumpWidget(
-        buildTile(item: article(), onTap: () => taps++),
-      );
+      await tester.pumpWidget(buildTile(item: article(), onTap: () => taps++));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('A story'));

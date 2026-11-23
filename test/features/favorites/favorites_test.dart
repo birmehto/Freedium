@@ -359,7 +359,10 @@ void main() {
         matching: find.byType(FavoriteTile),
       );
       await tester.tap(
-        find.descendant(of: tile, matching: find.byTooltip('Remove from library')),
+        find.descendant(
+          of: tile,
+          matching: find.byTooltip('Remove from library'),
+        ),
       );
       await tester.pumpAndSettle();
     }

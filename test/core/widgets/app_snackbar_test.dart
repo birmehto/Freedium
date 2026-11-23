@@ -44,7 +44,9 @@ void main() {
         UncontrolledProviderScope(
           container: container,
           child: MaterialApp(
-            localizationsDelegates: const [DefaultMaterialLocalizations.delegate],
+            localizationsDelegates: const [
+              DefaultMaterialLocalizations.delegate,
+            ],
             theme: AppTheme.light(),
             scaffoldMessengerKey: rootScaffoldMessengerKey,
             home: const Scaffold(body: SizedBox.shrink()),

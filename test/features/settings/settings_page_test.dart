@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:freedium/core/storage/preferences_store.dart';
 import 'package:freedium/features/settings/models/reader_settings.dart';
 import 'package:freedium/features/settings/views/settings_page.dart';
 import 'package:material_ui/material_ui.dart';
@@ -39,10 +40,7 @@ void main() {
   testWidgets('shows the stored font size in the reader appearance sheet', (
     tester,
   ) async {
-    seedReaderSettings(
-      services.storage,
-      const ReaderSettings(fontSize: 21),
-    );
+    seedReaderSettings(services.storage, const ReaderSettings(fontSize: 21));
 
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
@@ -89,10 +87,7 @@ void main() {
   });
 
   testWidgets('reset returns the appearance to defaults', (tester) async {
-    seedReaderSettings(
-      services.storage,
-      const ReaderSettings(fontSize: 21),
-    );
+    seedReaderSettings(services.storage, const ReaderSettings(fontSize: 21));
 
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
@@ -131,5 +126,17 @@ void main() {
 
     expect(find.text('Storage'), findsNothing);
     expect(find.text('Offline Articles'), findsNothing);
+  });
+
+  testWidgets('shows readable names instead of stored ids', (tester) async {
+    services.storage.preferences.themeMode = PreferencesStore.modeDark;
+    services.storage.preferences.preferredMirror = 'mirror';
+
+    await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dark'), findsOneWidget);
+    expect(find.text('Freedium Web'), findsOneWidget);
+    expect(find.text('mirror'), findsNothing);
   });
 }

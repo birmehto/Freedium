@@ -4,7 +4,7 @@
 
 **Read any Medium story — free, clean, and distraction-free.**
 
-[![Version](https://img.shields.io/badge/Release-v1.1.5-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
+[![Version](https://img.shields.io/badge/Release-v1.3.0-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Android-blue?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
@@ -78,10 +78,10 @@ Freedium is built for **Android**. You can install it directly from the Google P
 | 📦 **Direct APK (GitHub)** | Direct download — all APK variants (Universal + split per-ABI) | [Download latest APKs from Releases](https://github.com/birmehto/Freedium/releases/latest) |
 
 > **Direct APK Installation Note:** GitHub Releases provides all APK variants:
-> - `Freedium-v1.1.5-universal.apk` — works on all Android devices
-> - `Freedium-v1.1.5-arm64-v8a.apk` — optimized for modern 64-bit devices (smaller file size)
-> - `Freedium-v1.1.5-armeabi-v7a.apk` — for older 32-bit devices
-> - `Freedium-v1.1.5-x86_64.apk` — for emulators and Chromebooks
+> - `Freedium-v1.3.0-universal.apk` — works on all Android devices
+> - `Freedium-v1.3.0-arm64-v8a.apk` — optimized for modern 64-bit devices (smaller file size)
+> - `Freedium-v1.3.0-armeabi-v7a.apk` — for older 32-bit devices
+> - `Freedium-v1.3.0-x86_64.apk` — for emulators and Chromebooks
 >
 > If installing an APK directly, allow "Install unknown apps" when prompted by your browser or file manager.
 
@@ -99,7 +99,7 @@ Freedium is built for **Android**. You can install it directly from the Google P
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 334 unit/widget tests |
+| Quality | `flutter_lints`, 335 unit/widget tests |
 
 ---
 

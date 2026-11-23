@@ -22,9 +22,8 @@ void main() {
 
   tearDown(() => container.dispose());
 
-  ThemeMode resolvedThemeMode() => AppTheme.themeMode(
-    container.read(themeControllerProvider).preferredMode,
-  );
+  ThemeMode resolvedThemeMode() =>
+      AppTheme.themeMode(container.read(themeControllerProvider).preferredMode);
 
   test('starts in the stored theme mode', () {
     final theme = container.read(themeControllerProvider);
@@ -41,10 +40,7 @@ void main() {
 
     final theme = services.container.read(themeControllerProvider);
     expect(theme.isDarkMode, isTrue);
-    expect(
-      AppTheme.themeMode(theme.preferredMode),
-      ThemeMode.dark,
-    );
+    expect(AppTheme.themeMode(theme.preferredMode), ThemeMode.dark);
   });
 
   test('migrates a pre-1.0 boolean theme value', () {

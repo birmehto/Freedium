@@ -17,7 +17,7 @@ class HomePage extends StatelessWidget {
       backgroundColor: AppTheme.paper(context),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 56, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 40, 24, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

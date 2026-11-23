@@ -30,7 +30,7 @@ class HomeHero extends StatelessWidget {
             Text(
               'READ WITHOUT NOISE',
               style: Theme.of(context).textTheme.labelSmall
-                  ?.copyWith(color: muted, letterSpacing: 1.8),
+                  ?.copyWith(color: muted, letterSpacing: 1.6),
             ),
           ],
         ),

@@ -6,6 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-24
+
+### Added
+- **One shared motion system** (`AppAnimator`) for page routes, state swaps, entrances and toggle pulses, used across Home, Library, Settings and the reader.
+- **Lucide icons** (`lucide_icons_flutter`) across the UI, with the filled Material heart reserved for the saved state so "already in the library" is unmistakable.
+- **Five reading sources** in the fallback chain: Freedium Mirror, Freedium Web, Freedium backup, Archive.ph and Archive.is, with redirect-host aliases so archive hops stay inside the reader.
+- **Full-bleed launcher icon** for every density and a proper white monochrome layer for themed Android icons.
+- **Startup failure screen** and lifecycle write flushing so a corrupt database explains itself and pending preference writes reach SQLite before the app is killed.
+- Tests for the animator, mirror catalogue, URL edge cases, Home, ArticlePage, FavoriteTile, settings dialogs, AppShell and utilities.
+
+### Changed
+- Migrated the app to a Riverpod-based architecture with scoped controllers and app-wide service providers.
+- Hardened `ArticleUrl`: rejects invalid ports, control characters and oversized input; normalizes scheme, host, trailing root dots and default ports; canonicalization is exception-safe.
+- Introduced a raw `{url}` mirror template alongside the encoded `{original}` one, so prefix-style archive mirrors build correct URLs.
+- Performance: cached `ThemeData`, decoded reader settings and `DateFormat`, and hoisted the markdown-link regex out of the hot path.
+- UI consistency pass: aligned top spacing, uppercase tracking, icon sizes, Settings subtitles (readable names instead of stored ids) and accent-colored switches.
+- The reader keeps a single save control — the heart in the app bar.
+
+### Fixed
+- Freedium Web mirror used a path suffix that answered every article with a 404; it now uses its `/read?url=` route.
+- Favorited articles show a filled heart; the duplicate Save action in the reader strip is gone.
+- Malformed palette values no longer fall back to a transparent white WebView background.
+- Default ports, trailing root dots and out-of-range ports no longer produce duplicate or unopenable canonical URLs.
+
+
 ## [1.1.5] - 2026-10-26
 
 ### Added

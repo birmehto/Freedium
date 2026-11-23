@@ -7,8 +7,9 @@ import '../../../core/utils/app_log.dart';
 import '../../../core/widgets/app_snackbar.dart';
 
 /// Drives the "support Freedium" option: opening the donation page.
-final supportControllerProvider =
-    Provider<SupportController>((ref) => SupportController());
+final supportControllerProvider = Provider<SupportController>(
+  (ref) => SupportController(),
+);
 
 class SupportController {
   Future<void> buyCoffee() async {

@@ -252,10 +252,7 @@ void main() {
     });
 
     test('refuses an unreasonably long URL', () {
-      expect(
-        ArticleUrl.normalize('https://medium.com/${'a' * 5000}'),
-        isNull,
-      );
+      expect(ArticleUrl.normalize('https://medium.com/${'a' * 5000}'), isNull);
     });
 
     test('keeps query and fragment in the normalized form', () {

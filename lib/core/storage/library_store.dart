@@ -110,10 +110,8 @@ class LibraryStore {
 
     _favorites = List.unmodifiable(
       raw.whereType<Map>().map(
-            (entry) => FavoriteArticle.fromJson(
-              Map<String, dynamic>.from(entry),
-            ),
-          ),
+        (entry) => FavoriteArticle.fromJson(Map<String, dynamic>.from(entry)),
+      ),
     );
   }
 }

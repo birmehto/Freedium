@@ -43,8 +43,10 @@ class ShareIntentService {
       final files = await ReceiveSharingIntent.instance.getInitialMedia();
       if (files.isNotEmpty) handleShare(files.first.path);
     } catch (error) {
-      appLog('Could not read the initial share intent: $error',
-          name: 'ShareIntent');
+      appLog(
+        'Could not read the initial share intent: $error',
+        name: 'ShareIntent',
+      );
     } finally {
       // Cleared unconditionally: Android re-delivers the launch intent after a
       // restart, and leaving it in place would resurrect an already handled
@@ -52,8 +54,7 @@ class ShareIntentService {
       try {
         await ReceiveSharingIntent.instance.reset();
       } catch (error) {
-        appLog('Could not reset the share intent: $error',
-            name: 'ShareIntent');
+        appLog('Could not reset the share intent: $error', name: 'ShareIntent');
       }
     }
 

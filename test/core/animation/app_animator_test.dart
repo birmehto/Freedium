@@ -47,9 +47,8 @@ void main() {
     testWidgets('pulse keeps the same child when its value changes', (
       tester,
     ) async {
-      Widget build(Object value) => host(
-        AppAnimator.pulse(value: value, child: const Icon(Icons.star)),
-      );
+      Widget build(Object value) =>
+          host(AppAnimator.pulse(value: value, child: const Icon(Icons.star)));
 
       await tester.pumpWidget(build(true));
       await tester.pumpAndSettle();

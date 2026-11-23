@@ -40,16 +40,8 @@ class _TabBar extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   static const _items = [
-    (
-      label: 'Home',
-      icon: LucideIcons.newspaper,
-      active: LucideIcons.newspaper,
-    ),
-    (
-      label: 'Library',
-      icon: LucideIcons.library,
-      active: LucideIcons.library,
-    ),
+    (label: 'Home', icon: LucideIcons.home, active: LucideIcons.home),
+    (label: 'Library', icon: LucideIcons.library, active: LucideIcons.library),
     (
       label: 'Settings',
       icon: LucideIcons.settings2,
@@ -120,7 +112,8 @@ class _TabItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             item.label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: color),
           ),
           const SizedBox(height: 3),
           AnimatedContainer(

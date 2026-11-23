@@ -25,10 +25,8 @@ class HomeUnlockForm extends ConsumerWidget {
         children: [
           Text(
             'ARTICLE URL',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: muted,
-                  letterSpacing: 1.6,
-                ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: muted, letterSpacing: 1.6),
           ),
           const SizedBox(height: 12),
           Container(
@@ -44,9 +42,8 @@ class HomeUnlockForm extends ConsumerWidget {
                     validator: ArticleUrl.validationError,
                     onChanged: (_) => controller.onUrlChanged(''),
                     onFieldSubmitted: (_) => controller.submit(),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: ink,
-                        ),
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(color: ink),
                     decoration: InputDecoration(
                       hintText: 'https://medium.com/…',
                       hintStyle: Theme.of(context).textTheme.bodyLarge
@@ -85,9 +82,8 @@ class HomeUnlockForm extends ConsumerWidget {
             AppAnimator.entrance(
               child: Text(
                 state.errorMessage,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.error),
               ),
             ),
           ],

@@ -61,7 +61,7 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
         elevation: 0,
         automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft),
+          icon: const Icon(LucideIcons.arrowLeft, size: 21),
           color: ink,
           tooltip: 'Back',
           onPressed: () => Navigator.of(context).pop(),
@@ -92,6 +92,7 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
                 // Lucide is outline-only, so the saved state uses the filled
                 // Material heart to make "already in the library" unmistakable.
                 state.isFavorite ? Icons.favorite : LucideIcons.heart,
+                size: 21,
                 color: state.isFavorite ? AppTheme.accent(context) : ink,
               ),
               tooltip: state.isFavorite
@@ -347,7 +348,7 @@ class _Action extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 19, color: onTap == null ? muted : color),
+            Icon(icon, size: 21, color: onTap == null ? muted : color),
             const SizedBox(height: 3),
             Text(
               label,

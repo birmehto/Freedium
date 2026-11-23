@@ -57,10 +57,11 @@ void main() {
         aliases: const ['archive.today', 'Archive.is'],
       );
 
-      expect(
-        mirror.allowedHosts,
-        {'archive.ph', 'archive.today', 'archive.is'},
-      );
+      expect(mirror.allowedHosts, {
+        'archive.ph',
+        'archive.today',
+        'archive.is',
+      });
     });
 
     test('is just the host when there are no aliases', () {

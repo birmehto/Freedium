@@ -12,11 +12,7 @@ void showThemeDialog(BuildContext context) {
   final controller = container.read(settingsControllerProvider.notifier);
   final current = container.read(settingsControllerProvider).themeMode;
 
-  const modes = [
-    ('System', 'system'),
-    ('Light', 'light'),
-    ('Dark', 'dark'),
-  ];
+  const modes = [('System', 'system'), ('Light', 'light'), ('Dark', 'dark')];
 
   showDialog<void>(
     context: context,
@@ -48,7 +44,8 @@ void showThemeDialog(BuildContext context) {
 void showMirrorDialog(BuildContext context) {
   final container = ProviderScope.containerOf(context);
   final controller = container.read(settingsControllerProvider.notifier);
-  final selected = container.read(settingsControllerProvider).preferredMirror ?? '';
+  final selected =
+      container.read(settingsControllerProvider).preferredMirror ?? '';
 
   final options = <(String, String, String?)>[
     ('Auto', '', 'Let Freedium choose'),
@@ -98,10 +95,8 @@ void showCreditsDialog(BuildContext context) {
       content: Text(
         'Freedium is not affiliated with Medium.\n\n'
         'All article content belongs to their respective authors.',
-        style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.muted(dialogContext),
-              height: 1.5,
-            ),
+        style: Theme.of(dialogContext).textTheme.bodyMedium
+            ?.copyWith(color: AppTheme.muted(dialogContext), height: 1.5),
       ),
       actions: [
         TextButton(
@@ -114,13 +109,13 @@ void showCreditsDialog(BuildContext context) {
 }
 
 Widget _dialogTitle(BuildContext context, String text) => Text(
-      text,
-      style: GoogleFonts.sourceSerif4(
-        fontSize: 21,
-        fontWeight: FontWeight.w600,
-        color: AppTheme.ink(context),
-      ),
-    );
+  text,
+  style: GoogleFonts.sourceSerif4(
+    fontSize: 21,
+    fontWeight: FontWeight.w600,
+    color: AppTheme.ink(context),
+  ),
+);
 
 class _DialogOption extends StatelessWidget {
   const _DialogOption({
@@ -152,9 +147,8 @@ class _DialogOption extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: ink,
-                        ),
+                    style: Theme.of(context).textTheme.bodyLarge
+                        ?.copyWith(color: ink),
                   ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
@@ -162,16 +156,19 @@ class _DialogOption extends StatelessWidget {
                       subtitle!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: muted,
-                          ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: muted),
                     ),
                   ],
                 ],
               ),
             ),
             if (selected)
-              Icon(LucideIcons.check, size: 18, color: AppTheme.accent(context)),
+              Icon(
+                LucideIcons.check,
+                size: 18,
+                color: AppTheme.accent(context),
+              ),
           ],
         ),
       ),

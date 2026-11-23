@@ -100,9 +100,9 @@ class FavoritesPage extends ConsumerWidget {
               child: list.isEmpty
                   ? AppAnimator.entrance(
                       child: _EmptyState(
-                      isSearching: isSearching,
-                      query: query,
-                      isLibraryEmpty: library.isEmpty,
+                        isSearching: isSearching,
+                        query: query,
+                        isLibraryEmpty: library.isEmpty,
                         onStart: () => ref
                             .read(appShellTabProvider.notifier)
                             .selectTab(AppShellTab.home),

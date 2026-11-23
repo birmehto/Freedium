@@ -91,13 +91,9 @@ class _ReaderAppearanceSheet extends ConsumerWidget {
                 _Choice(
                   label: mode.label,
                   selected: settings.themeMode == mode,
-                  leading: _ThemeSwatch(
-                    mode: mode,
-                    systemDark: systemDark,
-                  ),
-                  onTap: () => controller.update(
-                    settings.copyWith(themeMode: mode),
-                  ),
+                  leading: _ThemeSwatch(mode: mode, systemDark: systemDark),
+                  onTap: () =>
+                      controller.update(settings.copyWith(themeMode: mode)),
                 ),
             ],
           ),
@@ -129,17 +125,14 @@ class _ReaderAppearanceSheet extends ConsumerWidget {
                 children: [
                   Text(
                     'FONT SIZE',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: muted,
-                          letterSpacing: 1.6,
-                        ),
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: muted, letterSpacing: 1.6),
                   ),
                   const Spacer(),
                   Text(
                     '${settings.fontSize.toStringAsFixed(0)} px',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: ink,
-                        ),
+                    style: Theme.of(context).textTheme.labelMedium
+                        ?.copyWith(color: ink),
                   ),
                 ],
               ),
@@ -148,9 +141,8 @@ class _ReaderAppearanceSheet extends ConsumerWidget {
                 children: [
                   Text(
                     'A',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: muted,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: muted),
                   ),
                   Expanded(
                     child: Slider(
@@ -158,16 +150,14 @@ class _ReaderAppearanceSheet extends ConsumerWidget {
                       min: ReaderSettings.kMinFontSize,
                       max: ReaderSettings.kMaxFontSize,
                       divisions: ReaderSettings.kFontSizeDivisions,
-                      onChanged: (size) => controller.update(
-                        settings.copyWith(fontSize: size),
-                      ),
+                      onChanged: (size) =>
+                          controller.update(settings.copyWith(fontSize: size)),
                     ),
                   ),
                   Text(
                     'A',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: ink,
-                        ),
+                    style: Theme.of(context).textTheme.headlineSmall
+                        ?.copyWith(color: ink),
                   ),
                 ],
               ),
@@ -206,10 +196,8 @@ class _ChoiceGroup extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppTheme.muted(context),
-                letterSpacing: 1.6,
-              ),
+          style: Theme.of(context).textTheme.labelSmall
+              ?.copyWith(color: AppTheme.muted(context), letterSpacing: 1.6),
         ),
         const SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: children),
@@ -251,9 +239,8 @@ class _Choice extends StatelessWidget {
             if (leading != null) ...[leading!, const SizedBox(width: 8)],
             Text(
               label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected ? ink : muted,
-                  ),
+              style: Theme.of(context).textTheme.labelLarge
+                  ?.copyWith(color: selected ? ink : muted),
             ),
           ],
         ),
@@ -272,10 +259,7 @@ class _ReaderPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = ReaderTheme.previewColors(
-      settings,
-      systemDark: systemDark,
-    );
+    final preview = ReaderTheme.previewColors(settings, systemDark: systemDark);
     final text = ReaderTheme.hexToColor(preview.text);
     final secondary = ReaderTheme.hexToColor(preview.secondaryText);
     final link = ReaderTheme.hexToColor(preview.link);
@@ -376,12 +360,12 @@ class _ReaderPreview extends StatelessWidget {
   }
 
   String get _resolvedModeLabel => switch (settings.themeMode) {
-        ReaderThemeMode.system => systemDark ? 'Dark' : 'Light',
-        ReaderThemeMode.light => 'Light',
-        ReaderThemeMode.dark => 'Dark',
-        ReaderThemeMode.sepia => 'Sepia',
-        ReaderThemeMode.oled => 'OLED',
-      };
+    ReaderThemeMode.system => systemDark ? 'Dark' : 'Light',
+    ReaderThemeMode.light => 'Light',
+    ReaderThemeMode.dark => 'Dark',
+    ReaderThemeMode.sepia => 'Sepia',
+    ReaderThemeMode.oled => 'OLED',
+  };
 }
 
 /// A swatch of the palette a theme chip selects.

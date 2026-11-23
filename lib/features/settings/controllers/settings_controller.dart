@@ -34,7 +34,9 @@ class SettingsState {
     return SettingsState(
       appVersion: appVersion ?? this.appVersion,
       themeMode: themeMode ?? this.themeMode,
-      preferredMirror: clearMirror ? null : preferredMirror ?? this.preferredMirror,
+      preferredMirror: clearMirror
+          ? null
+          : preferredMirror ?? this.preferredMirror,
       autoFallback: autoFallback ?? this.autoFallback,
     );
   }
@@ -64,13 +66,18 @@ class SettingsController extends Notifier<SettingsState> {
 
   void toggleTheme(bool dark) {
     ref.read(themeControllerProvider.notifier).toggleTheme(dark);
-    state = state.copyWith(themeMode: dark ? PreferencesStore.modeDark : PreferencesStore.modeLight);
+    state = state.copyWith(
+      themeMode: dark ? PreferencesStore.modeDark : PreferencesStore.modeLight,
+    );
   }
 
   void setPreferredMirror(String? mirrorId) {
     ref.read(storageServiceProvider).preferences.preferredMirror = mirrorId;
     ref.read(articleResolverProvider).setPreferred(mirrorId);
-    state = state.copyWith(preferredMirror: mirrorId, clearMirror: mirrorId == null);
+    state = state.copyWith(
+      preferredMirror: mirrorId,
+      clearMirror: mirrorId == null,
+    );
   }
 
   void setAutoFallback(bool value) {
