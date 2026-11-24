@@ -15,7 +15,7 @@ import '../../../core/widgets/app_snackbar.dart';
 class SettingsState {
   const SettingsState({
     this.appVersion = '',
-    this.themeMode = PreferencesStore.modeSystem,
+    this.themeMode = PreferencesStore.modeDark,
     this.preferredMirror,
     this.autoFallback = true,
   });
@@ -109,9 +109,7 @@ class SettingsController extends Notifier<SettingsState> {
   /// everywhere else (or when no store app is installed) the https URL opens
   /// in a browser instead.
   Future<void> rateApp() async {
-    final market = Uri.parse(
-      'market://details?id=${AppConstants.playStoreId}',
-    );
+    final market = Uri.parse('market://details?id=${AppConstants.playStoreId}');
     if (await _openExternal(market, reportFailure: false)) return;
 
     await _openExternal(Uri.parse(AppConstants.playStoreUrl));

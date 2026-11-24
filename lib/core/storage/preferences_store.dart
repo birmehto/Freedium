@@ -36,15 +36,24 @@ class PreferencesStore {
 
   // ─────────────────────────────── theme ───────────────────────────────
 
-  /// One of [modeSystem], [modeLight] or [modeDark].
+  /// Either [modeLight] or [modeDark].
+  ///
+  /// Fresh installs start dark. Older builds allowed a [modeSystem] choice;
+  /// that stored value is resolved to the device's current brightness so those
+  /// users keep the appearance they had instead of being reset.
   String get themeMode {
     final raw = _store.read(themeModeKey);
 
     // Pre-1.0 builds persisted a boolean instead of the mode name.
     if (raw is bool) return raw ? modeDark : modeLight;
-    if (raw is String && raw.isNotEmpty) return raw;
+    if (raw is String && raw.isNotEmpty) {
+      if (raw == modeSystem) {
+        return platformBrightness == Brightness.dark ? modeDark : modeLight;
+      }
+      return raw;
+    }
 
-    return modeSystem;
+    return modeDark;
   }
 
   set themeMode(String value) {

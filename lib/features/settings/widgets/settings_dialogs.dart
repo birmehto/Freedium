@@ -12,7 +12,7 @@ void showThemeDialog(BuildContext context) {
   final controller = container.read(settingsControllerProvider.notifier);
   final current = container.read(settingsControllerProvider).themeMode;
 
-  const modes = [('System', 'system'), ('Light', 'light'), ('Dark', 'dark')];
+  const modes = [('Light', 'light'), ('Dark', 'dark')];
 
   showDialog<void>(
     context: context,

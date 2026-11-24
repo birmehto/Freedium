@@ -25,11 +25,24 @@ void main() {
   ThemeMode resolvedThemeMode() =>
       AppTheme.themeMode(container.read(themeControllerProvider).preferredMode);
 
-  test('starts in the stored theme mode', () {
+  test('starts in dark mode by default', () {
     final theme = container.read(themeControllerProvider);
 
-    expect(theme.preferredMode, PreferencesStore.modeSystem);
-    expect(resolvedThemeMode(), ThemeMode.system);
+    expect(theme.preferredMode, PreferencesStore.modeDark);
+    expect(theme.isDarkMode, isTrue);
+    expect(resolvedThemeMode(), ThemeMode.dark);
+  });
+
+  test('migrates a stored system preference to the device brightness', () {
+    final services = registerServices(
+      seed: {PreferencesStore.themeModeKey: PreferencesStore.modeSystem},
+    );
+    addTearDown(services.container.dispose);
+
+    final mode = services.container
+        .read(themeControllerProvider)
+        .preferredMode;
+    expect(mode, isIn([PreferencesStore.modeLight, PreferencesStore.modeDark]));
   });
 
   test('reads a persisted dark preference', () {
@@ -69,13 +82,13 @@ void main() {
     expect(storage.preferences.themeMode, PreferencesStore.modeLight);
   });
 
-  test('setThemeMode keeps light and dark explicit', () {
+  test('setThemeMode switches between light and dark', () {
     final theme = container.read(themeControllerProvider.notifier);
-
-    theme.setThemeMode(PreferencesStore.modeSystem);
-    expect(resolvedThemeMode(), ThemeMode.system);
 
     theme.setThemeMode(PreferencesStore.modeLight);
     expect(resolvedThemeMode(), ThemeMode.light);
+
+    theme.setThemeMode(PreferencesStore.modeDark);
+    expect(resolvedThemeMode(), ThemeMode.dark);
   });
 }

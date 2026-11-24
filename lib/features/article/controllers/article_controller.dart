@@ -222,7 +222,7 @@ class ArticleController extends Notifier<ArticleState> {
     _startLoadingTimer();
   }
 
-  // ─────────────────────────────── WebView ────────────────────────────────
+  //  WebView ─
 
   void onPageStart(String? url) {
     state = state.copyWith(
@@ -359,7 +359,7 @@ class ArticleController extends Notifier<ArticleState> {
     await controller.loadRequest(Uri.parse(url));
   }
 
-  // ─────────────────────────────── reader ────────────────────────────────
+  //  reader ─
 
   void updateReaderSettings(ReaderSettings settings) =>
       ref.read(readerSettingsProvider.notifier).update(settings);
@@ -395,7 +395,7 @@ class ArticleController extends Notifier<ArticleState> {
     }
   }
 
-  // ─────────────────────────────── metadata ──────────────────────────────
+  //  metadata ──────────────────────────────
 
   /// Extracts metadata once a document is visible. Nothing is written to the
   /// offline store here: an article is kept because it was favorited, not
@@ -440,7 +440,7 @@ class ArticleController extends Notifier<ArticleState> {
     }
   }
 
-  // ─────────────────────────────── offline ───────────────────────────────
+  //  offline
 
   Future<bool> _saveArticleOffline() async {
     final url = state.originalUrl;
@@ -623,7 +623,7 @@ ${copy.html}
     return result;
   }
 
-  // ─────────────────────────────── actions ──────────────────────────────
+  //  actions ──────────────────────────────
 
   Future<void> openInBrowser() async {
     final uri = Uri.tryParse(state.originalUrl);
@@ -719,7 +719,7 @@ ${copy.html}
         .join(' ');
   }
 
-  // ──────────────────────────────── timer ────────────────────────────────
+  // ─ timer ─
 
   void _startLoadingTimer() {
     _loadingTimer?.cancel();

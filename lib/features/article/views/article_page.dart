@@ -27,6 +27,15 @@ class ArticlePage extends ConsumerStatefulWidget {
 class _ArticlePageState extends ConsumerState<ArticlePage> {
   late final ArticleController _controller;
 
+  /// The URL the WebView on this page was created for.
+  ///
+  /// The controller is app-scoped and still holds the previous article's state
+  /// while a new page is being built, so the WebView must not be created from
+  /// that stale URL. It is also used as the widget key: without it Flutter would
+  /// reuse the old WebView state for a different article and keep loading the
+  /// first URL (CSS injection then appears to work only once).
+  String? _webViewUrl;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +46,9 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       unawaited(_controller.open(widget.request));
+      if (!mounted) return;
+      final url = ref.read(articleControllerProvider).currentUrl;
+      setState(() => _webViewUrl = url.isEmpty ? null : url);
     });
   }
 
@@ -112,8 +124,13 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
       ),
       body: Stack(
         children: [
-          if (state.currentUrl.isNotEmpty)
-            ArticleWebView(url: state.currentUrl, controller: _controller),
+          if (_webViewUrl case final url?) ...[
+            ArticleWebView(
+              key: ValueKey(url),
+              url: url,
+              controller: _controller,
+            ),
+          ],
           if (state.isLoading)
             Positioned(
               top: 0,

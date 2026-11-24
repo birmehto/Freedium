@@ -103,7 +103,6 @@ class HomeController extends Notifier<HomeState> {
 
       urlController.text = text.trim();
       onUrlChanged(text);
-      AppSnackbar.message('URL pasted from clipboard');
     } catch (error) {
       final exception = AppException.from(error, context: 'pasteFromClipboard');
       appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
@@ -131,7 +130,12 @@ class HomeController extends Notifier<HomeState> {
 
     state = state.copyWith(isLoading: true);
     try {
-      await pushPage(ArticlePage(request: request));
+      final route = pushPage(ArticlePage(request: request));
+      // The route's future completes only when the reader is popped. Keeping
+      // the form disabled until then would reject a share that arrives while
+      // an article is already open.
+      state = state.copyWith(isLoading: false);
+      await route;
       urlController.clear();
       state = const HomeState();
     } catch (error, stackTrace) {

@@ -170,6 +170,14 @@ void main() {
       expect(script, contains('custom-reader-style'));
       expect(script, contains('previous.remove()'));
     });
+
+    test('blocks host touchmove handlers that cancel native scrolling', () {
+      final script = ReaderTheme.injectCssScript('a{}');
+
+      expect(script, contains('__freediumTouchScroll'));
+      expect(script, contains('stopImmediatePropagation'));
+      expect(script, contains('capture: true'));
+    });
   });
 
   group('earlyStyleInjector', () {

@@ -30,21 +30,21 @@ void main() {
     await tester.pumpWidget(wrapTestApp(child: const Freedium()));
     await tester.pumpAndSettle();
 
-    expect(resolvedBrightness(tester), Brightness.light);
-
-    theme.toggleTheme(true);
-    await tester.pumpAndSettle();
-
     expect(resolvedBrightness(tester), Brightness.dark);
-    expect(
-      services.container.read(themeControllerProvider).preferredMode,
-      PreferencesStore.modeDark,
-    );
 
     theme.toggleTheme(false);
     await tester.pumpAndSettle();
 
     expect(resolvedBrightness(tester), Brightness.light);
+    expect(
+      services.container.read(themeControllerProvider).preferredMode,
+      PreferencesStore.modeLight,
+    );
+
+    theme.toggleTheme(true);
+    await tester.pumpAndSettle();
+
+    expect(resolvedBrightness(tester), Brightness.dark);
   });
 
   testWidgets('a stored dark preference is applied on startup', (tester) async {

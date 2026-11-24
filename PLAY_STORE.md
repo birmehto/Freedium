@@ -14,15 +14,6 @@ Listing text and AI image prompts for the redesigned v1.3.0 app.
 | **Content rating** | Everyone |
 | **Support email** | birmehto@gmail.com |
 
-> **There is no "Keywords" field in Google Play Console.** Google removed it; indexing comes from the app name, short description and full description. The phrases below are already placed in those fields naturally — do not paste them as a comma-separated list anywhere.
->
-> - `medium reader` → app name + short description
-> - `medium paywall` / `unlocked articles` → full description ("without the paywall", "member-only Medium stories")
-> - `offline reading` → short description + full description
-> - `clean reader` → short description + full description
-> - `dark mode` / `font size` → full description ("System, Light, Dark, Sepia and OLED", "font family and text size")
-> - `share link` → full description ("share a Medium link from any Android app")
-
 ### Full description
 
 Read the Medium stories you care about — without the paywall, the pop-ups, or the clutter.

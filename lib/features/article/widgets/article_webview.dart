@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -57,7 +59,16 @@ class _ArticleWebViewState extends State<ArticleWebView> {
 
   @override
   Widget build(BuildContext context) {
-    return WebViewWidget(controller: _webViewController);
+    return WebViewWidget(
+      controller: _webViewController,
+      // Eagerly claim every pointer: the WebView must see the whole gesture
+      // (down, moves, up) or native scrolling and taps inside the page stall.
+      // Competing recognizers are the wrong tool here — they only forward the
+      // gesture after they win the arena, which drops the initial movement.
+      gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+        Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer()),
+      },
+    );
   }
 
   WebViewController _createWebViewController() {

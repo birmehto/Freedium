@@ -747,6 +747,17 @@ $hostModeSyncJs
     // overflow/height settings until a refresh forces a re-layout.
     void document.body.offsetHeight;
   } catch (e) {}
+
+  // Host pages such as Medium cancel touchmove to drive their own gestures,
+  // which also cancels the WebView's native scroll. A capture-phase listener
+  // runs before theirs; stopping propagation there keeps the default scroll.
+  // The flag keeps repeated injections (theme changes) from stacking listeners.
+  if (!window.__freediumTouchScroll) {
+    window.__freediumTouchScroll = true;
+    document.addEventListener('touchmove', function (event) {
+      event.stopImmediatePropagation();
+    }, { capture: true, passive: true });
+  }
 })();
 $hostModeSyncJs
 ''';

@@ -29,12 +29,6 @@ class SettingsPage extends ConsumerWidget {
               .where((mirror) => mirror.id == mirrorId)
               .map((mirror) => mirror.name)
               .firstWhere((_) => true, orElse: () => mirrorId);
-    final themeLabel = switch (settings.themeMode) {
-      'system' => 'System',
-      'light' => 'Light',
-      'dark' => 'Dark',
-      final other => other,
-    };
 
     return Scaffold(
       backgroundColor: AppTheme.paper(context),
@@ -61,13 +55,6 @@ class SettingsPage extends ConsumerWidget {
                 value: theme.isDarkMode,
                 onChanged: controller.toggleTheme,
               ),
-            ),
-            const _Hairline(),
-            _SettingsRow(
-              title: 'Theme',
-              subtitle: themeLabel,
-              onTap: () => showThemeDialog(context),
-              trailing: Icon(LucideIcons.chevronRight, size: 18, color: muted),
             ),
             const _Hairline(),
             _SettingsRow(

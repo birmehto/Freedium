@@ -125,9 +125,9 @@ void main() {
     });
   });
 
-    test('rateApp opens the store without throwing', () async {
-      // No platform channel is mocked here; the launcher failure is handled
-      // and reported through the snackbar rather than escaping the controller.
-      await expectLater(controller.rateApp(), completes);
-    });
+  test('rateApp opens the store without throwing', () async {
+    // No platform channel is mocked here; the launcher failure is handled
+    // and reported through the snackbar rather than escaping the controller.
+    await expectLater(controller.rateApp(), completes);
+  });
 }
