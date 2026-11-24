@@ -86,19 +86,31 @@ void showMirrorDialog(BuildContext context) {
 }
 
 void showCreditsDialog(BuildContext context) {
+  final container = ProviderScope.containerOf(context);
+  final version = container.read(settingsControllerProvider).appVersion;
+  final label = version.isEmpty ? 'Freedium' : 'Freedium $version';
+
   showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       backgroundColor: AppTheme.paper(dialogContext),
       surfaceTintColor: Colors.transparent,
       title: _dialogTitle(dialogContext, 'Licenses & Credits'),
-      content: Text(
-        'Freedium is an independent reader built by Bir.\n\n'
-        'It is not affiliated with Medium. Stories belong to their authors — '
-        'we just help you read them.\n\n'
-        'Thanks for reading.',
-        style: Theme.of(dialogContext).textTheme.bodyMedium
-            ?.copyWith(color: AppTheme.muted(dialogContext), height: 1.5),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Text(
+            '$label — made by Bir Mehto, MIT licensed, and held together with '
+            'open source and coffee.\n\n'
+            'Not affiliated with, endorsed by, or connected to Medium. '
+            'Stories belong to their authors — we just hold the door '
+            'open.\n\n'
+            'No ads, no analytics, no accounts — your reading stays on your '
+            'phone. Nosy strangers get nothing.',
+            style: Theme.of(dialogContext).textTheme.bodyMedium
+                ?.copyWith(color: AppTheme.muted(dialogContext), height: 1.5),
+          ),
+        ),
       ),
       actions: [
         TextButton(

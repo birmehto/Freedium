@@ -4,7 +4,20 @@ All notable changes to Freedium are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-11-24
+
+### Added
+- **Redesigned UI screenshots** for Home, Library, Settings, Reader Appearance, Article Reader and Share Integration, plus a new Play banner.
+- `THIRD_PARTY_NOTICES.md` with library, font, icon and content attributions.
+- Refreshed the README around the redesigned UI and the new screenshots.
+
+### Changed
+- **R8 rules tightened**: removed the blanket Flutter keeps and rely on the embedding's `@Keep` annotations and generated plugin rules. DEX classes down 41%, obfuscation rate up to 85%, universal APK about 58 MB.
+- **Licenses & Credits** is now a short, friendly dialog that covers the legal bit without the wall of text.
+- Updated the MIT copyright range, tidied the README legal section, and set the version to 1.2.0 (build 7).
+
+### Fixed
+- The Home URL field no longer leaves a stale validation message after the link is corrected or cleared.
 
 ## [1.3.0] - 2026-11-24
 

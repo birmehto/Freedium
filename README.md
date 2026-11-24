@@ -4,14 +4,14 @@
 
 **Read any Medium story — free, clean, and distraction-free.**
 
-[![Version](https://img.shields.io/badge/Release-v1.3.0-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
+[![Version](https://img.shields.io/badge/Release-v1.2.0-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Android-blue?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
 
-<img src="screenshots/icon.png" width="120" alt="Freedium app icon"/>
+<img src="screenshots/banner.jpg" width="600" alt="Freedium banner"/>
 
-**Paste or share a Medium link, and Freedium opens the full story in a clean, comfortable reader** — no paywall, no clutter, no account.
+**Paste or share a Medium link, and Freedium opens the full story in a freshly redesigned, distraction-free reader** — no paywall, no clutter, no account.
 
 ⭐ **[Star the repo](https://github.com/birmehto/Freedium/stargazers)** — it is the single best way to help new readers discover Freedium.
 
@@ -29,7 +29,9 @@
 
 - **Your reading stays yours.** No account, no analytics, no ads. Favorites, settings and saved stories stay on your device — no cloud sync. Opening a story only sends its link to the mirror that fetches it.
 - **A story, not a webpage.** The reader strips the paywall and the clutter, then gives you five themes, font families and text size so long-form writing stays easy to read.
+- **Redesigned from top to bottom.** An editorial masthead, Lucide icons, quiet motion and cleaner spacing make every screen feel calm and intentional.
 - **It keeps working.** Five sources with automatic fallback and health tracking. Favorited stories are saved on-device, so a story you care about is still readable when every mirror is down.
+- **Smaller and faster.** Tighter R8 rules removed 41% of DEX classes and shrank the universal APK to roughly 58 MB.
 - **Free and open source.** MIT licensed, built in spare time. A coffee is appreciated, never required.
 
 ---
@@ -37,6 +39,8 @@
 ## ✨ Features
 
 - **🛡️ Unlock any Medium story** — paste a link or share one from any app.
+- **🖌️ Redesigned interface** — editorial masthead, Lucide icons, calmer spacing and one shared motion system.
+- **⚡ Lean release build** — minimized R8 rules keep the app small without breaking any plugin.
 - **⭐ Favorites** — a searchable on-device library of the stories you keep.
 - **📥 Offline reading** — favoriting a story keeps a copy for offline use; removing the favorite removes the copy.
 - **🎨 Make it yours** — System, Light, Dark, Sepia and OLED reader themes, plus font family and size.
@@ -49,15 +53,13 @@
 
 ## 📱 Screenshots
 
-The images currently in `screenshots/` show the previous design and are being regenerated for v1.3.0. Until then, the most accurate view of the new UI is the [Google Play listing](https://play.google.com/store/apps/details?id=com.bir.freedium). The AI prompts used to produce the new set live in [PLAY_STORE.md](PLAY_STORE.md).
+| Home | Library | Settings |
+|:---:|:---:|:---:|
+| <img src="screenshots/home.jpg" width="200" alt="Home"/> | <img src="screenshots/library.jpg" width="200" alt="Library"/> | <img src="screenshots/settings.jpg" width="200" alt="Settings"/> |
 
----
-
-## 📲 Download & Install (Android)
-
-[Get it on Google Play](https://play.google.com/store/apps/details?id=com.bir.freedium) · [Download APKs from GitHub Releases](https://github.com/birmehto/Freedium/releases/latest)
-
-Direct APKs come as `universal` (all devices), `arm64-v8a` (modern 64-bit), `armeabi-v7a` (older 32-bit) and `x86_64` (emulators). Allow "Install unknown apps" when prompted.
+| Reader appearance | Article reader | Share integration |
+|:---:|:---:|:---:|
+| <img src="screenshots/reader_appearance.jpg" width="200" alt="Reader appearance"/> | <img src="screenshots/article_reader.jpg" width="200" alt="Article reader"/> | <img src="screenshots/share_integration.jpg" width="200" alt="Share integration"/> |
 
 ---
 
@@ -90,13 +92,13 @@ flutter run
 | Local storage | Drift + SQLite behind a `KeyValueStore` abstraction |
 | Share integration | `receive_sharing_intent` (Share → Freedium) |
 | Utilities | `url_launcher`, `share_plus`, `intl`, `package_info_plus` |
-| Quality | `flutter_lints`, 338 unit/widget tests |
+| Quality | `flutter_lints`, 344 unit/widget tests |
 
 ---
 
 ## 🗺️ Roadmap
 
-Shipped already: unlock & read, favorites, offline copies, reader customization, five-source fallback, app themes and consistent motion.
+Shipped already: unlock & read, favorites, offline copies, reader customization, five-source fallback, app themes, consistent motion and the redesigned UI.
 
 Next up:
 
@@ -148,14 +150,13 @@ Freedium is free and open source, built and maintained in spare time. If it's us
 
 - 🤝 [Contributing](CONTRIBUTING.md) — build instructions and guidelines
 - 📝 [Changelog](CHANGELOG.md) — release history
-- 📋 [Release notes](RELEASE_NOTES.md) — highlights for the current release
-- 🖼️ [Play Store assets & ASO copy](PLAY_STORE.md) — screenshots prompts and store listing text
+- ⚖️ [Third-party notices](THIRD_PARTY_NOTICES.md) — library, font and content attributions
 - 🔒 [Privacy](PRIVACY_POLICY.md) — what stays on your device
 
 ---
 
-## ⚖️ Legal
+## ⚖️ Legal & credits
 
-Freedium is **not affiliated with, endorsed by, or connected to Medium or Freedium**. It wraps publicly available reader endpoints; all article content remains the property of its original authors.
+Not affiliated with Medium. Stories belong to their authors — we just hold the door open. MIT licensed, © 2025–2026 Bir Mehto.
 
-Open source under the [MIT License](LICENSE). © Bir Mehto.
+The long version (libraries, fonts, mirrors and the rest) lives in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The short, funny version is in the app under **Settings → Licenses & Credits**.

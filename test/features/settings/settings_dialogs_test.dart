@@ -90,13 +90,18 @@ void main() {
   });
 
   group('showCreditsDialog', () {
-    testWidgets('states the licensing facts plainly', (tester) async {
+    testWidgets('keeps the legal bit short and friendly', (tester) async {
       await openDialog(tester, showCreditsDialog);
 
       expect(find.text('Licenses & Credits'), findsOneWidget);
-      expect(find.textContaining('not affiliated with Medium'), findsOneWidget);
-      expect(find.textContaining('independent reader'), findsOneWidget);
+      expect(find.textContaining('Not affiliated with'), findsOneWidget);
+      expect(
+        find.textContaining('Stories belong to their authors'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('MIT licensed'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Open-source licenses'), findsNothing);
     });
   });
 }

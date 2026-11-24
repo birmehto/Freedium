@@ -83,6 +83,79 @@ void main() {
       expect(find.text('Only Medium links are supported'), findsOneWidget);
     });
 
+    testWidgets('stays quiet until the form is submitted', (tester) async {
+      registerServices();
+
+      await tester.pumpWidget(wrapTestApp(child: const HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'not a url');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Please enter a valid URL'), findsNothing);
+    });
+
+    testWidgets('clears the validation message once the URL is corrected', (
+      tester,
+    ) async {
+      registerServices();
+
+      await tester.pumpWidget(wrapTestApp(child: const HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'not a url');
+      await tester.tap(find.text('Unlock story'));
+      await tester.pumpAndSettle();
+      expect(find.text('Please enter a valid URL'), findsOneWidget);
+
+      await tester.enterText(
+        find.byType(TextFormField),
+        'https://medium.com/@user/a-story',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Please enter a valid URL'), findsNothing);
+    });
+
+    testWidgets('updates the message while the URL stays invalid', (
+      tester,
+    ) async {
+      registerServices();
+
+      await tester.pumpWidget(wrapTestApp(child: const HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'not a url');
+      await tester.tap(find.text('Unlock story'));
+      await tester.pumpAndSettle();
+      expect(find.text('Please enter a valid URL'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextFormField), 'https://google.com');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Please enter a valid URL'), findsNothing);
+      expect(find.text('Only Medium links are supported'), findsOneWidget);
+    });
+
+    testWidgets('clears the validation message when the field is cleared', (
+      tester,
+    ) async {
+      registerServices();
+
+      await tester.pumpWidget(wrapTestApp(child: const HomePage()));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextFormField), 'not a url');
+      await tester.tap(find.text('Unlock story'));
+      await tester.pumpAndSettle();
+      expect(find.text('Please enter a valid URL'), findsOneWidget);
+
+      await tester.tap(find.byIcon(LucideIcons.x));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Please enter a valid URL'), findsNothing);
+    });
+
     testWidgets('enables the article for a Medium URL', (tester) async {
       final services = registerServices();
 

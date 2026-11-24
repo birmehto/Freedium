@@ -113,6 +113,7 @@ class SettingsPage extends ConsumerWidget {
             const _Hairline(),
             _SettingsRow(
               title: 'Licenses & Credits',
+              subtitle: 'The tiny legal bit',
               onTap: () => showCreditsDialog(context),
             ),
           ],

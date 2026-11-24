@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart'
-    show FocusNode, FormState, GlobalKey, TextEditingController, WidgetsBinding;
+    show FocusNode, TextEditingController, WidgetsBinding;
 
 import '../../../core/errors/app_exception.dart';
 import '../../../core/navigation/app_navigation.dart';
@@ -18,17 +18,31 @@ class HomeState {
     this.urlText = '',
     this.errorMessage = '',
     this.isLoading = false,
+    this.showValidation = false,
   });
 
   final String urlText;
   final String errorMessage;
   final bool isLoading;
 
-  HomeState copyWith({String? urlText, String? errorMessage, bool? isLoading}) {
+  /// Whether the form has been submitted once.
+  ///
+  /// Until then the field stays quiet, so a half-typed URL is not flagged. After
+  /// the first submit it validates on every change, which is what makes a
+  /// corrected URL clear its error instead of leaving it on screen.
+  final bool showValidation;
+
+  HomeState copyWith({
+    String? urlText,
+    String? errorMessage,
+    bool? isLoading,
+    bool? showValidation,
+  }) {
     return HomeState(
       urlText: urlText ?? this.urlText,
       errorMessage: errorMessage ?? this.errorMessage,
       isLoading: isLoading ?? this.isLoading,
+      showValidation: showValidation ?? this.showValidation,
     );
   }
 }
@@ -38,7 +52,6 @@ final homeControllerProvider = NotifierProvider<HomeController, HomeState>(
 );
 
 class HomeController extends Notifier<HomeState> {
-  final formKey = GlobalKey<FormState>();
   final urlController = TextEditingController();
   final urlFocusNode = FocusNode();
 
@@ -84,13 +97,26 @@ class HomeController extends Notifier<HomeState> {
     if (url != null) _openSharedUrl(url);
   }
 
-  void onUrlChanged(String _) {
-    state = state.copyWith(errorMessage: '');
+  /// Clears any error, then flags the field once the user edits it again.
+  ///
+  /// Validation lives in the controller rather than a [Form] so there is a
+  /// single error channel: the same slot below the field shows both validator
+  /// messages and runtime failures, and fixing the URL removes it immediately.
+  void onUrlChanged(String value) {
+    state = state.copyWith(
+      errorMessage: state.showValidation
+          ? (ArticleUrl.validationError(value) ?? '')
+          : '',
+    );
   }
 
   void submit() {
     urlFocusNode.unfocus();
-    if (formKey.currentState?.validate() ?? false) openArticle();
+    final error = ArticleUrl.validationError(urlController.text);
+    // Mark the form as submitted so later edits are validated live instead of
+    // leaving a stale message under the field.
+    state = state.copyWith(showValidation: true, errorMessage: error ?? '');
+    if (error == null) openArticle();
   }
 
   Future<void> pasteFromClipboard() async {
@@ -102,7 +128,7 @@ class HomeController extends Notifier<HomeState> {
       }
 
       urlController.text = text.trim();
-      onUrlChanged(text);
+      onUrlChanged(urlController.text);
     } catch (error) {
       final exception = AppException.from(error, context: 'pasteFromClipboard');
       appLog(exception.toString(), name: 'Home', level: LogLevel.warning);
