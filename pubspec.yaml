@@ -33,3 +33,6 @@ dev_dependencies:
   webview_flutter_platform_interface: any
 flutter:
   uses-material-design: true
+  assets:
+    # google_fonts finds these by filename and never needs to fetch at runtime.
+    - assets/fonts/

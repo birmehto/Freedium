@@ -8,11 +8,13 @@ import 'core/providers/service_providers.dart';
 import 'core/services/clipboard_service.dart';
 import 'core/services/share_intent_service.dart';
 import 'core/services/storage_service.dart';
+import 'core/theme/app_fonts.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_log.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppFonts.configure();
 
   // One long-lived instance per service. Providers would otherwise construct a
   // second database or a second share subscription on first watch.
