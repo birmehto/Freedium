@@ -69,6 +69,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // The VCS revision is not reproducible across build machines;
+            // F-Droid rebuilds from a clean checkout and compares the output.
+            vcsInfo {
+                include = false
+            }
             signingConfig = if (hasReleaseKeystore) {
                 signingConfigs.getByName("release")
             } else {

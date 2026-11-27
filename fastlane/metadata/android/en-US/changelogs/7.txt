@@ -6,4 +6,4 @@ Version 1.3.0 (build 7)
 - Sharing the same article twice now works; restored tasks no longer reopen the last story.
 - Fonts are bundled, so the app no longer fetches anything from Google Fonts at runtime.
 - Fixed trailing punctuation on shared links and unstable mirror ordering.
-- Builds are reproducible: no developer dependency metadata is written into the APK.
+- Builds are reproducible: no developer dependency metadata or VCS revision is written into the APK.

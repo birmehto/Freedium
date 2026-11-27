@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - UI consistency pass: aligned top spacing, uppercase tracking, icon sizes, Settings subtitles (readable names instead of stored ids) and accent-colored switches.
 - The reader keeps a single save control — the heart in the app bar.
 - Fonts are bundled and runtime fetching is disabled; the app no longer contacts Google Fonts.
-- The Android build no longer writes developer dependency metadata into the APK.
+- The Android build no longer writes developer dependency metadata or the local VCS revision into the APK.
 
 ### Fixed
 - The reader now applies its palette before the first paint and blocks pop-ups at document start; both helpers existed but were never wired up.
