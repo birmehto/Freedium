@@ -39,9 +39,7 @@ void main() {
     );
     addTearDown(services.container.dispose);
 
-    final mode = services.container
-        .read(themeControllerProvider)
-        .preferredMode;
+    final mode = services.container.read(themeControllerProvider).preferredMode;
     expect(mode, isIn([PreferencesStore.modeLight, PreferencesStore.modeDark]));
   });
 

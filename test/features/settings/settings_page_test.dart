@@ -135,9 +135,7 @@ void main() {
     await tester.pumpWidget(wrapTestApp(child: const SettingsPage()));
     await tester.pumpAndSettle();
 
-    final darkModeSwitch = tester.widget<Switch>(
-      find.byType(Switch).first,
-    );
+    final darkModeSwitch = tester.widget<Switch>(find.byType(Switch).first);
     expect(darkModeSwitch.value, isTrue);
     expect(find.text('Freedium Web'), findsOneWidget);
     expect(find.text('mirror'), findsNothing);
