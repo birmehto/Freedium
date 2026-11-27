@@ -1,7 +1,6 @@
-# Template for metadata/com.bir.freedium.yml in the fdroiddata repository.
-# Copy this file there and replace the `commit` value with the release tag you
-# pushed. See FDROID.md for the full submission steps.
-
+AntiFeatures:
+  - NonFreeNet
+  - TetheredNet
 Categories:
   - Reading
 License: MIT
@@ -11,14 +10,7 @@ WebSite: https://github.com/birmehto/Freedium
 SourceCode: https://github.com/birmehto/Freedium
 IssueTracker: https://github.com/birmehto/Freedium/issues
 Changelog: https://github.com/birmehto/Freedium/blob/main/CHANGELOG.md
-Summary: Read Medium stories in a clean, distraction-free reader
 AutoName: Freedium
-
-# The client is free software, but it fetches articles from public third-party
-# mirrors and Medium itself. Declare that honestly instead of hiding it.
-AntiFeatures:
-  - NonFreeNet
-  - TetheredNet
 
 RepoType: git
 Repo: https://github.com/birmehto/Freedium.git
@@ -26,13 +18,16 @@ Repo: https://github.com/birmehto/Freedium.git
 Builds:
   - versionName: 1.3.0
     versionCode: 7
-    # Tag the release commit in this repository first, then push the tag.
     commit: v1.3.0
+    output: build/app/outputs/flutter-apk/app-release.apk
     srclibs:
       - flutter@stable
     prebuild:
       - $$flutter$$/bin/flutter config --no-analytics
       - $$flutter$$/bin/flutter pub get
-    build:
-      - $$flutter$$/bin/flutter build apk --release --target-platform android-arm,android-arm64
-    output: build/app/outputs/flutter-apk/app-release.apk
+    build: $$flutter$$/bin/flutter build apk --release --target-platform android-arm,android-arm64
+
+AutoUpdateMode: None
+UpdateCheckMode: None
+CurrentVersion: 1.3.0
+CurrentVersionCode: 7
