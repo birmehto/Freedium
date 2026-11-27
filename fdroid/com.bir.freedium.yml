@@ -26,7 +26,7 @@ Builds:
     prebuild:
       - $$flutter$$/bin/flutter config --no-analytics
       - $$flutter$$/bin/flutter pub get
-    build: $$flutter$$/bin/flutter build apk --release --target-platform android-arm,android-arm64
+    build: $$flutter$$/bin/flutter build apk --release --target-platform android-arm,android-arm64,android-x64
 
 AutoUpdateMode: None
 UpdateCheckMode: None
