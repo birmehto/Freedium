@@ -55,14 +55,14 @@ void main() {
     // task and hands it back as the "initial" intent on every relaunch, so
     // coming back to the app re-opened the article instead of showing Home.
     test('a re-delivered launch intent does not re-open the article', () {
-      service.handleShare(article);
+      service.handleShare(article, fromLaunchIntent: true);
       expect(service.incomingUrl.value, article);
 
       service.consume();
       expect(service.incomingUrl.value, isNull);
 
       final restarted = relaunch();
-      restarted.handleShare(article);
+      restarted.handleShare(article, fromLaunchIntent: true);
 
       expect(
         restarted.incomingUrl.value,
@@ -72,20 +72,32 @@ void main() {
     });
 
     test('a different article after a re-delivery is still opened', () {
-      service.handleShare(article);
+      service.handleShare(article, fromLaunchIntent: true);
       service.consume();
 
       final restarted = relaunch();
-      restarted.handleShare(other);
+      restarted.handleShare(other, fromLaunchIntent: true);
 
       expect(restarted.incomingUrl.value, other);
     });
 
     test('the same article shared again once the share is forgotten', () {
-      service.handleShare(article);
+      service.handleShare(article, fromLaunchIntent: true);
       service.consume();
 
       preferences.forgetLastShare();
+      service.handleShare(article, fromLaunchIntent: true);
+
+      expect(service.incomingUrl.value, article);
+    });
+
+    // A share that arrives while Freedium is alive comes through the live
+    // stream, not a restored launch intent, so it is a genuine request even
+    // when it points at the article the reader just closed.
+    test('a live share of the same article is opened again', () {
+      service.handleShare(article, fromLaunchIntent: true);
+      service.consume();
+
       service.handleShare(article);
 
       expect(service.incomingUrl.value, article);

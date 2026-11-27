@@ -41,7 +41,9 @@ class ShareIntentService {
 
     try {
       final files = await ReceiveSharingIntent.instance.getInitialMedia();
-      if (files.isNotEmpty) handleShare(files.first.path);
+      if (files.isNotEmpty) {
+        handleShare(files.first.path, fromLaunchIntent: true);
+      }
     } catch (error) {
       appLog(
         'Could not read the initial share intent: $error',
@@ -68,14 +70,17 @@ class ShareIntentService {
   ///
   /// The single place a share is interpreted, so the launch intent and the live
   /// stream follow the same rules. Public as the only seam tests can reach.
-  void handleShare(String? text) {
+  ///
+  /// [fromLaunchIntent] marks a payload read from `getInitialMedia` when the
+  /// process starts. Android re-delivers the intent that started a task when
+  /// the task is restored from recents, so that path has to be deduplicated
+  /// against the last share. A live share (`onNewIntent`, the media stream) is
+  /// a fresh request even when it carries the same URL.
+  void handleShare(String? text, {bool fromLaunchIntent = false}) {
     final url = ArticleUrl.normalize(ArticleUrl.extractFirstUrl(text));
     if (url == null) return;
 
-    // Android hands back the intent that started a task every time it is
-    // relaunched. Remembering the last opened URL tells a re-delivery apart from
-    // a genuinely new share.
-    if (_preferences.lastSharedUrl == url) {
+    if (fromLaunchIntent && _preferences.lastSharedUrl == url) {
       appLog('Ignoring a re-delivered share', name: 'ShareIntent');
       return;
     }
