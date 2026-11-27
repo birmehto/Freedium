@@ -1,0 +1,9 @@
+Version 1.3.0 (build 7)
+
+- Redesigned UI: editorial masthead, Lucide icons, calmer spacing and one shared motion system.
+- Reader applies its theme before the first paint and blocks pop-ups at document start.
+- Five reading sources with automatic fallback and health tracking.
+- Sharing the same article twice now works; restored tasks no longer reopen the last story.
+- Fonts are bundled, so the app no longer fetches anything from Google Fonts at runtime.
+- Fixed trailing punctuation on shared links and unstable mirror ordering.
+- Builds are reproducible: no developer dependency metadata is written into the APK.

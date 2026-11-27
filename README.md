@@ -4,7 +4,7 @@
 
 **Read any Medium story — free, clean, and distraction-free.**
 
-[![Version](https://img.shields.io/badge/Release-v1.2.0-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
+[![Version](https://img.shields.io/badge/Release-v1.3.0-2E8B57?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![Platform](https://img.shields.io/badge/Platform-Android-blue?style=flat-square)](https://github.com/birmehto/Freedium/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/birmehto/Freedium?style=flat-square)](https://github.com/birmehto/Freedium/stargazers)
@@ -150,6 +150,7 @@ Freedium is free and open source, built and maintained in spare time. If it's us
 
 - 🤝 [Contributing](CONTRIBUTING.md) — build instructions and guidelines
 - 📝 [Changelog](CHANGELOG.md) — release history
+- 📦 [F-Droid guide](FDROID.md) — how to build and submit Freedium to F-Droid
 - ⚖️ [Third-party notices](THIRD_PARTY_NOTICES.md) — library, font and content attributions
 - 🔒 [Privacy](PRIVACY_POLICY.md) — what stays on your device
 

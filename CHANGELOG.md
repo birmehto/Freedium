@@ -4,24 +4,10 @@ All notable changes to Freedium are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-11-24
+## [1.3.0] - 2026-11-27
 
 ### Added
-- **Redesigned UI screenshots** for Home, Library, Settings, Reader Appearance, Article Reader and Share Integration, plus a new Play banner.
-- `THIRD_PARTY_NOTICES.md` with library, font, icon and content attributions.
-- Refreshed the README around the redesigned UI and the new screenshots.
-
-### Changed
-- **R8 rules tightened**: removed the blanket Flutter keeps and rely on the embedding's `@Keep` annotations and generated plugin rules. DEX classes down 41%, obfuscation rate up to 85%, universal APK about 58 MB.
-- **Licenses & Credits** is now a short, friendly dialog that covers the legal bit without the wall of text.
-- Updated the MIT copyright range, tidied the README legal section, and set the version to 1.2.0 (build 7).
-
-### Fixed
-- The Home URL field no longer leaves a stale validation message after the link is corrected or cleared.
-
-## [1.3.0] - 2026-11-24
-
-### Added
+- **F-Droid readiness**: bundled fonts, reproducible build settings, fastlane metadata and an `fdroiddata` recipe with a submission guide in `FDROID.md`.
 - **One shared motion system** (`AppAnimator`) for page routes, state swaps, entrances and toggle pulses, used across Home, Library, Settings and the reader.
 - **Lucide icons** (`lucide_icons_flutter`) across the UI, with the filled Material heart reserved for the saved state so "already in the library" is unmistakable.
 - **Five reading sources** in the fallback chain: Freedium Mirror, Freedium Web, Freedium backup, Archive.ph and Archive.is, with redirect-host aliases so archive hops stay inside the reader.
@@ -36,12 +22,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Performance: cached `ThemeData`, decoded reader settings and `DateFormat`, and hoisted the markdown-link regex out of the hot path.
 - UI consistency pass: aligned top spacing, uppercase tracking, icon sizes, Settings subtitles (readable names instead of stored ids) and accent-colored switches.
 - The reader keeps a single save control — the heart in the app bar.
+- Fonts are bundled and runtime fetching is disabled; the app no longer contacts Google Fonts.
+- The Android build no longer writes developer dependency metadata into the APK.
 
 ### Fixed
+- The reader now applies its palette before the first paint and blocks pop-ups at document start; both helpers existed but were never wired up.
+- The same article can be shared into the app again; a restored launch intent still lands on Home instead of reopening the last story.
+- The preferred mirror stays first without shuffling the rest of the catalog.
+- Sentence punctuation after a shared link no longer becomes part of the URL.
+- The Home URL field no longer leaves a stale validation message after the link is corrected or cleared.
 - Freedium Web mirror used a path suffix that answered every article with a 404; it now uses its `/read?url=` route.
 - Favorited articles show a filled heart; the duplicate Save action in the reader strip is gone.
 - Malformed palette values no longer fall back to a transparent white WebView background.
 - Default ports, trailing root dots and out-of-range ports no longer produce duplicate or unopenable canonical URLs.
+
+## [1.2.0] - 2026-11-24
+
+### Added
+- **Redesigned UI screenshots** for Home, Library, Settings, Reader Appearance, Article Reader and Share Integration, plus a new Play banner.
+- `THIRD_PARTY_NOTICES.md` with library, font, icon and content attributions.
+- Refreshed the README around the redesigned UI and the new screenshots.
+
+### Changed
+- **R8 rules tightened**: removed the blanket Flutter keeps and rely on the embedding's `@Keep` annotations and generated plugin rules. DEX classes down 41%, obfuscation rate up to 85%, universal APK about 58 MB.
+- **Licenses & Credits** is now a short, friendly dialog that covers the legal bit without the wall of text.
+- Updated the MIT copyright range, tidied the README legal section, and set the version to 1.2.0 (build 7).
 
 
 ## [1.1.5] - 2026-10-26

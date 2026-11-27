@@ -1,0 +1,16 @@
+Freedium is a free, open-source Android reader for Medium stories. Paste a Medium link, or share one from any other app, and read the full story without the paywall, pop-ups or clutter.
+
+WHAT IT DOES
+- Opens Medium articles in a clean, dedicated reader with five themes (System, Light, Dark, Sepia and OLED), selectable font family and text size.
+- Saves a copy of every story you favorite, so it stays readable offline when no mirror is reachable. Your library, settings and saved stories never leave your device.
+- Tries five public mirrors in order and falls back automatically when one is down.
+- Supports Android's "Share to Freedium" flow from any app that can share text.
+
+PRIVACY
+Freedium has no account, no analytics, no ads and no cloud sync. The only network request made for an article sends its link to the public mirror that fetches it. Fonts are bundled with the app, so the app does not contact Google Fonts. Saved stories and preferences stay in local storage.
+
+IMPORTANT
+Freedium depends on third-party public mirrors to fetch stories. Those services are outside this project and may be unavailable or change without notice. The app is fully free and open source (MIT), but the content it loads is served by external services.
+
+BUILT WITH
+Flutter, Riverpod, Drift/SQLite and webview_flutter. Source, issue tracker and build instructions: https://github.com/birmehto/Freedium

@@ -29,6 +29,14 @@ android {
     compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
+    // F-Droid rebuilds the APK and signs it itself. Developer dependency
+    // metadata is neither reproducible nor useful in that build, and it is
+    // written into the APK by default on modern AGP versions.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
