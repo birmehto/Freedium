@@ -162,6 +162,10 @@ abstract final class ReaderTheme {
 (function () {
   'use strict';
 
+  // When this runs from the early injector there may be no document root yet.
+  // The full script runs again on load, once the root is guaranteed to exist.
+  if (!document.documentElement) return;
+
   /*
    * The legibility floor for a code token, as a contrast ratio. Kept in step
    * with the palette: a token below this against the code surface is not worth
@@ -514,16 +518,48 @@ abstract final class ReaderTheme {
 
     return '''
 (function() {
-  try {
-    var style = document.createElement('style');
-    style.id = ${jsonEncode(_earlyCssId)};
-    style.textContent = ${jsonEncode(css)};
-    (document.head || document.documentElement).appendChild(style);
-  } catch(e) {}
+  var id = ${jsonEncode(_earlyCssId)};
+  var css = ${jsonEncode(css)};
+  var tries = 0;
+
+  function apply() {
+    // The high-level WebView plugin has no document-start hook, so this can
+    // run before the document has a root at all. Retry briefly instead of
+    // losing the stylesheet to a swallowed exception.
+    var root = document.head || document.documentElement;
+    if (!root) return false;
+    if (document.getElementById(id)) return true;
+
+    try {
+      var style = document.createElement('style');
+      style.id = id;
+      style.textContent = css;
+      root.appendChild(style);
+    } catch (e) {}
+    return true;
+  }
+
+  if (!apply()) {
+    var timer = setInterval(function () {
+      if (apply() || ++tries > 100) clearInterval(timer);
+    }, 10);
+  }
 })();
 $hostModeSyncJs
 ''';
   }
+
+  /// Everything the WebView must run as soon as a document starts loading.
+  ///
+  /// The early stylesheet prevents a theme flash; the popup guard stops
+  /// `window.open` before it can reach the platform. [injectCssScript] removes
+  /// the temporary stylesheet and re-applies the real one on load.
+  static String startupScript({
+    required ReaderSettings settings,
+    required bool systemDark,
+  }) =>
+      '${earlyStyleInjector(settings: settings, systemDark: systemDark)}\n'
+      '$popupBlockingJs';
 
   // ---------------------------------------------------------------------------
   // Popup handling

@@ -160,6 +160,29 @@ class _ArticleWebViewState extends State<ArticleWebView> {
     _mainFrameUrl = url;
     appLog('WebView.onPageStarted: url=$url');
     _controller.onPageStart(url);
+    unawaited(_injectStartupScript());
+  }
+
+  /// Applies the reader palette before the page paints and disables popups
+  /// before its own scripts can open one. Neither script can be installed at
+  /// true document-start through the high-level plugin, so this runs on the
+  /// earliest callback it exposes and the stylesheet retries until the
+  /// document has a root.
+  Future<void> _injectStartupScript() async {
+    try {
+      await _webViewController.runJavaScript(
+        ReaderTheme.startupScript(
+          settings: _controller.readerSettings,
+          systemDark: _controller.isDarkMode,
+        ),
+      );
+    } catch (error) {
+      appLog(
+        'Could not install the reader startup script: $error',
+        name: 'Reader',
+        level: LogLevel.warning,
+      );
+    }
   }
 
   void _onPageFinished(String url) {

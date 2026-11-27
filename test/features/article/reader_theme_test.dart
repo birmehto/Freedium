@@ -191,6 +191,30 @@ void main() {
       expect(early, contains('freedium-early-flash-prevention'));
       expect(early, contains('color-scheme: light'));
     });
+
+    test('waits for a document root instead of failing at document start', () {
+      final early = ReaderTheme.earlyStyleInjector(
+        settings: const ReaderSettings(),
+        systemDark: false,
+      );
+
+      expect(early, contains('if (!root) return false;'));
+      expect(early, contains('setInterval'));
+      expect(early, contains('getElementById(id)'));
+    });
+  });
+
+  group('startupScript', () {
+    test('carries the early stylesheet and the popup guard', () {
+      final script = ReaderTheme.startupScript(
+        settings: const ReaderSettings(),
+        systemDark: true,
+      );
+
+      expect(script, contains('freedium-early-flash-prevention'));
+      expect(script, contains("Object.defineProperty(window, 'open'"));
+      expect(script, contains('color-scheme: dark'));
+    });
   });
 
   group('host mode sync', () {
