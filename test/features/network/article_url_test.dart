@@ -196,6 +196,39 @@ void main() {
         'https://medium.com/@user/a-post',
       );
     });
+
+    // Share prose usually puts the link at the end of a sentence, so the
+    // punctuation after it is part of the message, not the article's path.
+    test('drops sentence punctuation after the URL', () {
+      expect(
+        ArticleUrl.extractFirstUrl(
+          'Worth reading: https://medium.com/@user/post.',
+        ),
+        'https://medium.com/@user/post',
+      );
+    });
+
+    test('drops a comma, colon or bang after the URL', () {
+      expect(
+        ArticleUrl.extractFirstUrl(
+          'See https://medium.com/@user/post, then this',
+        ),
+        'https://medium.com/@user/post',
+      );
+      expect(
+        ArticleUrl.extractFirstUrl('Look https://medium.com/@user/post!'),
+        'https://medium.com/@user/post',
+      );
+    });
+
+    test('keeps a query string while dropping trailing punctuation', () {
+      expect(
+        ArticleUrl.extractFirstUrl(
+          'Read https://medium.com/@user/post?x=1, ok',
+        ),
+        'https://medium.com/@user/post?x=1',
+      );
+    });
   });
 
   group('ArticleUrl.normalize', () {

@@ -28,6 +28,10 @@ const Set<String> kTrackingParams = {
 /// Matches a bare URL inside a larger block of share text.
 final RegExp _urlInText = RegExp(r'''https?://[^\s<>"'()\[\]]+''');
 
+/// Punctuation that ends the sentence around a shared link rather than the
+/// link itself. Only stripped from a URL found inside prose.
+final RegExp _trailingPunctuation = RegExp(r'[.,;:!?…]+$');
+
 /// Matches a Markdown link whose target is an http(s) URL.
 final RegExp _markdownLink = RegExp(
   r'\[[^\]]*\]\((https?://[^)\s]+)\)',
@@ -199,7 +203,10 @@ abstract final class ArticleUrl {
     // shared on purpose, so take it as-is.
     if (!_whitespace.hasMatch(text)) return normalize(text);
 
-    return normalize(_urlInText.firstMatch(text)?.group(0));
+    final match = _urlInText.firstMatch(text)?.group(0);
+    if (match == null) return null;
+
+    return normalize(match.replaceFirst(_trailingPunctuation, ''));
   }
 
   /// The host without a leading `www.`, used for display and deduplication.
