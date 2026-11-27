@@ -191,6 +191,20 @@ void main() {
     test('keeps catalog order without a preference', () {
       expect(resolver.candidates.map((s) => s.id), ['mirror-a', 'mirror-b']);
     });
+
+    // Dart's sort is not stable, so a comparator that returns 0 for every
+    // non-preferred mirror can shuffle the catalog once it is long enough for
+    // the sort to leave insertion sort behind.
+    test('preferred first and the rest in catalog order on a large catalog', () {
+      final ids = [for (var i = 0; i < 40; i++) 's$i'];
+      final large = ArticleResolver(sources: [for (final id in ids) mirror(id)]);
+      large.setPreferred('s20');
+
+      expect(
+        large.candidates.map((s) => s.id),
+        ['s20', for (final id in ids) if (id != 's20') id],
+      );
+    });
   });
 
   group('isolation', () {

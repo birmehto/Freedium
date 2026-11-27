@@ -25,17 +25,19 @@ class ArticleResolver {
   /// Backends in the order they will be attempted: the user's preferred mirror
   /// first, then the remaining catalog order.
   List<MirrorSource> get candidates {
-    final ordered = List<MirrorSource>.from(_sources);
     final preferred = _preferredSourceId;
-    if (preferred == null) return ordered;
+    if (preferred == null) return List<MirrorSource>.from(_sources);
 
-    ordered.sort((a, b) {
-      if (a.id == preferred) return -1;
-      if (b.id == preferred) return 1;
-      return 0;
-    });
+    // Rebuild instead of sorting: `List.sort` is not stable, and a comparator
+    // that returns 0 for every other source is free to shuffle the catalog.
+    final first = _sources.where((source) => source.id == preferred).firstOrNull;
+    if (first == null) return List<MirrorSource>.from(_sources);
 
-    return ordered;
+    return [
+      first,
+      for (final source in _sources)
+        if (source.id != preferred) source,
+    ];
   }
 
   /// The proxied URL to load for [originalUrl], or `null` when the article URL
