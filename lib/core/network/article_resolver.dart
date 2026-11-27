@@ -30,7 +30,9 @@ class ArticleResolver {
 
     // Rebuild instead of sorting: `List.sort` is not stable, and a comparator
     // that returns 0 for every other source is free to shuffle the catalog.
-    final first = _sources.where((source) => source.id == preferred).firstOrNull;
+    final first = _sources
+        .where((source) => source.id == preferred)
+        .firstOrNull;
     if (first == null) return List<MirrorSource>.from(_sources);
 
     return [
